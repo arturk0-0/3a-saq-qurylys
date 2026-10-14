@@ -1,0 +1,1222 @@
+{
+  "version": "demo-v1",
+  "collections": {
+    "developers": [
+      {
+        "id": "demo-developer-01",
+        "name": "DEMO — Учебный застройщик 1",
+        "bin": "000000000001",
+        "demo": true
+      },
+      {
+        "id": "demo-developer-02",
+        "name": "DEMO — Учебный застройщик 2",
+        "bin": "000000000002",
+        "demo": true
+      },
+      {
+        "id": "demo-developer-03",
+        "name": "DEMO — Учебный застройщик 3",
+        "bin": "000000000003",
+        "demo": true
+      },
+      {
+        "id": "demo-developer-04",
+        "name": "DEMO — Учебный застройщик 4",
+        "bin": "000000000004",
+        "demo": true
+      },
+      {
+        "id": "demo-developer-05",
+        "name": "DEMO — Учебный застройщик 5",
+        "bin": "000000000005",
+        "demo": true
+      },
+      {
+        "id": "demo-developer-06",
+        "name": "DEMO — Учебный застройщик 6",
+        "bin": "000000000006",
+        "demo": true
+      },
+      {
+        "id": "demo-developer-07",
+        "name": "DEMO — Учебный застройщик 7",
+        "bin": "000000000007",
+        "demo": true
+      },
+      {
+        "id": "demo-developer-08",
+        "name": "DEMO — Учебный застройщик 8",
+        "bin": "000000000008",
+        "demo": true
+      }
+    ],
+    "complexes": [
+      {
+        "id": "demo-complex-01",
+        "name": "DEMO — Янтарный берег",
+        "city": "Усть-Каменогорск",
+        "region": "ВКО",
+        "address": "DEMO, несуществующий адрес: Учебная улица, 101",
+        "developerId": "demo-developer-01",
+        "stage": "under_construction",
+        "coordinates": {
+          "latitude": 49.955,
+          "longitude": 82.615
+        },
+        "progress": {
+          "claimedPercent": 25,
+          "verifiedPercent": null,
+          "claimedAt": "2026-10-14T08:00:00Z",
+          "verifiedAt": null,
+          "claimedSource": "DEMO-презентация проекта 1",
+          "verifiedSource": ""
+        },
+        "legalBasis": {
+          "type": "unknown",
+          "status": "unknown",
+          "reference": "",
+          "source": "",
+          "checkedAt": null,
+          "reviewer": null,
+          "validUntil": null
+        },
+        "factors": [
+          {
+            "code": "R1",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R2",
+            "status": "confirmed",
+            "evidenceIds": [
+              "demo-evidence-ad-01"
+            ],
+            "reviewer": "DEMO-fictional-reviewer",
+            "reviewedAt": "2026-10-14T08:00:00Z",
+            "notes": "Вымышленная DEMO-проверка"
+          },
+          {
+            "code": "R3",
+            "status": "confirmed",
+            "evidenceIds": [
+              "demo-evidence-ad-01"
+            ],
+            "reviewer": "DEMO-fictional-reviewer",
+            "reviewedAt": "2026-10-14T08:00:00Z",
+            "notes": "Вымышленная DEMO-проверка"
+          },
+          {
+            "code": "R4",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R5",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R6",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          }
+        ],
+        "demo": true,
+        "scenario": "A",
+        "version": 1,
+        "createdAt": "2026-10-14T08:00:00Z",
+        "updatedAt": "2026-10-14T08:00:00Z"
+      },
+      {
+        "id": "demo-complex-02",
+        "name": "DEMO — Кедровый квартал",
+        "city": "Риддер",
+        "region": "ВКО",
+        "address": "DEMO, несуществующий адрес: Вымышленный проспект, 102",
+        "developerId": "demo-developer-02",
+        "stage": "under_construction",
+        "coordinates": {
+          "latitude": 50.339,
+          "longitude": 83.512
+        },
+        "progress": {
+          "claimedPercent": 30,
+          "verifiedPercent": null,
+          "claimedAt": "2026-10-14T08:00:00Z",
+          "verifiedAt": null,
+          "claimedSource": "DEMO-презентация проекта 2",
+          "verifiedSource": ""
+        },
+        "legalBasis": {
+          "type": "unknown",
+          "status": "unknown",
+          "reference": "",
+          "source": "",
+          "checkedAt": null,
+          "reviewer": null,
+          "validUntil": null
+        },
+        "factors": [
+          {
+            "code": "R1",
+            "status": "confirmed",
+            "evidenceIds": [
+              "demo-evidence-legal-02"
+            ],
+            "reviewer": "DEMO-fictional-reviewer",
+            "reviewedAt": "2026-10-14T08:00:00Z",
+            "notes": "DEMO: отсутствие оснований проверено документально"
+          },
+          {
+            "code": "R2",
+            "status": "confirmed",
+            "evidenceIds": [
+              "demo-evidence-ad-02"
+            ],
+            "reviewer": "DEMO-fictional-reviewer",
+            "reviewedAt": "2026-10-14T08:00:00Z",
+            "notes": "Вымышленная DEMO-проверка"
+          },
+          {
+            "code": "R3",
+            "status": "confirmed",
+            "evidenceIds": [
+              "demo-evidence-ad-02"
+            ],
+            "reviewer": "DEMO-fictional-reviewer",
+            "reviewedAt": "2026-10-14T08:00:00Z",
+            "notes": "Вымышленная DEMO-проверка"
+          },
+          {
+            "code": "R4",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R5",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R6",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          }
+        ],
+        "demo": true,
+        "scenario": "B",
+        "version": 1,
+        "createdAt": "2026-10-14T08:00:00Z",
+        "updatedAt": "2026-10-14T08:00:00Z"
+      },
+      {
+        "id": "demo-complex-03",
+        "name": "DEMO — Солнечный склон",
+        "city": "Усть-Каменогорск",
+        "region": "ВКО",
+        "address": "DEMO, несуществующий адрес: Демонстрационная улица, 103",
+        "developerId": "demo-developer-03",
+        "stage": "under_construction",
+        "coordinates": {
+          "latitude": 49.965,
+          "longitude": 82.63
+        },
+        "progress": {
+          "claimedPercent": 35,
+          "verifiedPercent": null,
+          "claimedAt": "2026-10-14T08:00:00Z",
+          "verifiedAt": null,
+          "claimedSource": "DEMO-презентация проекта 3",
+          "verifiedSource": ""
+        },
+        "legalBasis": {
+          "type": "guarantee",
+          "status": "confirmed",
+          "reference": "DEMO-GUARANTEE-003",
+          "source": "Синтетический документ: применимая действующая гарантия (сценарий C)",
+          "checkedAt": "2026-10-14T08:00:00Z",
+          "reviewer": "DEMO-fictional-reviewer",
+          "validUntil": "2027-12-31T00:00:00Z"
+        },
+        "factors": [
+          {
+            "code": "R1",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R2",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R3",
+            "status": "confirmed",
+            "evidenceIds": [
+              "demo-evidence-ad-03"
+            ],
+            "reviewer": "DEMO-fictional-reviewer",
+            "reviewedAt": "2026-10-14T08:00:00Z",
+            "notes": "Вымышленная DEMO-проверка"
+          },
+          {
+            "code": "R4",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R5",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R6",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          }
+        ],
+        "demo": true,
+        "scenario": "C",
+        "version": 1,
+        "createdAt": "2026-10-14T08:00:00Z",
+        "updatedAt": "2026-10-14T08:00:00Z"
+      },
+      {
+        "id": "demo-complex-04",
+        "name": "DEMO — Горная мозаика",
+        "city": "Алтай",
+        "region": "ВКО",
+        "address": "DEMO, несуществующий адрес: Учебный переулок, 104",
+        "developerId": "demo-developer-04",
+        "stage": "under_construction",
+        "coordinates": {
+          "latitude": 49.727,
+          "longitude": 84.274
+        },
+        "progress": {
+          "claimedPercent": 40,
+          "verifiedPercent": null,
+          "claimedAt": "2026-10-14T08:00:00Z",
+          "verifiedAt": null,
+          "claimedSource": "DEMO-презентация проекта 4",
+          "verifiedSource": ""
+        },
+        "legalBasis": {
+          "type": "unknown",
+          "status": "unknown",
+          "reference": "",
+          "source": "",
+          "checkedAt": null,
+          "reviewer": null,
+          "validUntil": null
+        },
+        "factors": [
+          {
+            "code": "R1",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R2",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R3",
+            "status": "confirmed",
+            "evidenceIds": [
+              "demo-evidence-ad-04"
+            ],
+            "reviewer": "DEMO-fictional-reviewer",
+            "reviewedAt": "2026-10-14T08:00:00Z",
+            "notes": "Вымышленная DEMO-проверка"
+          },
+          {
+            "code": "R4",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R5",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R6",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          }
+        ],
+        "demo": true,
+        "scenario": null,
+        "version": 1,
+        "createdAt": "2026-10-14T08:00:00Z",
+        "updatedAt": "2026-10-14T08:00:00Z"
+      },
+      {
+        "id": "demo-complex-05",
+        "name": "DEMO — Тихая долина",
+        "city": "Серебрянск",
+        "region": "ВКО",
+        "address": "DEMO, несуществующий адрес: Вымышленная улица, 105",
+        "developerId": "demo-developer-05",
+        "stage": "under_construction",
+        "coordinates": {
+          "latitude": 49.681,
+          "longitude": 83.3
+        },
+        "progress": {
+          "claimedPercent": 45,
+          "verifiedPercent": null,
+          "claimedAt": "2026-10-14T08:00:00Z",
+          "verifiedAt": null,
+          "claimedSource": "DEMO-презентация проекта 5",
+          "verifiedSource": ""
+        },
+        "legalBasis": {
+          "type": "unknown",
+          "status": "unknown",
+          "reference": "",
+          "source": "",
+          "checkedAt": null,
+          "reviewer": null,
+          "validUntil": null
+        },
+        "factors": [
+          {
+            "code": "R1",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R2",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R3",
+            "status": "confirmed",
+            "evidenceIds": [
+              "demo-evidence-ad-05"
+            ],
+            "reviewer": "DEMO-fictional-reviewer",
+            "reviewedAt": "2026-10-14T08:00:00Z",
+            "notes": "Вымышленная DEMO-проверка"
+          },
+          {
+            "code": "R4",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R5",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R6",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          }
+        ],
+        "demo": true,
+        "scenario": null,
+        "version": 1,
+        "createdAt": "2026-10-14T08:00:00Z",
+        "updatedAt": "2026-10-14T08:00:00Z"
+      },
+      {
+        "id": "demo-complex-06",
+        "name": "DEMO — Восточный сад",
+        "city": "Шемонаиха",
+        "region": "ВКО",
+        "address": "DEMO, несуществующий адрес: Демонстрационный проспект, 106",
+        "developerId": "demo-developer-06",
+        "stage": "under_construction",
+        "coordinates": {
+          "latitude": 50.632,
+          "longitude": 81.91
+        },
+        "progress": {
+          "claimedPercent": 50,
+          "verifiedPercent": null,
+          "claimedAt": "2026-10-14T08:00:00Z",
+          "verifiedAt": null,
+          "claimedSource": "DEMO-презентация проекта 6",
+          "verifiedSource": ""
+        },
+        "legalBasis": {
+          "type": "unknown",
+          "status": "unknown",
+          "reference": "",
+          "source": "",
+          "checkedAt": null,
+          "reviewer": null,
+          "validUntil": null
+        },
+        "factors": [
+          {
+            "code": "R1",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R2",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R3",
+            "status": "confirmed",
+            "evidenceIds": [
+              "demo-evidence-ad-06"
+            ],
+            "reviewer": "DEMO-fictional-reviewer",
+            "reviewedAt": "2026-10-14T08:00:00Z",
+            "notes": "Вымышленная DEMO-проверка"
+          },
+          {
+            "code": "R4",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R5",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R6",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          }
+        ],
+        "demo": true,
+        "scenario": null,
+        "version": 1,
+        "createdAt": "2026-10-14T08:00:00Z",
+        "updatedAt": "2026-10-14T08:00:00Z"
+      },
+      {
+        "id": "demo-complex-07",
+        "name": "DEMO — Лазурный двор",
+        "city": "Зайсан",
+        "region": "ВКО",
+        "address": "DEMO, несуществующий адрес: Учебная набережная, 107",
+        "developerId": "demo-developer-07",
+        "stage": "under_construction",
+        "coordinates": {
+          "latitude": 47.467,
+          "longitude": 84.872
+        },
+        "progress": {
+          "claimedPercent": 55,
+          "verifiedPercent": null,
+          "claimedAt": "2026-10-14T08:00:00Z",
+          "verifiedAt": null,
+          "claimedSource": "DEMO-презентация проекта 7",
+          "verifiedSource": ""
+        },
+        "legalBasis": {
+          "type": "unknown",
+          "status": "unknown",
+          "reference": "",
+          "source": "",
+          "checkedAt": null,
+          "reviewer": null,
+          "validUntil": null
+        },
+        "factors": [
+          {
+            "code": "R1",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R2",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R3",
+            "status": "confirmed",
+            "evidenceIds": [
+              "demo-evidence-ad-07"
+            ],
+            "reviewer": "DEMO-fictional-reviewer",
+            "reviewedAt": "2026-10-14T08:00:00Z",
+            "notes": "Вымышленная DEMO-проверка"
+          },
+          {
+            "code": "R4",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R5",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R6",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          }
+        ],
+        "demo": true,
+        "scenario": null,
+        "version": 1,
+        "createdAt": "2026-10-14T08:00:00Z",
+        "updatedAt": "2026-10-14T08:00:00Z"
+      },
+      {
+        "id": "demo-complex-08",
+        "name": "DEMO — Сосновая терраса",
+        "city": "Риддер",
+        "region": "ВКО",
+        "address": "DEMO, несуществующий адрес: Вымышленная улица, 108",
+        "developerId": "demo-developer-08",
+        "stage": "under_construction",
+        "coordinates": {
+          "latitude": 50.347,
+          "longitude": 83.521
+        },
+        "progress": {
+          "claimedPercent": 60,
+          "verifiedPercent": null,
+          "claimedAt": "2026-10-14T08:00:00Z",
+          "verifiedAt": null,
+          "claimedSource": "DEMO-презентация проекта 8",
+          "verifiedSource": ""
+        },
+        "legalBasis": {
+          "type": "unknown",
+          "status": "unknown",
+          "reference": "",
+          "source": "",
+          "checkedAt": null,
+          "reviewer": null,
+          "validUntil": null
+        },
+        "factors": [
+          {
+            "code": "R1",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R2",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R3",
+            "status": "confirmed",
+            "evidenceIds": [
+              "demo-evidence-ad-08"
+            ],
+            "reviewer": "DEMO-fictional-reviewer",
+            "reviewedAt": "2026-10-14T08:00:00Z",
+            "notes": "Вымышленная DEMO-проверка"
+          },
+          {
+            "code": "R4",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R5",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          },
+          {
+            "code": "R6",
+            "status": "unknown",
+            "evidenceIds": [],
+            "reviewer": null,
+            "reviewedAt": null,
+            "notes": ""
+          }
+        ],
+        "demo": true,
+        "scenario": null,
+        "version": 1,
+        "createdAt": "2026-10-14T08:00:00Z",
+        "updatedAt": "2026-10-14T08:00:00Z"
+      }
+    ],
+    "advertisements": [
+      {
+        "id": "demo-ad-01",
+        "complexId": "demo-complex-01",
+        "platform": "DEMO social",
+        "account": "demo_training_account_1",
+        "sourceUrl": "https://demo.invalid/advertisements/1",
+        "text": "DEMO: DEMO — Янтарный берег. Строящийся жилой комплекс в городе Усть-Каменогорск. Забронируйте квартиру: внесите платный депозит 300 000 тенге.",
+        "publishedAt": "2026-10-14T08:00:00Z",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "createdBy": "DEMO-fictional-reviewer",
+        "attachmentIds": [],
+        "demo": true,
+        "linkageStatus": "confirmed",
+        "version": 1
+      },
+      {
+        "id": "demo-ad-02",
+        "complexId": "demo-complex-02",
+        "platform": "DEMO social",
+        "account": "demo_training_account_2",
+        "sourceUrl": "https://demo.invalid/advertisements/2",
+        "text": "DEMO: DEMO — Кедровый квартал. Строящийся жилой комплекс в городе Риддер. Забронируйте квартиру: внесите платный депозит 300 000 тенге.",
+        "publishedAt": "2026-10-14T08:00:00Z",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "createdBy": "DEMO-fictional-reviewer",
+        "attachmentIds": [],
+        "demo": true,
+        "linkageStatus": "confirmed",
+        "version": 1
+      },
+      {
+        "id": "demo-ad-03",
+        "complexId": "demo-complex-03",
+        "platform": "DEMO social",
+        "account": "demo_training_account_3",
+        "sourceUrl": "https://demo.invalid/advertisements/3",
+        "text": "DEMO: DEMO — Солнечный склон. Строящийся жилой комплекс в городе Усть-Каменогорск. Информация о планировках. Оплата и бронирование не предлагаются.",
+        "publishedAt": "2026-10-14T08:00:00Z",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "createdBy": "DEMO-fictional-reviewer",
+        "attachmentIds": [],
+        "demo": true,
+        "linkageStatus": "confirmed",
+        "version": 1
+      },
+      {
+        "id": "demo-ad-04",
+        "complexId": "demo-complex-04",
+        "platform": "DEMO social",
+        "account": "demo_training_account_4",
+        "sourceUrl": "https://demo.invalid/advertisements/4",
+        "text": "DEMO: DEMO — Горная мозаика. Строящийся жилой комплекс в городе Алтай. Информация о планировках. Оплата и бронирование не предлагаются.",
+        "publishedAt": "2026-10-14T08:00:00Z",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "createdBy": "DEMO-fictional-reviewer",
+        "attachmentIds": [],
+        "demo": true,
+        "linkageStatus": "confirmed",
+        "version": 1
+      },
+      {
+        "id": "demo-ad-05",
+        "complexId": "demo-complex-05",
+        "platform": "DEMO social",
+        "account": "demo_training_account_5",
+        "sourceUrl": "https://demo.invalid/advertisements/5",
+        "text": "DEMO: DEMO — Тихая долина. Строящийся жилой комплекс в городе Серебрянск. Информация о планировках. Оплата и бронирование не предлагаются.",
+        "publishedAt": "2026-10-14T08:00:00Z",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "createdBy": "DEMO-fictional-reviewer",
+        "attachmentIds": [],
+        "demo": true,
+        "linkageStatus": "confirmed",
+        "version": 1
+      },
+      {
+        "id": "demo-ad-06",
+        "complexId": "demo-complex-06",
+        "platform": "DEMO social",
+        "account": "demo_training_account_6",
+        "sourceUrl": "https://demo.invalid/advertisements/6",
+        "text": "DEMO: DEMO — Восточный сад. Строящийся жилой комплекс в городе Шемонаиха. Информация о планировках. Оплата и бронирование не предлагаются.",
+        "publishedAt": "2026-10-14T08:00:00Z",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "createdBy": "DEMO-fictional-reviewer",
+        "attachmentIds": [],
+        "demo": true,
+        "linkageStatus": "confirmed",
+        "version": 1
+      },
+      {
+        "id": "demo-ad-07",
+        "complexId": "demo-complex-07",
+        "platform": "DEMO social",
+        "account": "demo_training_account_7",
+        "sourceUrl": "https://demo.invalid/advertisements/7",
+        "text": "DEMO: DEMO — Лазурный двор. Строящийся жилой комплекс в городе Зайсан. Информация о планировках. Оплата и бронирование не предлагаются.",
+        "publishedAt": "2026-10-14T08:00:00Z",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "createdBy": "DEMO-fictional-reviewer",
+        "attachmentIds": [],
+        "demo": true,
+        "linkageStatus": "confirmed",
+        "version": 1
+      },
+      {
+        "id": "demo-ad-08",
+        "complexId": "demo-complex-08",
+        "platform": "DEMO social",
+        "account": "demo_training_account_8",
+        "sourceUrl": "https://demo.invalid/advertisements/8",
+        "text": "DEMO: DEMO — Сосновая терраса. Строящийся жилой комплекс в городе Риддер. Информация о планировках. Оплата и бронирование не предлагаются.",
+        "publishedAt": "2026-10-14T08:00:00Z",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "createdBy": "DEMO-fictional-reviewer",
+        "attachmentIds": [],
+        "demo": true,
+        "linkageStatus": "confirmed",
+        "version": 1
+      },
+      {
+        "id": "demo-ad-09",
+        "complexId": "demo-complex-01",
+        "platform": "DEMO social",
+        "account": "demo_training_account_1",
+        "sourceUrl": "https://demo.invalid/advertisements/9",
+        "text": "DEMO — дополнительная публикация 9. DEMO: DEMO — Янтарный берег. Строящийся жилой комплекс в городе Усть-Каменогорск. Забронируйте квартиру: внесите платный депозит 300 000 тенге.",
+        "publishedAt": "2026-10-14T08:00:00Z",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "createdBy": "DEMO-fictional-reviewer",
+        "attachmentIds": [],
+        "demo": true,
+        "linkageStatus": "confirmed",
+        "version": 1
+      },
+      {
+        "id": "demo-ad-10",
+        "complexId": "demo-complex-02",
+        "platform": "DEMO social",
+        "account": "demo_training_account_2",
+        "sourceUrl": "https://demo.invalid/advertisements/10",
+        "text": "DEMO — дополнительная публикация 10. DEMO: DEMO — Кедровый квартал. Строящийся жилой комплекс в городе Риддер. Забронируйте квартиру: внесите платный депозит 300 000 тенге.",
+        "publishedAt": "2026-10-14T08:00:00Z",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "createdBy": "DEMO-fictional-reviewer",
+        "attachmentIds": [],
+        "demo": true,
+        "linkageStatus": "confirmed",
+        "version": 1
+      },
+      {
+        "id": "demo-ad-11",
+        "complexId": "demo-complex-03",
+        "platform": "DEMO social",
+        "account": "demo_training_account_3",
+        "sourceUrl": "https://demo.invalid/advertisements/11",
+        "text": "DEMO — дополнительная публикация 11. DEMO: DEMO — Солнечный склон. Строящийся жилой комплекс в городе Усть-Каменогорск. Информация о планировках. Оплата и бронирование не предлагаются.",
+        "publishedAt": "2026-10-14T08:00:00Z",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "createdBy": "DEMO-fictional-reviewer",
+        "attachmentIds": [],
+        "demo": true,
+        "linkageStatus": "confirmed",
+        "version": 1
+      },
+      {
+        "id": "demo-ad-12",
+        "complexId": "demo-complex-04",
+        "platform": "DEMO social",
+        "account": "demo_training_account_4",
+        "sourceUrl": "https://demo.invalid/advertisements/12",
+        "text": "DEMO — дополнительная публикация 12. DEMO: DEMO — Горная мозаика. Строящийся жилой комплекс в городе Алтай. Информация о планировках. Оплата и бронирование не предлагаются.",
+        "publishedAt": "2026-10-14T08:00:00Z",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "createdBy": "DEMO-fictional-reviewer",
+        "attachmentIds": [],
+        "demo": true,
+        "linkageStatus": "confirmed",
+        "version": 1
+      }
+    ],
+    "evidence": [
+      {
+        "id": "demo-evidence-ad-01",
+        "complexId": "demo-complex-01",
+        "advertisementId": "demo-ad-01",
+        "type": "advertisement",
+        "sourceUrl": "https://demo.invalid/advertisements/1",
+        "sourceReference": "",
+        "excerpt": "DEMO: DEMO — Янтарный берег. Строящийся жилой комплекс в городе Усть-Каменогорск. Забронируйте квартиру: внесите платный депозит 300 000 тенге.",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "status": "confirmed",
+        "reviewer": "DEMO-fictional-reviewer",
+        "reviewedAt": "2026-10-14T08:00:00Z",
+        "storagePath": null,
+        "sha256": null,
+        "mediaType": null,
+        "sizeBytes": null,
+        "legalAbsenceVerified": false,
+        "applicableBasesChecked": false,
+        "activeAdvertisingVerified": true,
+        "constructionVerified": true,
+        "paymentOfferVerified": true,
+        "collectiveComplaintVerified": false,
+        "workStoppageVerified": false,
+        "claimedPercent": null,
+        "verifiedPercent": null,
+        "claimedAt": null,
+        "verifiedAt": null,
+        "claimedSource": "",
+        "verifiedSource": "",
+        "demo": true
+      },
+      {
+        "id": "demo-evidence-ad-02",
+        "complexId": "demo-complex-02",
+        "advertisementId": "demo-ad-02",
+        "type": "advertisement",
+        "sourceUrl": "https://demo.invalid/advertisements/2",
+        "sourceReference": "",
+        "excerpt": "DEMO: DEMO — Кедровый квартал. Строящийся жилой комплекс в городе Риддер. Забронируйте квартиру: внесите платный депозит 300 000 тенге.",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "status": "confirmed",
+        "reviewer": "DEMO-fictional-reviewer",
+        "reviewedAt": "2026-10-14T08:00:00Z",
+        "storagePath": null,
+        "sha256": null,
+        "mediaType": null,
+        "sizeBytes": null,
+        "legalAbsenceVerified": false,
+        "applicableBasesChecked": false,
+        "activeAdvertisingVerified": true,
+        "constructionVerified": true,
+        "paymentOfferVerified": true,
+        "collectiveComplaintVerified": false,
+        "workStoppageVerified": false,
+        "claimedPercent": null,
+        "verifiedPercent": null,
+        "claimedAt": null,
+        "verifiedAt": null,
+        "claimedSource": "",
+        "verifiedSource": "",
+        "demo": true
+      },
+      {
+        "id": "demo-evidence-legal-02",
+        "complexId": "demo-complex-02",
+        "advertisementId": null,
+        "type": "legal_basis_review",
+        "sourceUrl": null,
+        "sourceReference": "DEMO-REVIEW-002: синтетическая проверка всех применимых оснований",
+        "excerpt": "DEMO: документально проверено отсутствие всех применимых оснований. Это вымышленный сценарий B, не результат поиска в реальном госреестре.",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "status": "confirmed",
+        "reviewer": "DEMO-fictional-reviewer",
+        "reviewedAt": "2026-10-14T08:00:00Z",
+        "storagePath": null,
+        "sha256": null,
+        "mediaType": null,
+        "sizeBytes": null,
+        "legalAbsenceVerified": true,
+        "applicableBasesChecked": true,
+        "activeAdvertisingVerified": false,
+        "constructionVerified": false,
+        "paymentOfferVerified": false,
+        "collectiveComplaintVerified": false,
+        "workStoppageVerified": false,
+        "claimedPercent": null,
+        "verifiedPercent": null,
+        "claimedAt": null,
+        "verifiedAt": null,
+        "claimedSource": "",
+        "verifiedSource": "",
+        "demo": true
+      },
+      {
+        "id": "demo-evidence-ad-03",
+        "complexId": "demo-complex-03",
+        "advertisementId": "demo-ad-03",
+        "type": "advertisement",
+        "sourceUrl": "https://demo.invalid/advertisements/3",
+        "sourceReference": "",
+        "excerpt": "DEMO: DEMO — Солнечный склон. Строящийся жилой комплекс в городе Усть-Каменогорск. Информация о планировках. Оплата и бронирование не предлагаются.",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "status": "confirmed",
+        "reviewer": "DEMO-fictional-reviewer",
+        "reviewedAt": "2026-10-14T08:00:00Z",
+        "storagePath": null,
+        "sha256": null,
+        "mediaType": null,
+        "sizeBytes": null,
+        "legalAbsenceVerified": false,
+        "applicableBasesChecked": false,
+        "activeAdvertisingVerified": true,
+        "constructionVerified": true,
+        "paymentOfferVerified": false,
+        "collectiveComplaintVerified": false,
+        "workStoppageVerified": false,
+        "claimedPercent": null,
+        "verifiedPercent": null,
+        "claimedAt": null,
+        "verifiedAt": null,
+        "claimedSource": "",
+        "verifiedSource": "",
+        "demo": true
+      },
+      {
+        "id": "demo-evidence-ad-04",
+        "complexId": "demo-complex-04",
+        "advertisementId": "demo-ad-04",
+        "type": "advertisement",
+        "sourceUrl": "https://demo.invalid/advertisements/4",
+        "sourceReference": "",
+        "excerpt": "DEMO: DEMO — Горная мозаика. Строящийся жилой комплекс в городе Алтай. Информация о планировках. Оплата и бронирование не предлагаются.",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "status": "confirmed",
+        "reviewer": "DEMO-fictional-reviewer",
+        "reviewedAt": "2026-10-14T08:00:00Z",
+        "storagePath": null,
+        "sha256": null,
+        "mediaType": null,
+        "sizeBytes": null,
+        "legalAbsenceVerified": false,
+        "applicableBasesChecked": false,
+        "activeAdvertisingVerified": true,
+        "constructionVerified": true,
+        "paymentOfferVerified": false,
+        "collectiveComplaintVerified": false,
+        "workStoppageVerified": false,
+        "claimedPercent": null,
+        "verifiedPercent": null,
+        "claimedAt": null,
+        "verifiedAt": null,
+        "claimedSource": "",
+        "verifiedSource": "",
+        "demo": true
+      },
+      {
+        "id": "demo-evidence-ad-05",
+        "complexId": "demo-complex-05",
+        "advertisementId": "demo-ad-05",
+        "type": "advertisement",
+        "sourceUrl": "https://demo.invalid/advertisements/5",
+        "sourceReference": "",
+        "excerpt": "DEMO: DEMO — Тихая долина. Строящийся жилой комплекс в городе Серебрянск. Информация о планировках. Оплата и бронирование не предлагаются.",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "status": "confirmed",
+        "reviewer": "DEMO-fictional-reviewer",
+        "reviewedAt": "2026-10-14T08:00:00Z",
+        "storagePath": null,
+        "sha256": null,
+        "mediaType": null,
+        "sizeBytes": null,
+        "legalAbsenceVerified": false,
+        "applicableBasesChecked": false,
+        "activeAdvertisingVerified": true,
+        "constructionVerified": true,
+        "paymentOfferVerified": false,
+        "collectiveComplaintVerified": false,
+        "workStoppageVerified": false,
+        "claimedPercent": null,
+        "verifiedPercent": null,
+        "claimedAt": null,
+        "verifiedAt": null,
+        "claimedSource": "",
+        "verifiedSource": "",
+        "demo": true
+      },
+      {
+        "id": "demo-evidence-ad-06",
+        "complexId": "demo-complex-06",
+        "advertisementId": "demo-ad-06",
+        "type": "advertisement",
+        "sourceUrl": "https://demo.invalid/advertisements/6",
+        "sourceReference": "",
+        "excerpt": "DEMO: DEMO — Восточный сад. Строящийся жилой комплекс в городе Шемонаиха. Информация о планировках. Оплата и бронирование не предлагаются.",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "status": "confirmed",
+        "reviewer": "DEMO-fictional-reviewer",
+        "reviewedAt": "2026-10-14T08:00:00Z",
+        "storagePath": null,
+        "sha256": null,
+        "mediaType": null,
+        "sizeBytes": null,
+        "legalAbsenceVerified": false,
+        "applicableBasesChecked": false,
+        "activeAdvertisingVerified": true,
+        "constructionVerified": true,
+        "paymentOfferVerified": false,
+        "collectiveComplaintVerified": false,
+        "workStoppageVerified": false,
+        "claimedPercent": null,
+        "verifiedPercent": null,
+        "claimedAt": null,
+        "verifiedAt": null,
+        "claimedSource": "",
+        "verifiedSource": "",
+        "demo": true
+      },
+      {
+        "id": "demo-evidence-ad-07",
+        "complexId": "demo-complex-07",
+        "advertisementId": "demo-ad-07",
+        "type": "advertisement",
+        "sourceUrl": "https://demo.invalid/advertisements/7",
+        "sourceReference": "",
+        "excerpt": "DEMO: DEMO — Лазурный двор. Строящийся жилой комплекс в городе Зайсан. Информация о планировках. Оплата и бронирование не предлагаются.",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "status": "confirmed",
+        "reviewer": "DEMO-fictional-reviewer",
+        "reviewedAt": "2026-10-14T08:00:00Z",
+        "storagePath": null,
+        "sha256": null,
+        "mediaType": null,
+        "sizeBytes": null,
+        "legalAbsenceVerified": false,
+        "applicableBasesChecked": false,
+        "activeAdvertisingVerified": true,
+        "constructionVerified": true,
+        "paymentOfferVerified": false,
+        "collectiveComplaintVerified": false,
+        "workStoppageVerified": false,
+        "claimedPercent": null,
+        "verifiedPercent": null,
+        "claimedAt": null,
+        "verifiedAt": null,
+        "claimedSource": "",
+        "verifiedSource": "",
+        "demo": true
+      },
+      {
+        "id": "demo-evidence-ad-08",
+        "complexId": "demo-complex-08",
+        "advertisementId": "demo-ad-08",
+        "type": "advertisement",
+        "sourceUrl": "https://demo.invalid/advertisements/8",
+        "sourceReference": "",
+        "excerpt": "DEMO: DEMO — Сосновая терраса. Строящийся жилой комплекс в городе Риддер. Информация о планировках. Оплата и бронирование не предлагаются.",
+        "capturedAt": "2026-10-14T08:00:00Z",
+        "status": "confirmed",
+        "reviewer": "DEMO-fictional-reviewer",
+        "reviewedAt": "2026-10-14T08:00:00Z",
+        "storagePath": null,
+        "sha256": null,
+        "mediaType": null,
+        "sizeBytes": null,
+        "legalAbsenceVerified": false,
+        "applicableBasesChecked": false,
+        "activeAdvertisingVerified": true,
+        "constructionVerified": true,
+        "paymentOfferVerified": false,
+        "collectiveComplaintVerified": false,
+        "workStoppageVerified": false,
+        "claimedPercent": null,
+        "verifiedPercent": null,
+        "claimedAt": null,
+        "verifiedAt": null,
+        "claimedSource": "",
+        "verifiedSource": "",
+        "demo": true
+      }
+    ]
+  }
+}
