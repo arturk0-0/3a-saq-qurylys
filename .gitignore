@@ -218,3 +218,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Frontend, local configuration and private credentials
+node_modules/
+*.tsbuildinfo
+.env.*
+!.env.example
+credentials/
+*-service-account*.json
+!frontend/src/lib/

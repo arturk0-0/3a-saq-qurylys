@@ -1,0 +1,28 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      CORS_ORIGINS: '${CORS_ORIGINS:-["http://localhost:5173","http://127.0.0.1:5173"]}'
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", ".venv/bin/python", "-c", "import json, urllib.request; assert json.load(urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3)) == {'status': 'ok', 'service': 'saq-qurylys-api'}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+  frontend:
+    build: ./frontend
+    environment:
+      API_PROXY_TARGET: http://backend:8000
+    ports:
+      - "127.0.0.1:5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "Promise.all([fetch('http://127.0.0.1:5173/').then(r=>{if(!r.ok)throw Error('UI unavailable')}),fetch('http://127.0.0.1:5173/api/v1/health').then(r=>r.json()).then(d=>{if(d.status!=='ok'||d.service!=='saq-qurylys-api')throw Error('API unavailable')})]).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
