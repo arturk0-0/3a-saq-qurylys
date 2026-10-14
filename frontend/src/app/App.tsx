@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { NavLink, Route, Routes } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { getHealth } from '@/lib/api'
+import { ConfigurationNotice, useAuth } from '@/features/auth/AuthProvider'
+import { LoginPage } from '@/features/auth/LoginPage'
 
 const modules = [
   { path: '/', title: 'Обзор' },
@@ -47,10 +49,26 @@ function PendingModule({ title }: { title: string }) {
 }
 
 export function App() {
+  const { status, profile, error, logout } = useAuth()
+  const [logoutError, setLogoutError] = useState<string | null>(null)
+  if (status !== 'authenticated') return <div className="min-h-screen bg-muted px-4 py-16">
+    {status === 'unavailable' ? <ConfigurationNotice />
+      : status === 'loading' ? <p role="status" className="text-center">Проверяем доступ…</p>
+      : status === 'denied' ? <section className="mx-auto max-w-lg rounded-xl bg-background p-8">
+        <h1 className="text-2xl font-semibold">Доступ не подтверждён</h1>
+        <p className="my-4" role="alert">{error}</p>
+        <p className="mb-4 text-sm">Администратор должен назначить роль аналитика и настроить backend.
+          После этого войдите снова.</p>
+        <Button onClick={() => { logout().catch(() => setLogoutError('Не удалось выйти. Повторите.')) }}>Выйти</Button>
+        {logoutError && <p role="alert">{logoutError}</p>}
+      </section> : <LoginPage />}
+  </div>
   return <div className="min-h-screen bg-muted text-foreground">
     <header className="border-b border-border bg-background px-6 py-4">
       <span className="font-bold tracking-wide">SAQ QURYLYS</span>
-      <span className="ml-4 text-sm text-muted-foreground">ВКО · Каркас приложения</span>
+      <span className="ml-4 text-sm text-muted-foreground">ВКО · {profile?.displayName || profile?.email || 'Аналитик'}</span>
+      <Button variant="outline" size="sm" className="ml-4" onClick={() => { logout().catch(() => setLogoutError('Не удалось выйти. Повторите.')) }}>Выйти</Button>
+      {logoutError && <p role="alert">{logoutError}</p>}
     </header>
     <div className="mx-auto flex max-w-7xl flex-col md:flex-row">
       <nav aria-label="Основная навигация" className="flex shrink-0 flex-wrap gap-2 p-4 md:w-56 md:flex-col">
@@ -61,7 +79,7 @@ export function App() {
       </nav>
       <main className="min-w-0 flex-1 p-6 md:p-8">
         <p className="mb-6 rounded-md border border-border bg-background p-3 text-sm">
-          Авторизация пока не подключена. Рабочие данные и бизнес-операции недоступны.
+          DEMO-среда · Синтетические записи используются для демонстрации и проверки сценариев.
         </p>
         <Routes>
           <Route path="/" element={<Overview />} />

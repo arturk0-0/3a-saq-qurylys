@@ -1,0 +1,10 @@
+services:
+  backend:
+    environment:
+      FIREBASE_ENABLED: "true"
+      FIREBASE_CREDENTIALS_PATH: /run/secrets/firebase-admin.json
+    volumes:
+      - type: bind
+        source: ${FIREBASE_CREDENTIALS_FILE:?Set FIREBASE_CREDENTIALS_FILE to a private service-account JSON path}
+        target: /run/secrets/firebase-admin.json
+        read_only: true

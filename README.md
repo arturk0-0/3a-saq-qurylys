@@ -5,7 +5,18 @@
 Контекст: [AGENTS.md](AGENTS.md), [спецификация](docs/PROJECT_SPEC.md),
 [план разработки](docs/DEVELOPMENT_PLAN.md).
 
-## G0 — каркас
+## Текущий этап
+
+Готовы чистый скоринг R1–R6, валидируемые модели доказательств, DEMO-набор из 8 ЖК и
+12 объявлений, Firebase Admin и вход через Firebase Authentication. Защищённые запросы
+требуют проверенный token с ролью analyst/admin. Без настройки Firebase отображается
+экран подключения среды. Реальный вход в облачный проект ещё требует credentials.
+
+Настройка: [Firebase и доступ аналитика](docs/firebase-setup.md).
+Правила: [R1–R6](docs/risk-rules.md). Данные: [DEMO seed](data/seed/README.md).
+Ход реализации и ограничения: [WORK_LOG](docs/WORK_LOG.md).
+
+## Основа G0
 
 React + TypeScript (strict) + Vite, Tailwind CSS, базовый Button shadcn/ui и React Router.
 Навигация: обзор, реестр ЖК, объявления, сигналы. Рабочие разделы ещё не реализованы.
@@ -13,9 +24,8 @@ React + TypeScript (strict) + Vite, Tailwind CSS, базовый Button shadcn/u
 повторить запрос. API предоставляет `GET /api/v1/health`, настройки CORS, ошибки
 `{code, message, requestId}` и заголовок `X-Request-ID`.
 
-Firebase Auth/Firestore/Storage, Gemini, DEMO seed, R1–R6, карта и PDF пока не подключены.
-Авторизации и рабочих данных нет: открыта только техническая оболочка и health endpoint.
-Health проверяет процесс API, а не Firebase или Gemini. Сценарии A/B/C ещё не реализованы.
+Бизнес-страницы, Gemini, карта и PDF находятся на следующих этапах реализации.
+Health проверяет процесс API, а не Firebase или Gemini. A/B/C проверены на синтетических данных.
 
 ## Запуск через Docker
 
@@ -27,10 +37,10 @@ docker compose up --build --wait
 ```
 
 UI: `http://localhost:5173`, API: `http://localhost:8000/api/v1/health`,
-OpenAPI: `http://localhost:8000/docs`. В облачной среде порт 5173 можно открыть
-через встроенную панель Preview.
+OpenAPI: `http://localhost:8000/docs`. Адреса относятся к компьютеру, где запущен Compose.
+Порты ограничены loopback. Панель cloud onboarding не предоставляет доступ к этим адресам.
 Ожидаемый health: `{"status":"ok","service":"saq-qurylys-api"}`.
-В обзоре появится «API доступен». Остановка: `docker compose down`.
+Без browser Firebase config появится экран настройки. Остановка: `docker compose down`.
 Compose запускает dev-сервер Vite; это локальная среда, не публичный deployment.
 После изменения исходников пересоберите контейнеры той же командой.
 При сборке за HTTPS-прокси Docker должен иметь доступ к DNS и прокси; передавайте
@@ -94,16 +104,16 @@ curl --fail http://127.0.0.1:5173/api/v1/health
 
 ## Конфигурация и следующие этапы
 
-Для G0 внешние сервисы и секреты не нужны. `.env.example` содержит пустые поля для
-будущего Firebase/Gemini; они пока не используются. Firebase project ID — `saq-qurylys`.
-В будущей интеграции backend получит приватные Admin credentials и `GEMINI_API_KEY`,
-модель будет задаваться через `GEMINI_MODEL`. Настройки `VITE_FIREBASE_*` предназначены
+Health и экран настройки запускаются без секретов. Рабочее пространство требует
+Firebase Authentication и серверный Firebase Admin. Firebase project ID — `saq-qurylys`.
+Gemini будет использовать серверный `GEMINI_API_KEY` и выбранный `GEMINI_MODEL`.
+Настройки `VITE_FIREBASE_*` предназначены
 только для browser SDK. Никогда не помещайте Admin credentials или Gemini key в `VITE_*`.
-Credentials храните вне Git; монтирование в контейнер добавляется при реализации интеграции.
+Credentials храните вне Git; для монтирования используйте `compose.firebase.yaml`.
 `.env` и `credentials/` исключены из Git.
 
-Следующий этап: Firebase и авторизация, безопасный DEMO seed и чистый backend-скоринг
-с тестами A/B/C. AI и рабочий процесс — после этого. Плановые чекбоксы обновляются
+Следующий этап: защищённый API и UI для ЖК, объявлений и доказательств,
+затем AI и рабочий процесс сигналов. Плановые чекбоксы обновляются
 после review/merge, а не по наличию каркаса.
 
 Каркас создан с помощью Codex; реализация требует обычного командного review.

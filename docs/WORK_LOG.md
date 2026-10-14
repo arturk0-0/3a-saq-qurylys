@@ -15,6 +15,15 @@ GitHub main пока содержит только исходную докуме
 валидация доказательств, детерминированный DEMO seed. Правила и форма данных следуют
 PROJECT_SPEC.md. Новые контракты документируются для командного review.
 
+Скоринг и DEMO seed сохранены коммитом `e39e10d`, ветка отправлена в GitHub.
+50 backend-тестов прошли на этом этапе.
+
+Следующая ветка `feat/BE-02-firebase-auth`: Firebase Admin, серверная проверка ID token
+с отзывом и ролями, закрытый frontend с login/setup screens, Firestore adapter,
+атомарная create-only загрузка seed, deny-by-default rules, CLI назначения роли.
+Проверено 65 backend-тестов, 5 frontend-тестов, TypeScript и сборка.
+Cloud Firebase-вызовы пока не проверены из-за отсутствия credentials проекта.
+
 ## Доступы и ограничения
 
 - Git read/push работает. GitHub API возвращает Forbidden; создание PR/проверка CI

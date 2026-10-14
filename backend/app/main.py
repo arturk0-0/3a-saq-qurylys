@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Awaitable, Callable
+from contextlib import asynccontextmanager
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
@@ -9,8 +10,11 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 from starlette.responses import Response
 
+from app.api.auth import router as auth_router
 from app.api.router import router
 from app.core.config import Settings
+from app.core.errors import AppError
+from app.core.firebase import FirebaseRuntime
 from app.schemas.errors import ErrorResponse
 
 logger = logging.getLogger(__name__)
@@ -18,8 +22,18 @@ logger = logging.getLogger(__name__)
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings if settings is not None else Settings()
-    application = FastAPI(title="SAQ QURYLYS API", version="0.1.0")
+    runtime = FirebaseRuntime(settings)
+
+    @asynccontextmanager
+    async def lifespan(application: FastAPI):
+        yield
+        runtime.close()
+
+    application = FastAPI(title="SAQ QURYLYS API", version="0.2.0", lifespan=lifespan)
+    application.state.settings = settings
+    application.state.firebase = runtime
     application.include_router(router)
+    application.include_router(auth_router)
 
     def error_response(request: Request, status: int, code: str, message: str) -> JSONResponse:
         request_id = getattr(request.state, "request_id", str(uuid4()))
@@ -41,7 +55,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @application.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException) -> JSONResponse:
-        return error_response(request, exc.status_code, f"HTTP_{exc.status_code}", str(exc.detail))
+        response = error_response(
+            request, exc.status_code, f"HTTP_{exc.status_code}", str(exc.detail)
+        )
+        response.headers.update(exc.headers or {})
+        return response
+
+    @application.exception_handler(AppError)
+    async def app_error(request: Request, exc: AppError) -> JSONResponse:
+        response = error_response(request, exc.status_code, exc.code, exc.message)
+        if exc.status_code == 401:
+            response.headers["WWW-Authenticate"] = "Bearer"
+        return response
 
     @application.exception_handler(RequestValidationError)
     async def validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
@@ -60,8 +85,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
-        allow_methods=["GET"],
-        allow_headers=["Content-Type"],
+        allow_methods=["GET", "POST", "PATCH"],
+        allow_headers=["Content-Type", "Authorization"],
+        expose_headers=["X-Request-ID"],
     )
     return application
 
