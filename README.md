@@ -27,7 +27,8 @@ docker compose up --build --wait
 ```
 
 UI: `http://localhost:5173`, API: `http://localhost:8000/api/v1/health`,
-OpenAPI: `http://localhost:8000/docs`. Порты опубликованы только на loopback.
+OpenAPI: `http://localhost:8000/docs`. В облачной среде порт 5173 можно открыть
+через встроенную панель Preview.
 Ожидаемый health: `{"status":"ok","service":"saq-qurylys-api"}`.
 В обзоре появится «API доступен». Остановка: `docker compose down`.
 Compose запускает dev-сервер Vite; это локальная среда, не публичный deployment.

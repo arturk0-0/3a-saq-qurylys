@@ -4,7 +4,7 @@ services:
     environment:
       CORS_ORIGINS: '${CORS_ORIGINS:-["http://localhost:5173","http://127.0.0.1:5173"]}'
     ports:
-      - "127.0.0.1:8000:8000"
+      - "8000:8000"
     healthcheck:
       test: ["CMD", ".venv/bin/python", "-c", "import json, urllib.request; assert json.load(urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3)) == {'status': 'ok', 'service': 'saq-qurylys-api'}"]
       interval: 5s
@@ -16,7 +16,7 @@ services:
     environment:
       API_PROXY_TARGET: http://backend:8000
     ports:
-      - "127.0.0.1:5173:5173"
+      - "5173:5173"
     depends_on:
       backend:
         condition: service_healthy
