@@ -209,3 +209,37 @@ AI draft и PDF header). Следующий docs-коммит завершает
 Windows/второе устройство, независимый reviewer и CI. Владельцу — конкретная
 матрица в конце judge-runbook. Сохранённые инструкции не публикуют сайт и не
 меняют Cloud Run модель, данные или инфраструктуру.
+
+## Передача PR и CI
+
+Ветка `test/night-release-readiness` отправлена в origin по всем этапам. Git refs
+подтвердили существующие PR heads #1 = ac11efc, #2 = 94cda6b, #3 = d579566;
+security-база в origin осталась d579566. Их состояние review/merge нельзя вывести
+из Git refs, а PR API в этой сессии недоступен.
+
+После push пакета `9519958` выполнена команда:
+
+```bash
+gh pr create --repo arturk0-0/3a-saq-qurylys \
+  --base fix/security-demo-hardening --head test/night-release-readiness \
+  --title "fix(release): preserve review drafts and validate demo readiness" \
+  --body-file /tmp/saq-release-pr.md
+```
+
+Подготовлено полное описание, но создание остановлено до результата:
+`Post https://api.github.com/graphql: Forbidden`. REST `/commits/9519958/check-runs`
+и `/commits/9519958/status` также вернули `Forbidden`. **PR не создан, CI не
+подтверждён**. Это ограничение доступа к GitHub API, не упавшие application tests.
+Для последнего report-only коммита доступ к CI проверяется повторно; результат
+при прежнем отказе не будет объявлен зелёным.
+
+[Создать PR с нужной базой](https://github.com/arturk0-0/3a-saq-qurylys/compare/fix/security-demo-hardening...test/night-release-readiness?expand=1).
+Заголовок указан выше. Для body: перечислить AUTH-01/NAV-01/SIGNAL-01/REVIEW-01/
+AI-REVIEW-01/PDF-01, проверки 218 backend / 61 frontend / 15 Chromium groups,
+ссылки на этот отчёт и judge-runbook, ограничения live/Windows/CI. Полный готовый
+body также сохранён локально в `/tmp/saq-release-pr.md`.
+
+Владелец открывает PR именно в `fix/security-demo-hardening`, проверяет Checks
+**финального SHA** на GitHub и получает независимое review. После согласованной
+публикации проходит ручную матрицу judge-runbook, прежде всего облачные историю,
+PDF и screenshot. Автоматического merge, deploy или изменения живых данных нет.
