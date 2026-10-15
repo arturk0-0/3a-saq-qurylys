@@ -13,6 +13,9 @@
 экран подключения среды. Реальный вход в облачный проект ещё требует credentials.
 
 Настройка: [Firebase и доступ аналитика](docs/firebase-setup.md).
+Windows: [пошаговый запуск](docs/windows-start.md).
+Демонстрация: [новое объявление → проверка → PDF](docs/demo-scenarios.md).
+Устройство приложения: [архитектура](docs/architecture.md), [API и данные](docs/data-model.md).
 Правила: [R1–R6](docs/risk-rules.md). Данные: [DEMO seed](data/seed/README.md).
 Ход реализации и ограничения: [WORK_LOG](docs/WORK_LOG.md).
 

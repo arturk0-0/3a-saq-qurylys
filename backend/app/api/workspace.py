@@ -6,7 +6,7 @@ from app.api.dependencies import CurrentUser, get_runtime
 from app.core.firebase import FirebaseRuntime
 from app.models.common import Identifier
 from app.models.entities import Advertisement, Evidence
-from app.models.risk import RiskResult, RiskZone
+from app.models.risk import RiskResult, RiskZone, VerificationStatus
 from app.repositories.firestore import FirestoreStore
 from app.schemas.workspace import (
     AdvertisementCreate,
@@ -125,8 +125,15 @@ def evidence_list(
     service: Workspace,
     cursor: Cursor = None,
     limit: Limit = 50,
+    status: VerificationStatus | None = None,
 ) -> dict:
-    return service.page("evidence", complex_id=record_id, after_id=cursor, limit=limit)
+    return service.page(
+        "evidence",
+        complex_id=record_id,
+        after_id=cursor,
+        limit=limit,
+        extra_filters=[("status", "==", status)] if status else [],
+    )
 
 
 @router.get("/evidence/{record_id}", response_model=Evidence)

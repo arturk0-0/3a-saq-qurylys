@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Path, Query
 from fastapi.responses import HTMLResponse, Response
 
 from app.api.dependencies import CurrentUser
@@ -59,7 +59,12 @@ def decide(record_id: Identifier, payload: SignalDecision, user: CurrentUser, se
 
 
 @router.get("/{record_id}/revisions/{version}", response_model=Signal)
-def revision(record_id: Identifier, version: int, user: CurrentUser, workspace: Workspace):
+def revision(
+    record_id: Identifier,
+    version: Annotated[int, Path(ge=1, le=1000000)],
+    user: CurrentUser,
+    workspace: Workspace,
+):
     workspace.require_record("signals", record_id)
     return workspace.require_record("signalRevisions", f"{record_id}-{version}")
 

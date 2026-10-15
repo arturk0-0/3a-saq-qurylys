@@ -172,6 +172,7 @@ class WorkspaceService:
 
         def operation(tx):
             complex_ = self.complex(payload.complex_id, tx)
+            source_url = payload.source_url
             if payload.advertisement_id:
                 ad = self.require_record("advertisements", payload.advertisement_id, tx)
                 if ad["complexId"] != complex_.id:
@@ -180,7 +181,16 @@ class WorkspaceService:
                     )
                 if payload.type == "advertisement" and payload.excerpt not in ad["text"]:
                     raise AppError(422, "EXCERPT_MISMATCH", "Quote must occur in the original text")
-            item = Evidence(id=record_id, **payload.model_dump(), demo=complex_.demo)
+                if payload.type == "advertisement":
+                    if source_url and str(source_url) != ad["sourceUrl"]:
+                        raise AppError(422, "SOURCE_MISMATCH", "Source must match the original ad")
+                    source_url = ad["sourceUrl"]
+            item = Evidence(
+                id=record_id,
+                **payload.model_dump(exclude={"source_url"}),
+                source_url=source_url,
+                demo=complex_.demo,
+            )
             event = audit_event(user, "evidence", item.id, "evidence.create", complex_)
             tx.create("evidence", item.id, serialize(item))
             tx.create("auditLogs", event.id, serialize(event))

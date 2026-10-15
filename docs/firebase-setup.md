@@ -15,6 +15,10 @@
 6. Настройте Firestore/Storage rules по файлам в корне. Они запрещают прямые клиентские
    обращения: данные читает/меняет FastAPI с Admin credentials. Перед применением к уже
    используемому проекту убедитесь, что других клиентов, зависящих от прежних правил, нет.
+7. Разверните индексы из firestore.indexes.json и дождитесь готовности.
+   При установленном Firebase CLI: firebase deploy --only firestore:indexes --project saq-qurylys.
+   Для rules: firebase deploy --only firestore:rules,storage --project saq-qurylys.
+   Эти команды здесь не выполнялись: требуется доступ к вашему проекту.
 
 ## 2. Серверные credentials
 

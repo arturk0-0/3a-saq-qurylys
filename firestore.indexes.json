@@ -1,5 +1,22 @@
 {
   "indexes": [
+    {"collectionGroup": "complexes", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath": "demo", "order": "ASCENDING"}, {"fieldPath": "city", "order": "ASCENDING"}]},
+    {"collectionGroup": "advertisements", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath": "demo", "order": "ASCENDING"}, {"fieldPath": "complexId", "order": "ASCENDING"}]},
+    {"collectionGroup": "evidence", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath": "demo", "order": "ASCENDING"}, {"fieldPath": "complexId", "order": "ASCENDING"}]},
+    {"collectionGroup": "evidence", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath": "demo", "order": "ASCENDING"}, {"fieldPath": "complexId", "order": "ASCENDING"},
+      {"fieldPath": "status", "order": "ASCENDING"}]},
+    {"collectionGroup": "evidence", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath": "complexId", "order": "ASCENDING"}, {"fieldPath": "status", "order": "ASCENDING"}]},
+    {"collectionGroup": "signals", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath": "demo", "order": "ASCENDING"}, {"fieldPath": "status", "order": "ASCENDING"}]},
+    {"collectionGroup": "analysisRuns", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath": "demo", "order": "ASCENDING"}, {"fieldPath": "advertisementId", "order": "ASCENDING"}]},
+    {"collectionGroup": "aiHypotheses", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath": "demo", "order": "ASCENDING"}, {"fieldPath": "advertisementId", "order": "ASCENDING"}]},
     {"collectionGroup": "auditLogs", "queryScope": "COLLECTION", "fields": [
       {"fieldPath": "demo", "order": "ASCENDING"},
       {"fieldPath": "entityId", "order": "ASCENDING"},

@@ -33,7 +33,7 @@ class Signal(DomainModel):
     id: Identifier
     complex_id: Identifier
     title: ShortText
-    reason: str = Field(min_length=1, max_length=2000)
+    reason: str = Field(min_length=1, max_length=2000, pattern=r"\S")
     status: Literal["draft", "pending_review", "confirmed", "returned"] = "draft"
     snapshot: SignalSnapshot
     created_by: str
@@ -50,10 +50,10 @@ class SignalCreate(DomainModel):
     complex_id: Identifier
     expected_complex_version: int = Field(ge=1)
     title: ShortText
-    reason: str = Field(min_length=1, max_length=2000)
+    reason: str = Field(min_length=1, max_length=2000, pattern=r"\S")
 
 
 class SignalDecision(DomainModel):
     action: Literal["submit", "confirm", "return"]
     expected_version: int = Field(ge=1)
-    notes: str = Field(min_length=1, max_length=2000)
+    notes: str = Field(min_length=1, max_length=2000, pattern=r"\S")

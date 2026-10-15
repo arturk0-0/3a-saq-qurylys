@@ -23,6 +23,11 @@
 }
 
 body { margin: 0; font-family: Inter, "Segoe UI", system-ui, sans-serif; color: var(--foreground); background: #f4f6f7; }
+.table-scroll { position: relative; }
+.user-menu { min-width: 0; }
+.user-menu strong { overflow-wrap: anywhere; }
+.form-field, .editor-form { min-width: 0; }
+h1, .evidence-card, .timeline, .page-description { overflow-wrap: anywhere; }
 button, input, textarea, select { font: inherit; }
 button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 button { cursor: pointer; }

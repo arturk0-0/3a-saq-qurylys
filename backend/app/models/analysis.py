@@ -47,4 +47,4 @@ class Hypothesis(ExtractedHypothesis):
 class HypothesisDecision(DomainModel):
     decision: Literal["accepted", "rejected"]
     expected_version: int = Field(ge=1)
-    notes: str = Field(min_length=1, max_length=2000)
+    notes: str = Field(min_length=1, max_length=2000, pattern=r"\S")

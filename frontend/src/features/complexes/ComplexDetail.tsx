@@ -68,8 +68,10 @@ function HistoryPanel({ id }: { id: string }) {
 
 export function ComplexDetail() {
   const { id } = useParams()
-  const [searchParams] = useSearchParams()
-  const [tab, setTab] = useState(searchParams.get('tab') === 'evidence' ? 'evidence' : 'overview')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedTab = searchParams.get('tab') || 'overview'
+  const tab = ['overview', 'ads', 'documents', 'evidence', 'history'].includes(requestedTab) ? requestedTab : 'overview'
+  function setTab(value: string) { setSearchParams({ tab: value }) }
   const { data: complex_, loading, error, refresh } = useApiQuery<Complex>(id ? `/api/v1/complexes/${encodeURIComponent(id)}` : null)
   if (loading) return <LoadingState />
   if (error) return <ErrorState message={error} retry={refresh} />

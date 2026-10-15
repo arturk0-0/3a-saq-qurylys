@@ -264,3 +264,25 @@ def test_advertisement_pagination_has_no_duplicates(workspace):
         if not cursor:
             break
     assert len(seen) == len(set(seen)) == 12
+
+
+def test_evidence_preserves_original_ad_source(workspace):
+    client, store = workspace
+    ad = store.get("advertisements", "demo-ad-01")
+    payload = {
+        "complexId": ad["complexId"],
+        "advertisementId": ad["id"],
+        "type": "advertisement",
+        "excerpt": ad["text"],
+        "capturedAt": ad["capturedAt"],
+        "sourceUrl": "https://wrong.invalid/post",
+    }
+    response = client.post("/api/v1/evidence", json=payload)
+    assert response.status_code == 422 and response.json()["code"] == "SOURCE_MISMATCH"
+    del payload["sourceUrl"]
+    response = client.post("/api/v1/evidence", json=payload)
+    assert response.status_code == 201
+    assert response.json()["sourceUrl"] == ad["sourceUrl"]
+    page = client.get(f"/api/v1/complexes/{ad['complexId']}/evidence?status=confirmed").json()
+    assert all(item["status"] == "confirmed" for item in page["items"])
+    assert response.json()["id"] not in [item["id"] for item in page["items"]]

@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 Identifier = Annotated[str, Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9_-]+$")]
-ShortText = Annotated[str, Field(min_length=1, max_length=500)]
+ShortText = Annotated[str, Field(min_length=1, max_length=500, pattern=r"\S")]
 
 
 def utc_now() -> datetime:

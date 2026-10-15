@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { EmptyState, ErrorState, FormField, LoadingState, SourceLink, StatusBadge } from '@/components/WorkspaceUI'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -89,18 +90,25 @@ export function EvidenceReviewForm({ item, onSaved, onCancel }: { item: Evidence
 }
 
 export function EvidencePanel({ complex_, onChanged }: { complex_: Complex; onChanged: () => void }) {
+  const [params] = useSearchParams()
+  const sourceId = params.get('source')
+  const source = useApiQuery<Evidence>(sourceId ? `/api/v1/evidence/${encodeURIComponent(sourceId)}` : null)
   const [creating, setCreating] = useState(false)
   const [reviewId, setReviewId] = useState<string | null>(null)
   const [cursor, setCursor] = useState('')
   const { data, loading, error, refresh } = useApiQuery<Page<Evidence>>(`/api/v1/complexes/${complex_.id}/evidence?limit=50${cursor ? `&cursor=${cursor}` : ''}`)
+  const selected = source.data?.complexId === complex_.id ? source.data : null
+  const items = selected ? [selected, ...(data?.items || []).filter((item) => item.id !== selected.id)] : data?.items || []
   return <>
     <div className="panel-heading"><div><h2>Источники и доказательства</h2><p>Оригинал → проверка аналитика → решение по фактору</p></div><Button variant="outline" onClick={() => setCreating(true)}>Добавить источник</Button></div>
     {creating && <EvidenceForm complexId={complex_.id} onCancel={() => setCreating(false)} onSaved={() => { setCreating(false); setCursor(''); refresh() }} />}
+    {source.error && <ErrorState message={source.error} retry={source.refresh} />}
     {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={refresh} />
-      : !data?.items.length ? <EmptyState title="Источники ещё не добавлены" />
-      : <div className="evidence-list">{data.items.map((item) => {
+      : !items.length ? <EmptyState title="Источники ещё не добавлены" />
+      : <div className="evidence-list">{items.map((item) => {
         const locked = complex_.factors.some((factor) => factor.status === 'confirmed' && factor.evidenceIds.includes(item.id))
         return <article className="evidence-card" key={item.id} id={`evidence-${item.id}`}>
+          {item.id === sourceId && <p className="inline-notice">Источник, выбранный по ссылке</p>}
           <div className="flex flex-wrap items-center justify-between gap-2"><strong>{evidenceTypes[item.type]}</strong><StatusBadge status={item.status} /></div>
           <blockquote>{item.excerpt}</blockquote><p className="text-sm text-muted-foreground">{item.sourceReference}</p><SourceLink url={item.sourceUrl} />
           <p className="mt-3 text-xs text-muted-foreground">Зафиксировано {formatDate(item.capturedAt)}{item.reviewer && ` · Проверил ${item.reviewer}, ${formatDate(item.reviewedAt)}`}</p>
@@ -108,7 +116,7 @@ export function EvidencePanel({ complex_, onChanged }: { complex_: Complex; onCh
           {item.storagePath && <EvidenceFile id={item.id} />}
           {locked ? <p className="mt-3 text-xs text-muted-foreground">Источник поддерживает подтверждённый фактор. Для повторной проверки сначала пересмотрите фактор.</p>
             : <Button className="mt-4" variant="outline" size="sm" onClick={() => setReviewId(item.id)}>Проверить источник</Button>}
-          {reviewId === item.id && <EvidenceReviewForm item={item} onCancel={() => setReviewId(null)} onSaved={() => { setReviewId(null); refresh(); onChanged() }} />}
+          {reviewId === item.id && <EvidenceReviewForm item={item} onCancel={() => setReviewId(null)} onSaved={() => { setReviewId(null); refresh(); source.refresh(); onChanged() }} />}
         </article>
       })}</div>}
     {(cursor || data?.nextCursor) && <div className="pagination"><Button variant="outline" onClick={() => setCursor('')}>В начало</Button>{data?.nextCursor && <Button variant="outline" onClick={() => setCursor(data.nextCursor!)}>Далее</Button>}</div>}
