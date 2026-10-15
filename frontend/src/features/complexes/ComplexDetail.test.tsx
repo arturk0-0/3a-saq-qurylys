@@ -22,6 +22,7 @@ it('opens a specific evidence link even when it is absent from the first page', 
   expect(await screen.findByText('Точная цитата из выбранного источника')).toBeInTheDocument()
   expect(screen.getByRole('tab', { name: 'Доказательства' })).toHaveAttribute('aria-selected', 'true')
   expect(screen.getByText('Источник, выбранный по ссылке')).toBeInTheDocument()
+  expect(screen.getByText('Источник, выбранный по ссылке')).toHaveFocus()
 })
 
 it('navigates tabs by keyboard with one tab stop and a labelled panel', async () => {
@@ -61,7 +62,7 @@ it('distinguishes reviewed evidence from its original unverified AI provenance',
   })
   render(<AuthContext.Provider value={{ status: 'authenticated', profile: null, error: null, api: api as ApiClient, signIn: vi.fn(), logout: vi.fn() }}><MemoryRouter initialEntries={['/complexes/c1?tab=evidence']}><Routes><Route path="/complexes/:id" element={<ComplexDetail />} /></Routes></MemoryRouter></AuthContext.Provider>)
   expect(await screen.findByText('Источник проверен')).toBeVisible()
-  expect(screen.getByText(/Цитата выделена AI/)).toBeVisible()
+  expect(screen.getByText(/В реквизитах указан AI-анализ/)).toBeVisible()
   const original = screen.getByText('AI hypothesis; advertising-extraction-v1; unverified')
   expect(original).not.toBeVisible()
   fireEvent.click(screen.getByText('Происхождение и версия анализа'))

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { EditorHeading, EmptyState, ErrorState, EvidenceProvenance, FormField, LoadingState, SourceLink, StatusBadge } from '@/components/WorkspaceUI'
@@ -102,6 +102,13 @@ export function EvidencePanel({ complex_, onChanged }: { complex_: Complex; onCh
   const { data, loading, error, refresh } = useApiQuery<Page<Evidence>>(`/api/v1/complexes/${complex_.id}/evidence?limit=50${cursor ? `&cursor=${cursor}` : ''}`)
   const selected = source.data?.complexId === complex_.id ? source.data : null
   const items = selected ? [selected, ...(data?.items || []).filter((item) => item.id !== selected.id)] : data?.items || []
+  const selectedNotice = useRef<HTMLParagraphElement>(null)
+  useEffect(() => {
+    if (!loading && sourceId && selected?.id === sourceId) {
+      selectedNotice.current?.focus({ preventScroll: true })
+      selectedNotice.current?.scrollIntoView?.({ block: 'start' })
+    }
+  }, [sourceId, selected?.id, loading])
   return <>
     <div className="panel-heading"><div><h2>Источники и доказательства</h2><p>Оригинал → проверка аналитика → решение по фактору</p></div><Button variant="outline" onClick={() => setCreating(true)}>Добавить источник</Button></div>
     {creating && <EvidenceForm complexId={complex_.id} onCancel={() => setCreating(false)} onSaved={() => { setCreating(false); setCursor(''); refresh() }} />}
@@ -111,7 +118,7 @@ export function EvidencePanel({ complex_, onChanged }: { complex_: Complex; onCh
       : <div className="evidence-list">{items.map((item) => {
         const locked = complex_.factors.some((factor) => factor.status === 'confirmed' && factor.evidenceIds.includes(item.id))
         return <article className="evidence-card" key={item.id} id={`evidence-${item.id}`}>
-          {item.id === sourceId && <p className="inline-notice">Источник, выбранный по ссылке</p>}
+          {item.id === sourceId && <p className="inline-notice" ref={selectedNotice} tabIndex={-1}>Источник, выбранный по ссылке</p>}
           <div className="flex flex-wrap items-center justify-between gap-2"><strong>{evidenceTypes[item.type]}</strong><StatusBadge status={item.status} label={{ confirmed: 'Источник проверен', unknown: 'Источник не проверен', proposed: 'Требует проверки источника', rejected: 'Источник отклонён' }[item.status]} /></div>
           <blockquote>{item.excerpt}</blockquote><EvidenceProvenance reference={item.sourceReference} /><SourceLink url={item.sourceUrl} />
           <p className="mt-3 text-xs text-muted-foreground">Зафиксировано {formatDate(item.capturedAt)}{item.reviewer && ` · Проверил ${item.reviewer}, ${formatDate(item.reviewedAt)}`}</p>

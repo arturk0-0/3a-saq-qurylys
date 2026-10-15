@@ -119,7 +119,9 @@ CI-сборку без production origin. В Cloud Shell из корня **ак�
 можно скопировать существующую browser config первой публикации (если папка та же):
 
 ```bash
-cp ~/saq-deploy/3a-saq-qurylys-feat-DEPLOY-01-hosting-cloud-run/.env.production.local .env.production.local
+if [ ! -e .env.production.local ]; then
+  cp ~/saq-deploy/3a-saq-qurylys-feat-DEPLOY-01-hosting-cloud-run/.env.production.local .env.production.local
+fi
 cd frontend
 npm ci
 npm run build:hosting
@@ -144,3 +146,11 @@ Backend обновляется отдельно по docs/cloud-deployment.md, �
 Chromium проверен локально; другие браузеры и полный аудит WCAG не выполнялись.
 Нужны второй reviewer и проверка интеграции после deployment; release gates не
 отмечены завершёнными по тестовым адаптерам. Работа не продолжается фоновым циклом.
+
+PR создан: https://github.com/arturk0-0/3a-saq-qurylys/pull/2 (base — backend-ветка
+PR #1). Подпись происхождения намеренно атрибутирована реквизитам, поскольку
+sourceReference — текстовое поле: префикс сам по себе не доказывает запуск AI.
+Данные/статусы источника и результат server-side scoring не меняются UI-подписью.
+При переходе «Источник» из панели риска найденный источник получает фокус и
+прокрутку: на мобильном он иначе мог оставаться далеко выше текущей позиции.
+Проверка учитывает завершение загрузки и принадлежность источника этому ЖК.

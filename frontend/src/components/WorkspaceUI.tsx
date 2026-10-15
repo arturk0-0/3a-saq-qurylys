@@ -58,7 +58,7 @@ export function ReviewGuide() {
 export function EvidenceProvenance({ reference }: { reference?: string }) {
   if (!reference) return null
   if (!reference.startsWith('AI hypothesis; ')) return <p className="form-hint">{reference}</p>
-  return <div className="form-hint"><p>Цитата выделена AI. Текущий статус проверки источника указан отдельно.</p><details><summary>Происхождение и версия анализа</summary><p>{reference}</p><p>Отметка «unverified» относится к моменту создания гипотезы и не заменяет последующее решение аналитика.</p></details></div>
+  return <div className="form-hint"><p>В реквизитах указан AI-анализ. Текущий статус проверки источника показан отдельно.</p><details><summary>Происхождение и версия анализа</summary><p>{reference}</p><p>Отметка «unverified» относится к моменту создания гипотезы и не заменяет последующее решение аналитика.</p></details></div>
 }
 
 export function ScrollableTable({ label, children }: { label: string; children: ReactNode }) {
