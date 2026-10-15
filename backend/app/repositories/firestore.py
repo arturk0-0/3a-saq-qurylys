@@ -18,6 +18,7 @@ COLLECTIONS = frozenset(
         "advertisements",
         "evidence",
         "signals",
+        "signalRevisions",
         "aiHypotheses",
         "auditLogs",
         "seedRuns",

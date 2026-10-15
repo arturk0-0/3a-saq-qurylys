@@ -76,7 +76,7 @@ export function ComplexDetail() {
   if (!complex_) return <EmptyState title="ЖК не найден" />
   const tabs = [['overview', 'Обзор'], ['ads', 'Объявления'], ['documents', 'Документы'], ['evidence', 'Доказательства'], ['history', 'История']]
   return <><Link to="/complexes" className="back-link"><ArrowLeft size={16} /> К реестру</Link>
-    <PageHeading eyebrow={`Карточка объекта · ${complex_.city}`} title={complex_.name.replace(/^DEMO — /, '')} description={complex_.address} action={complex_.demo && <DemoBadge />} />
+    <PageHeading eyebrow={`Карточка объекта · ${complex_.city}`} title={complex_.name.replace(/^DEMO — /, '')} description={complex_.address} action={<div className="flex items-center gap-4">{complex_.demo && <DemoBadge />}<Link className="detail-link" to={`/signals/new?complex=${complex_.id}`}>Создать сигнал →</Link></div>} />
     <div className="detail-layout"><section className="panel min-w-0"><div className="tabs" role="tablist" aria-label="Разделы карточки">{tabs.map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={tab === key} aria-controls={`panel-${key}`} id={`tab-${key}`} onClick={() => setTab(key)}>{label}</button>)}</div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {tab === 'overview' && <div className="content-pad"><div className="object-illustration"><MapPin size={26} /><span>{complex_.city} · Восточно-Казахстанская область</span></div>

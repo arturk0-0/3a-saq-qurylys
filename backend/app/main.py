@@ -13,6 +13,7 @@ from starlette.responses import Response
 from app.api.analysis import router as analysis_router
 from app.api.auth import router as auth_router
 from app.api.router import router
+from app.api.signals import router as signals_router
 from app.api.workspace import router as workspace_router
 from app.core.config import Settings
 from app.core.errors import AppError
@@ -38,6 +39,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(auth_router)
     application.include_router(workspace_router)
     application.include_router(analysis_router)
+    application.include_router(signals_router)
 
     def error_response(request: Request, status: int, code: str, message: str) -> JSONResponse:
         request_id = getattr(request.state, "request_id", str(uuid4()))

@@ -9,6 +9,7 @@ dependencies = [
     "pillow>=11,<13",
     "pydantic-settings>=2.6,<3",
     "uvicorn>=0.32,<1",
+    "weasyprint>=65,<70",
 ]
 
 [dependency-groups]

@@ -8,6 +8,7 @@ import { ComplexList } from '@/features/complexes/ComplexList'
 import { ComplexDetail } from '@/features/complexes/ComplexDetail'
 import { AdvertisementsPage } from '@/features/advertisements/AdvertisementsPage'
 import { EmptyState } from '@/components/WorkspaceUI'
+import { CreateSignal, SignalDetail, SignalsPage } from '@/features/signals/SignalsPage'
 
 const modules = [
   { path: '/', title: 'Обзор', icon: LayoutDashboard },
@@ -57,7 +58,9 @@ export function App() {
           <Route path="/complexes" element={<ComplexList />} />
           <Route path="/complexes/:id" element={<ComplexDetail />} />
           <Route path="/advertisements" element={<AdvertisementsPage />} />
-          <Route path="/signals" element={<EmptyState title="Сигналы — следующий этап"><p>Сначала проверьте источники и факторы риска в карточке ЖК.</p></EmptyState>} />
+          <Route path="/signals" element={<SignalsPage />} />
+          <Route path="/signals/new" element={<CreateSignal />} />
+          <Route path="/signals/:id" element={<SignalDetail />} />
           <Route path="*" element={<EmptyState title="Страница не найдена"><Link to="/">Вернуться к обзору</Link></EmptyState>} />
         </Routes>
       </main>
