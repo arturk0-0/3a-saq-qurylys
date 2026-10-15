@@ -21,7 +21,7 @@ def test_health(client):
 
 
 def test_missing_route_has_typed_error(client):
-    response = client.get("/api/v1/complexes")
+    response = client.get("/api/v1/nonexistent-route")
     assert response.status_code == 404
     body = response.json()
     assert body["code"] == "HTTP_404"

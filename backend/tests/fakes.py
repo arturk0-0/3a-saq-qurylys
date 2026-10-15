@@ -41,12 +41,21 @@ class MemoryStore:
         with self.lock:
             return deepcopy(self.documents.get(collection, {}).get(record_id))
 
-    def list(self, collection, *, filters=None, after_id=None, limit=100):
+    def list(self, collection, *, filters=None, after_id=None, limit=100, newest_first=False):
         rows = sorted(self.documents.get(collection, {}).values(), key=lambda row: row["id"])
-        rows = [row for row in rows if not after_id or row["id"] > after_id]
+        if newest_first:
+            rows.sort(key=lambda row: row["createdAt"], reverse=True)
         for field, operator, value in filters or []:
             assert operator == "==", "Implement a test adapter only for used query operators"
             rows = [row for row in rows if row.get(field) == value]
+        if after_id:
+            if newest_first:
+                index = next((i for i, row in enumerate(rows) if row["id"] == after_id), None)
+                if index is None:
+                    raise Conflict("Cursor no longer exists in this query")
+                rows = rows[index + 1 :]
+            else:
+                rows = [row for row in rows if row["id"] > after_id]
         return deepcopy(rows[:limit])
 
     def atomic(self, operation: Callable[[UnitOfWork], T]) -> T:

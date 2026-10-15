@@ -131,6 +131,7 @@ class Evidence(DomainModel):
     claimed_source: str = Field(default="", max_length=2000)
     verified_source: str = Field(default="", max_length=2000)
     demo: bool = True
+    version: int = Field(default=1, ge=1)
 
     @model_validator(mode="after")
     def verified_provenance(self) -> Self:

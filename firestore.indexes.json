@@ -1,4 +1,16 @@
 {
-  "indexes": [],
+  "indexes": [
+    {"collectionGroup": "auditLogs", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath": "demo", "order": "ASCENDING"},
+      {"fieldPath": "complexId", "order": "ASCENDING"},
+      {"fieldPath": "createdAt", "order": "DESCENDING"},
+      {"fieldPath": "__name__", "order": "ASCENDING"}
+    ]},
+    {"collectionGroup": "auditLogs", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath": "complexId", "order": "ASCENDING"},
+      {"fieldPath": "createdAt", "order": "DESCENDING"},
+      {"fieldPath": "__name__", "order": "ASCENDING"}
+    ]}
+  ],
   "fieldOverrides": []
 }

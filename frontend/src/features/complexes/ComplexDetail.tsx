@@ -1,0 +1,95 @@
+import { useState, type FormEvent } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { ArrowLeft, MapPin } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { DemoBadge, EmptyState, ErrorState, FormField, LoadingState, PageHeading } from '@/components/WorkspaceUI'
+import { AdvertisementCard, AdvertisementForm } from '@/features/advertisements/AdvertisementsPage'
+import { useAuth } from '@/features/auth/AuthProvider'
+import { basisLabels, errorMessage, formatDate, stageLabels } from '@/lib/labels'
+import { useApiQuery } from '@/lib/useApiQuery'
+import type { Advertisement, AuditEvent, Complex, Page } from '@/lib/types'
+import { EvidencePanel } from './EvidencePanel'
+import { RiskPanel } from './RiskPanel'
+
+function ComplexAdvertisements({ id }: { id: string }) {
+  const [creating, setCreating] = useState(false)
+  const [cursor, setCursor] = useState('')
+  const { data, loading, error, refresh } = useApiQuery<Page<Advertisement>>(`/api/v1/complexes/${id}/advertisements?limit=50${cursor ? `&cursor=${cursor}` : ''}`)
+  return <><div className="panel-heading"><h2>Объявления по объекту</h2><Button variant="outline" onClick={() => setCreating(true)}>Добавить</Button></div>
+    {creating && <AdvertisementForm complexId={id} onCancel={() => setCreating(false)} onSaved={() => { setCreating(false); setCursor(''); refresh() }} />}
+    {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={refresh} /> : !data?.items.length ? <EmptyState title="Объявлений пока нет" />
+      : data.items.map((ad) => <AdvertisementCard key={ad.id} ad={ad} />)}
+    {(cursor || data?.nextCursor) && <div className="pagination"><Button variant="outline" onClick={() => setCursor('')}>В начало</Button>{data?.nextCursor && <Button variant="outline" onClick={() => setCursor(data.nextCursor!)}>Далее</Button>}</div>}
+  </>
+}
+
+function DocumentsPanel({ complex_, onChanged }: { complex_: Complex; onChanged: () => void }) {
+  const { api } = useAuth()
+  const [editing, setEditing] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const basis = complex_.legalBasis
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    setBusy(true); setError(null)
+    try {
+      await api(`/api/v1/complexes/${complex_.id}/legal-basis`, { method: 'PATCH', body: JSON.stringify({
+        basis: { type: form.get('type'), status: form.get('status'), reference: form.get('reference'), source: form.get('source'),
+          validUntil: form.get('validUntil') ? new Date(String(form.get('validUntil'))).toISOString() : null }, expectedVersion: complex_.version,
+      }) })
+      setEditing(false); onChanged()
+    } catch (error) { setError(errorMessage(error)) } finally { setBusy(false) }
+  }
+  return <div className="content-pad"><div className="flex items-center justify-between gap-3"><h2>Правовое основание</h2><Button variant="outline" onClick={() => setEditing(!editing)}>Пересмотреть</Button></div>
+    <dl className="details-grid"><div><dt>Тип</dt><dd>{basisLabels[basis.type]}</dd></div><div><dt>Статус</dt><dd>{{ unknown: 'Не проверено', confirmed: 'Подтверждено', disproved: 'Опровергнуто' }[basis.status]}</dd></div>
+      <div><dt>Реквизиты</dt><dd>{basis.reference || 'Не указаны'}</dd></div><div><dt>Проверено</dt><dd>{formatDate(basis.checkedAt)}</dd></div><div className="col-span-full"><dt>Источник</dt><dd>{basis.source || 'Нет источника'}</dd></div></dl>
+    <p className="inline-notice">Неизвестное основание не означает его отсутствие. Действующая применимая гарантия может служить правовым основанием.</p>
+    {editing && <form className="editor-form" onSubmit={submit}><div className="form-grid">
+      <FormField label="Тип основания"><select name="type" defaultValue={basis.type}>{Object.entries(basisLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></FormField>
+      <FormField label="Статус проверки"><select name="status" defaultValue={basis.status}><option value="unknown">Не проверено</option><option value="confirmed">Подтверждено</option><option value="disproved">Опровергнуто</option></select></FormField>
+    </div><FormField label="Реквизиты"><input name="reference" defaultValue={basis.reference} maxLength={500} /></FormField><FormField label="Источник проверки"><textarea name="source" defaultValue={basis.source} rows={3} maxLength={2000} /></FormField>
+      <FormField label="Действует до (если указано)"><input name="validUntil" type="datetime-local" defaultValue={basis.validUntil ? new Date(new Date(basis.validUntil).getTime() - new Date(basis.validUntil).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''} /></FormField>
+      {error && <ErrorState message={error} />}<div className="form-actions"><Button disabled={busy}>Сохранить проверку</Button><Button type="button" variant="outline" onClick={() => setEditing(false)}>Отмена</Button></div></form>}
+  </div>
+}
+
+function HistoryPanel({ id }: { id: string }) {
+  const [cursor, setCursor] = useState('')
+  const { data, loading, error, refresh } = useApiQuery<Page<AuditEvent>>(`/api/v1/complexes/${id}/history?limit=100${cursor ? `&cursor=${cursor}` : ''}`)
+  const actionLabels: Record<string, string> = { 'advertisement.create': 'Добавлено объявление', 'evidence.create': 'Добавлен источник', 'evidence.review': 'Проверен источник', 'factor.review': 'Пересмотрен фактор', 'basis.review': 'Проверено правовое основание', 'complex.create': 'Создан ЖК' }
+  return <div className="content-pad"><h2>История действий</h2>{loading ? <LoadingState /> : error ? <ErrorState message={error} retry={refresh} /> : !data?.items.length ? <EmptyState title="Действий аналитиков пока нет" />
+    : <ol className="timeline">{[...data.items].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((event) => <li key={event.id}><strong>{actionLabels[event.action] || event.action}</strong>
+      <p>{formatDate(event.createdAt)} · {event.actorUid}</p>{typeof event.details.notes === 'string' && <blockquote>{event.details.notes}</blockquote>}
+      {typeof event.details.beforeScore === 'number' && <small>Баллы: {event.details.beforeScore} → {String(event.details.afterScore)}</small>}</li>)}</ol>}
+    {(cursor || data?.nextCursor) && <div className="pagination"><Button variant="outline" onClick={() => setCursor('')}>В начало</Button>{data?.nextCursor && <Button variant="outline" onClick={() => setCursor(data.nextCursor!)}>Далее</Button>}</div>}
+  </div>
+}
+
+export function ComplexDetail() {
+  const { id } = useParams()
+  const [tab, setTab] = useState('overview')
+  const { data: complex_, loading, error, refresh } = useApiQuery<Complex>(id ? `/api/v1/complexes/${encodeURIComponent(id)}` : null)
+  if (loading) return <LoadingState />
+  if (error) return <ErrorState message={error} retry={refresh} />
+  if (!complex_) return <EmptyState title="ЖК не найден" />
+  const tabs = [['overview', 'Обзор'], ['ads', 'Объявления'], ['documents', 'Документы'], ['evidence', 'Доказательства'], ['history', 'История']]
+  return <><Link to="/complexes" className="back-link"><ArrowLeft size={16} /> К реестру</Link>
+    <PageHeading eyebrow={`Карточка объекта · ${complex_.city}`} title={complex_.name.replace(/^DEMO — /, '')} description={complex_.address} action={complex_.demo && <DemoBadge />} />
+    <div className="detail-layout"><section className="panel min-w-0"><div className="tabs" role="tablist" aria-label="Разделы карточки">{tabs.map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={tab === key} aria-controls={`panel-${key}`} id={`tab-${key}`} onClick={() => setTab(key)}>{label}</button>)}</div>
+      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+        {tab === 'overview' && <div className="content-pad"><div className="object-illustration"><MapPin size={26} /><span>{complex_.city} · Восточно-Казахстанская область</span></div>
+          <h2 className="mt-6">Сведения об объекте</h2><dl className="details-grid"><div><dt>Застройщик</dt><dd>{complex_.developer?.name}</dd></div><div><dt>БИН (вымышленный)</dt><dd>{complex_.developer?.bin}</dd></div>
+            <div><dt>Этап строительства</dt><dd>{stageLabels[complex_.stage]}</dd></div><div><dt>Регион</dt><dd>ВКО</dd></div></dl>
+          <h3 className="mt-6 font-semibold">Готовность строительства</h3><div className="progress-comparison"><div><span>Заявленная</span><strong>{complex_.progress.claimedPercent === null ? 'Нет данных' : `${complex_.progress.claimedPercent}%`}</strong><progress max={100} value={complex_.progress.claimedPercent ?? 0} aria-label="Заявленная готовность" /><small>{complex_.progress.claimedSource || 'Источник не указан'}</small></div>
+            <div><span>Проверенная</span><strong>{complex_.progress.verifiedPercent === null ? 'Не проверено' : `${complex_.progress.verifiedPercent}%`}</strong><progress max={100} value={complex_.progress.verifiedPercent ?? 0} aria-label="Проверенная готовность" /><small>{complex_.progress.verifiedSource || 'Нет подтверждённого источника'}</small></div></div>
+          <p className="inline-notice">DEMO: название, застройщик, БИН и адрес вымышлены. Запись не является сведением государственного реестра.</p>
+        </div>}
+        {tab === 'ads' && <ComplexAdvertisements id={complex_.id} />}
+        {tab === 'documents' && <DocumentsPanel complex_={complex_} onChanged={refresh} />}
+        {tab === 'evidence' && <EvidencePanel complex_={complex_} onChanged={refresh} />}
+        {tab === 'history' && <HistoryPanel id={complex_.id} />}
+      </div>
+    </section><RiskPanel complex_={complex_} onChanged={refresh} /></div>
+  </>
+}

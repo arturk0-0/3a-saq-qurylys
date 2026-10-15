@@ -76,6 +76,7 @@ class FirestoreStore:
         filters: list[tuple[str, str, Any]] | None = None,
         after_id: str | None = None,
         limit: int = 100,
+        newest_first: bool = False,
     ) -> list[Document]:
         validate_path(collection, after_id)
         if not 1 <= limit <= 500:
@@ -83,11 +84,17 @@ class FirestoreStore:
         query = self.db.collection(collection)
         for field, operator, value in filters or []:
             query = query.where(filter=FieldFilter(field, operator, value))
+        if newest_first:
+            query = query.order_by("createdAt", direction=firestore.Query.DESCENDING)
         query = query.order_by("__name__")
         if after_id:
-            query = query.start_after(
-                {"__name__": self.db.collection(collection).document(after_id)}
-            )
+            cursor = {"__name__": self.db.collection(collection).document(after_id)}
+            if newest_first:
+                row = self.get(collection, after_id)
+                if not row or any(row.get(f) != v for f, _, v in filters or []):
+                    raise Conflict("Cursor no longer exists in this query")
+                cursor["createdAt"] = row["createdAt"]
+            query = query.start_after(cursor)
         try:
             return [snapshot.to_dict() for snapshot in query.limit(limit).stream(timeout=10)]
         except GoogleAPICallError as exc:

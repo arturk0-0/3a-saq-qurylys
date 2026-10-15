@@ -1,52 +1,20 @@
-import { useEffect, useState } from 'react'
-import { NavLink, Route, Routes } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, Route, Routes, Link } from 'react-router-dom'
+import { Building2, LayoutDashboard, LogOut, Megaphone, ShieldCheck, FileCheck2, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { getHealth } from '@/lib/api'
 import { ConfigurationNotice, useAuth } from '@/features/auth/AuthProvider'
 import { LoginPage } from '@/features/auth/LoginPage'
+import { ComplexList } from '@/features/complexes/ComplexList'
+import { ComplexDetail } from '@/features/complexes/ComplexDetail'
+import { AdvertisementsPage } from '@/features/advertisements/AdvertisementsPage'
+import { EmptyState } from '@/components/WorkspaceUI'
 
 const modules = [
-  { path: '/', title: 'Обзор' },
-  { path: '/complexes', title: 'Реестр ЖК' },
-  { path: '/advertisements', title: 'Объявления' },
-  { path: '/signals', title: 'Сигналы' },
+  { path: '/', title: 'Обзор', icon: LayoutDashboard },
+  { path: '/complexes', title: 'Реестр ЖК', icon: Building2 },
+  { path: '/advertisements', title: 'Объявления', icon: Megaphone },
+  { path: '/signals', title: 'Сигналы', icon: FileCheck2 },
 ]
-
-function Overview() {
-  const [status, setStatus] = useState('Проверяем соединение с API…')
-  const [attempt, setAttempt] = useState(0)
-  const [loading, setLoading] = useState(true)
-  useEffect(() => {
-    let active = true
-    const controller = new AbortController()
-    const timeout = window.setTimeout(() => controller.abort(), 8000)
-    setLoading(true)
-    setStatus('Проверяем соединение с API…')
-    getHealth(controller.signal)
-      .then(() => { if (active) setStatus('API доступен') })
-      .catch((error: unknown) => {
-        if (!active) return
-        setStatus(error instanceof Error && error.name !== 'AbortError'
-          ? error.message : 'API не ответил вовремя. Проверьте запуск backend.')
-      })
-      .finally(() => { window.clearTimeout(timeout); if (active) setLoading(false) })
-    return () => { active = false; window.clearTimeout(timeout); controller.abort() }
-  }, [attempt])
-  return <>
-    <h1 className="text-2xl font-semibold">Обзор</h1>
-    <p className="mt-3 text-muted-foreground">Каркас приложения для аналитиков Восточно-Казахстанской области.</p>
-    <section className="mt-6 rounded-lg border border-border bg-background p-6" aria-label="Соединение с API">
-      <h2 className="font-semibold">Состояние подключения</h2>
-      <p className="my-4" role="status">{status}</p>
-      <Button variant="outline" disabled={loading} onClick={() => setAttempt(attempt + 1)}>Проверить снова</Button>
-    </section>
-  </>
-}
-
-function PendingModule({ title }: { title: string }) {
-  return <><h1 className="text-2xl font-semibold">{title}</h1>
-    <p className="mt-4 text-muted-foreground">Раздел ещё не реализован. Данные и рабочие операции появятся на следующих этапах.</p></>
-}
 
 export function App() {
   const { status, profile, error, logout } = useAuth()
@@ -63,28 +31,34 @@ export function App() {
         {logoutError && <p role="alert">{logoutError}</p>}
       </section> : <LoginPage />}
   </div>
-  return <div className="min-h-screen bg-muted text-foreground">
-    <header className="border-b border-border bg-background px-6 py-4">
-      <span className="font-bold tracking-wide">SAQ QURYLYS</span>
-      <span className="ml-4 text-sm text-muted-foreground">ВКО · {profile?.displayName || profile?.email || 'Аналитик'}</span>
-      <Button variant="outline" size="sm" className="ml-4" onClick={() => { logout().catch(() => setLogoutError('Не удалось выйти. Повторите.')) }}>Выйти</Button>
-      {logoutError && <p role="alert">{logoutError}</p>}
-    </header>
-    <div className="mx-auto flex max-w-7xl flex-col md:flex-row">
-      <nav aria-label="Основная навигация" className="flex shrink-0 flex-wrap gap-2 p-4 md:w-56 md:flex-col">
-        {modules.map(({ path, title }) => <NavLink key={path} to={path} end={path === '/'}
-          className={({ isActive }) => `rounded-md px-4 py-3 text-sm ${isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-background'}`}>
-          {title}
+  return <div className="workspace-shell">
+    <a href="#main-content" className="skip-link">К содержимому</a>
+    <aside className="sidebar">
+      <Link to="/" className="brand"><span className="brand-symbol"><ShieldCheck size={25} /></span><span>SAQ <b>QURYLYS</b><small>Система проверки рисков</small></span></Link>
+      <div className="sidebar-label">РАБОЧЕЕ ПРОСТРАНСТВО</div>
+      <nav aria-label="Основная навигация">
+        {modules.map(({ path, title, icon: Icon }) => <NavLink key={path} to={path} end={path === '/'}
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <Icon size={19} />{title}
         </NavLink>)}
       </nav>
-      <main className="min-w-0 flex-1 p-6 md:p-8">
-        <p className="mb-6 rounded-md border border-border bg-background p-3 text-sm">
-          DEMO-среда · Синтетические записи используются для демонстрации и проверки сценариев.
-        </p>
+      <div className="sidebar-note"><ShieldCheck size={22} /><strong>Решение за человеком</strong><p>AI помогает находить гипотезы. Факты подтверждает аналитик.</p></div>
+      <div className="sidebar-region"><MapPin size={15} /> Восточно-Казахстанская область</div>
+    </aside>
+    <div className="workspace-main">
+      <header className="topbar"><div><span className="demo-badge">DEMO</span><span className="topbar-context">Внутренний аналитический контур</span></div>
+        <div className="user-menu"><span className="avatar">{(profile?.displayName || profile?.email || 'А').slice(0, 1).toUpperCase()}</span><span><strong>{profile?.displayName || profile?.email || 'Аналитик'}</strong><small>{profile?.role === 'admin' ? 'Администратор' : 'Аналитик'}</small></span>
+          <button type="button" className="icon-button" aria-label="Выйти" onClick={() => { logout().catch(() => setLogoutError('Не удалось выйти. Повторите.')) }}><LogOut size={18} /></button></div>
+      </header>
+      <main id="main-content" className="workspace-content">
+        {logoutError && <p role="alert" className="inline-notice">{logoutError}</p>}
         <Routes>
-          <Route path="/" element={<Overview />} />
-          {modules.slice(1).map(({ path, title }) => <Route key={path} path={path} element={<PendingModule title={title} />} />)}
-          <Route path="*" element={<PendingModule title="Страница не найдена" />} />
+          <Route path="/" element={<ComplexList overview />} />
+          <Route path="/complexes" element={<ComplexList />} />
+          <Route path="/complexes/:id" element={<ComplexDetail />} />
+          <Route path="/advertisements" element={<AdvertisementsPage />} />
+          <Route path="/signals" element={<EmptyState title="Сигналы — следующий этап"><p>Сначала проверьте источники и факторы риска в карточке ЖК.</p></EmptyState>} />
+          <Route path="*" element={<EmptyState title="Страница не найдена"><Link to="/">Вернуться к обзору</Link></EmptyState>} />
         </Routes>
       </main>
     </div>

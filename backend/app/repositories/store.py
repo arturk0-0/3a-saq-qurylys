@@ -22,5 +22,6 @@ class Store(Protocol):
         filters: list[tuple[str, str, Any]] | None = None,
         after_id: str | None = None,
         limit: int = 100,
+        newest_first: bool = False,
     ) -> list[Document]: ...
     def atomic(self, operation: Callable[[UnitOfWork], T]) -> T: ...
