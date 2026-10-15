@@ -153,7 +153,8 @@ egress proxy вернул `Tunnel connection failed: 403 Forbidden`. Это не
 сценариями: **15 групп passed / 499 requests**, нет page errors/внешних запросов,
 артефакты `/tmp/saq-release-browser-final/`. QA runner дополнительно изолирует cwd
 API в пустой временной папке, чтобы даже модульный default app не читал `.env`
-из рабочего checkout; этот startup ещё проверяется в финальном проходе.
+из рабочего checkout. Этот startup также прошёл: 15 групп / 499 запросов,
+`/tmp/saq-release-browser-isolated-final/`, exit 0, процессы runner завершены.
 
 Новых подтверждённых backend-дефектов в этом проходе не найдено. Общий код
 `CONFLICT` покрывает несколько причин: например, открыть source review, другим
@@ -162,8 +163,49 @@ backend корректно отклоняет действие, но не отд
 блокировки источника. UI даёт фиксированную подсказку проверить факторы. Код/
 контракт не менялись. Причина прежней облачной ошибки истории здесь не установлена.
 
-## Осталось проверить
+## Этап 4 — пакет организатора
 
-Браузерная матрица, исправления с regression-тестами, runbook, финальные проверки,
-push, PR и CI. Облачные история/PDF/скриншот и второй Windows-ПК остаются ручными
-шагами владельца; этот промежуточный отчёт их не объявляет пройденными.
+- README: отдельные инструкции просмотра сайта и локального запуска, новая копия
+  правильной ветки/SHA, lockfiles, Linux PDF system dependencies, безопасное
+  создание `.env`, точные рабочие папки, ожидаемый health/setup screen.
+- Windows: PowerShell-команды clone/start/health/stop, без перезаписи `.env`;
+  административные seed/claims отделены от обычного запуска. Windows не запускался.
+- Firebase setup: четыре обязательных browser-поля, backend/private credentials
+  отдельно, host/container пути, online-check без генерации; существующая Cloud Run
+  модель отмечена как выбор владельца, не доказательство доступа в другом проекте.
+- Demo scenarios: актуальные названия кнопок и полный цикл сигнала; исходные
+  баллы seed не выдаются за неизменяемое состояние shared DEMO.
+- `judge-runbook.md`: показ примерно на 6:30, честный ручной резерв при отказе
+  Gemini, отдельный резерв при отказе Firebase/API, список ручной облачной приёмки
+  и сдачи конкретного SHA после review/CI.
+
+Проверены локальные Markdown targets: отсутствующих нет. Изменений вне
+разрешённых frontend/docs/README нет. Backend/deploy/rules/индексы/Compose/API
+schemas/R1–R6/dependencies/lockfiles идентичны базе; только frontend использует
+новые regression-тесты и обработку восстановления.
+
+## Финальная проверка и внешние ограничения
+
+После последнего code-коммита `495a4c9` создан второй чистый Git-export
+`/tmp/saq-release-final` без секретов/готовых зависимостей. Повторный frontend
+`npm ci`, **61 tests**, typecheck и build прошли. Backend остался побайтово
+неизменённым относительно базы, для которой выполнены **218 tests + Ruff**;
+не объявляется новым независимым backend-прогоном на каждом docs-коммите.
+Финальный frontend Docker build успешен (image
+`sha256:4f2e130886628b2db9caba5e050dca6157caef28cca4103afbbc194740414db7`).
+Backend image переиспользован, так как backend не изменён. Compose пересоздал
+frontend; оба контейнера healthy. Health на 8000 и через proxy на 5173 — точный
+ожидаемый JSON; `/api/v1/signals` без token — 401. Chromium по прямому protected
+URL показывает configuration notice, без navigation/QA banner. Проверено
+отсутствие QA-маркеров в чистом production bundle.
+
+Коммиты отправлялись по этапам: `253a8e9` (чистая установка/инструкции),
+`79a9229` (auth/catalog/signal и browser runner), `495a4c9` (остальные conflicts,
+AI draft и PDF header). Следующий docs-коммит завершает пакет организатора;
+его точный SHA доступен через `git rev-parse HEAD`/историю ветки.
+
+Не выполнены и не считаются пройденными: реальный Firebase login/token/rules/IAM,
+облачные история/индексы/PDF/screenshot, платные RU/KZ/image генерации,
+Windows/второе устройство, независимый reviewer и CI. Владельцу — конкретная
+матрица в конце judge-runbook. Сохранённые инструкции не публикуют сайт и не
+меняют Cloud Run модель, данные или инфраструктуру.

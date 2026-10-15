@@ -16,17 +16,20 @@
 Настройка: [Firebase и доступ аналитика](docs/firebase-setup.md).
 Windows: [пошаговый запуск](docs/windows-start.md).
 Демонстрация: [новое объявление → проверка → PDF](docs/demo-scenarios.md).
+Организаторам: [показ на 5–7 минут и запасной сценарий](docs/judge-runbook.md).
+Проверки этой версии: [ночной отчёт](docs/night-reviewer-report.md).
 Устройство приложения: [архитектура](docs/architecture.md), [API и данные](docs/data-model.md).
 Правила: [R1–R6](docs/risk-rules.md). Данные: [DEMO seed](data/seed/README.md).
 Публичные реестры: [источники и порядок ручной сверки](docs/public-sources.md),
 ссылки доступны в карточке ЖК → Документы; автоматической загрузки реестров нет.
 Ход реализации и ограничения: [WORK_LOG](docs/WORK_LOG.md).
 
-## Основа G0
+## Возможности и стек
 
 React + TypeScript (strict) + Vite, Tailwind CSS, базовый Button shadcn/ui и React Router.
 Реализованы обзор с фильтрами, реестр, карточка ЖК, объявления, доказательства,
-документы и история. UI обращается к защищённому FastAPI через Vite proxy.
+документы и история. Локальный UI обращается к защищённому FastAPI через Vite proxy;
+Hosting использует настроенный HTTPS origin Cloud Run.
 API предоставляет `GET /api/v1/health`, настройки CORS, ошибки
 `{code, message, requestId}` и заголовок `X-Request-ID`.
 
@@ -61,7 +64,18 @@ https://saq-qurylys-api-722228028571.europe-west1.run.app.
 
 ## Запуск через Docker
 
-Требуются Docker Engine и Docker Compose v2. Из корня репозитория:
+Требуются Git, Docker Engine и Docker Compose v2. Для воспроизведения этой проверки
+из новой папки (ветка содержит открытые PR, merge/publication ещё нужны):
+
+```bash
+git clone --branch test/night-release-readiness --single-branch https://github.com/arturk0-0/3a-saq-qurylys.git
+cd 3a-saq-qurylys
+git rev-parse HEAD
+```
+
+Сравните SHA с проверяемым PR. Для окончательной сдачи владелец передаёт согласованный
+commit/tag после review; не заменяйте его случайным состоянием `main`.
+Из корня, где находятся `compose.yaml`, `backend/` и `frontend/`:
 
 ```bash
 test -e .env || cp .env.example .env
@@ -101,7 +115,7 @@ sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fon
 В Docker они устанавливаются Dockerfile. Для Windows используйте Docker Desktop
 по отдельной инструкции; Linux-проверка не подтверждает нативный Windows-запуск.
 
-В первом терминале:
+Оба терминала изначально откройте в корне `3a-saq-qurylys/`. В первом:
 
 ```bash
 cd backend
@@ -153,7 +167,7 @@ curl --fail http://127.0.0.1:5173/api/v1/health
 Health и экран настройки запускаются без секретов. Рабочее пространство требует
 Firebase Authentication и серверный Firebase Admin. Firebase project ID — `saq-qurylys`.
 Gemini использует серверный `GEMINI_API_KEY` и выбранный `GEMINI_MODEL`.
-Диагностика: `python -m app.cli.check --online --require-ai` из `backend/`;
+Диагностика: `uv run --frozen python -m app.cli.check --online --require-ai` из `backend/`;
 она проверяет доступ без генерации и изменения данных. Набор входов и команда
 для платного RU/KZ/image-прогона описаны в [методологии AI](docs/ai-methodology.md).
 Настройки `VITE_FIREBASE_*` предназначены
@@ -162,6 +176,9 @@ Credentials храните вне Git; для монтирования испо�
 `.env` и `credentials/` исключены из Git.
 
 Следующий этап: live-проверка Firebase/Gemini, командное review и прогон на втором ПК.
+Для локальной проверки без облачных данных есть отдельный
+[Chromium QA runner с явно тестовыми адаптерами](frontend/qa/release/README.md).
+Он не подменяет демонстрацию настоящего Gemini и не входит в production entry.
 Плановые чекбоксы обновляются
 после review/merge, а не по наличию каркаса.
 

@@ -1,10 +1,18 @@
 # Firebase и доступ аналитика
 
 Приложение использует Firebase Authentication, Firestore и Storage проекта `saq-qurylys`.
-В этой среде реальные credentials и browser config пока не предоставлены. Ниже —
-подготовленные инструкции; подключение к облаку не считается проверенным до реального входа.
+Для просмотра https://saq-qurylys.web.app нужна только приватно выданная учётная
+запись. Организаторам сайта не нужны Admin JSON или ключ Gemini. Владелец подтвердил
+облачный вход, DEMO, создание объявления и текстовый Gemini-анализ; облачные история,
+PDF и скриншоты требуют отдельной приёмки после публикации исправлений.
+Ниже — настройка владельцем **локального backend** или отдельного учебного проекта.
+В этой ночной проверке облачные credentials не использовались и данные не менялись.
 
 ## 1. Консоль Firebase
+
+Это административная подготовка проекта, не обязательные действия каждого
+организатора при входе на сайт. Для существующего проекта сначала проверьте его
+состояние; применение rules/индексов и создание ресурсов выполняет только владелец.
 
 1. Откройте проект `saq-qurylys` в Firebase Console.
 2. В Authentication включите Email/Password и создайте отдельную учётную запись аналитика.
@@ -39,6 +47,20 @@ FIREBASE_CREDENTIALS_FILE=C:/private/saq-firebase-admin.json
 FIREBASE_STORAGE_BUCKET=your-actual-bucket-name
 ```
 
+Для Linux используйте абсолютный путь к собственному приватному файлу, например
+`/home/your-user/private/saq-firebase-admin.json`. `FIREBASE_CREDENTIALS_PATH` нужен
+при нативном запуске backend; `FIREBASE_CREDENTIALS_FILE` — путь **на хосте** для
+Compose override. Внутри контейнера путь будет `/run/secrets/firebase-admin.json`,
+override задаёт его сам. Не переносите чужие credentials вместе с исходниками.
+
+Для frontend в корневом `.env` обязательны `VITE_FIREBASE_API_KEY`,
+`VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`
+из Web app config того же проекта. Для локального Vite оставьте `VITE_API_BASE_URL=`
+пустым: `/api/v1` идёт на локальный backend. `GEMINI_API_KEY` и `GEMINI_MODEL`
+нужны только backend; без них анализ недоступен, ручная проверка данных сохраняется.
+Выбранная владельцем Cloud Run модель — `gemini-3.5-flash-lite`; её наличие в
+документе не подтверждает доступность для другого проекта или успешную генерацию.
+
 Путь — пример, файл не создаётся автоматически. Для Docker:
 
 ```bash
@@ -50,7 +72,10 @@ docker compose -f compose.yaml -f compose.firebase.yaml up --build --wait
 
 ## 3. Назначить роль и загрузить DEMO
 
-В локальном терминале из `backend/`, с настроенными серверными credentials:
+Это **изменение облачных данных/claims**, только для владельца и явно выбранного
+учебного проекта. Обычный вход/перезапуск приложения не требует повторного seed
+или назначения роли. В локальном терминале из `backend/`, после `uv sync --frozen`,
+с собственными настроенными серверными credentials:
 
 ```bash
 uv run --frozen python -m app.cli.role FIREBASE_USER_UID analyst --project-confirm saq-qurylys
@@ -95,5 +120,8 @@ Firestore, метаданные bucket и метаданные выбранно�
 проект, срок действия, отзыв token и роль через Firebase Admin. Без Bearer token — 401;
 без роли — 403; при отключённой/недоступной интеграции — 503. Health остаётся публичным.
 
-Не настраивайте Firebase emulator hosts в рабочей среде. Тестовые адаптеры находятся только
-в `backend/tests/`; в приложении нет режима с поддельной авторизацией или локальной БД.
+Не настраивайте Firebase emulator hosts в рабочей среде. Production entry не имеет
+режима с поддельной авторизацией или локальной БД. Существующие backend test adapters
+и отдельный opt-in browser runner `frontend/qa/release/` используются только для
+локального QA, с явной плашкой и изолированной памятью; ими нельзя подтверждать
+готовность живой Firebase-интеграции.
