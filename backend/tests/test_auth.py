@@ -1,3 +1,4 @@
+import re
 from unittest.mock import Mock
 
 import pytest
@@ -91,3 +92,76 @@ def test_cors_permits_authorization_header_only_for_allowed_origin():
         )
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
+@pytest.mark.parametrize(
+    "authorization,status,code",
+    [
+        (None, 401, "AUTH_REQUIRED"),
+        ("Basic forged", 401, "AUTH_REQUIRED"),
+        ("Bearer invalid-test-token", 401, "INVALID_TOKEN"),
+        ("Bearer " + "x" * 8193, 401, "INVALID_TOKEN"),
+        ("Bearer valid-token-without-role", 403, "ROLE_REQUIRED"),
+    ],
+)
+def test_all_business_routes_reject_before_opening_cloud_resources(
+    monkeypatch, authorization, status, code
+):
+    """Exercise real dependencies; only the SDK identity provider is a test adapter."""
+    app = create_app(Settings(_env_file=None, firebase_enabled=True))
+    runtime = app.state.firebase
+    monkeypatch.setattr(runtime, "app", lambda: object())
+    monkeypatch.setattr(runtime, "db", Mock(side_effect=AssertionError("Must not open DB")))
+    monkeypatch.setattr(runtime, "bucket", Mock(side_effect=AssertionError("Must not open bucket")))
+
+    def verify(token, **kwargs):
+        if token == "valid-token-without-role":
+            return {"uid": "test-viewer", "role": "viewer"}
+        raise auth.InvalidIdTokenError("PRIVATE_TEST_TOKEN_DETAIL")
+
+    monkeypatch.setattr(auth, "verify_id_token", verify)
+    headers = {"X-Role": "admin", "X-User-ID": "forged-admin"}
+    if authorization:
+        headers["Authorization"] = authorization
+    protected = 0
+    with TestClient(app) as client:
+        for path, methods in app.openapi()["paths"].items():
+            if path == "/api/v1/health":
+                continue
+            # Valid syntax prevents path validation from obscuring authentication checks.
+            url = re.sub(r"\{([^}]+)\}", lambda m: "1" if m[1] == "version" else "test-id", path)
+            for method in methods:
+                if method not in {"get", "post", "patch"}:
+                    continue
+                response = client.request(method, url, headers=headers, json={})
+                assert response.status_code == status, (method, path, response.text)
+                assert response.json()["code"] == code
+                assert response.headers["cache-control"] == "no-store"
+                assert "PRIVATE_TEST_TOKEN_DETAIL" not in response.text
+                protected += 1
+    assert protected > 0
+    runtime.db.assert_not_called()
+    runtime.bucket.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        auth.ExpiredIdTokenError("PRIVATE_TEST_DETAIL", None),
+        auth.RevokedIdTokenError("PRIVATE_TEST_DETAIL"),
+        auth.UserDisabledError("PRIVATE_TEST_DETAIL"),
+        auth.UserNotFoundError("PRIVATE_TEST_DETAIL"),
+    ],
+)
+def test_expired_revoked_or_disabled_identity_is_rejected_without_detail(
+    monkeypatch, caplog, error
+):
+    app = create_app(Settings(_env_file=None, firebase_enabled=True))
+    monkeypatch.setattr(app.state.firebase, "app", lambda: object())
+    monkeypatch.setattr(auth, "verify_id_token", Mock(side_effect=error))
+    with TestClient(app) as client:
+        response = client.get("/api/v1/me", headers={"Authorization": "Bearer test-token"})
+    assert response.status_code == 401
+    assert response.json()["code"] == "INVALID_TOKEN"
+    assert response.headers["www-authenticate"] == "Bearer"
+    assert "PRIVATE_TEST_DETAIL" not in response.text + caplog.text

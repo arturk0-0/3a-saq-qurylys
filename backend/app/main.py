@@ -55,7 +55,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         request.state.request_id = str(uuid4())
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            # ServerErrorMiddleware re-raises even handled exceptions to the ASGI server.
+            # Catch before that boundary so Uvicorn cannot log private exception text.
+            response = await unexpected_error(request, exc)
         response.headers["X-Request-ID"] = request.state.request_id
         if request.url.path.startswith("/api/v1/"):
             response.headers["Cache-Control"] = "no-store"

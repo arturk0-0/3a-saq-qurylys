@@ -3,6 +3,7 @@ from html import escape
 from threading import BoundedSemaphore
 
 from app.core.errors import AppError, IntegrationUnavailable
+from app.core.images import IMAGE_DECODER_LOCK
 from app.models.signals import Signal
 
 PDF_SLOTS = BoundedSemaphore(2)
@@ -93,7 +94,10 @@ def render_pdf(signal: Signal) -> bytes:
         raise AppError(429, "PDF_BUSY", "PDF renderer is busy; try later")
     try:
         try:
-            from weasyprint import HTML
+            # Its first import changes a global Pillow option. Do not race the
+            # strict decoder used to validate uploaded evidence in another thread.
+            with IMAGE_DECODER_LOCK:
+                from weasyprint import HTML
         except (ImportError, OSError):
             raise IntegrationUnavailable("PDF system libraries") from None
         try:

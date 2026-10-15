@@ -7,7 +7,7 @@ from uuid import uuid4
 import httpx
 import pytest
 from fastapi.testclient import TestClient
-from PIL import Image
+from PIL import Image, ImageFile
 
 from app.api.analysis import analysis_service, file_service
 from app.api.dependencies import current_user
@@ -207,6 +207,30 @@ def test_private_upload_integrity_and_wrong_image_selection(services):
 def test_reject_unsafe_or_mislabeled_images(data, media):
     with pytest.raises(AppError):
         validate_image(data, media)
+
+
+@pytest.mark.parametrize("missing_bytes", [2, 5, 10])
+@pytest.mark.parametrize("allow_truncated", [False, True])
+def test_truncated_jpeg_is_rejected_before_storage(
+    services, monkeypatch, missing_bytes, allow_truncated
+):
+    # WeasyPrint's first import enables this flag in a running API process.
+    monkeypatch.setattr(ImageFile, "LOAD_TRUNCATED_IMAGES", allow_truncated)
+    _, files, store = services
+    buffer = io.BytesIO()
+    Image.new("RGB", (20, 20)).save(buffer, format="JPEG")
+    original = buffer.getvalue()
+    before = deepcopy(store.documents)
+    with pytest.raises(AppError) as error:
+        files.upload("demo-ad-01", 1, original[:-missing_bytes], "image/jpeg", USER)
+    assert error.value.code == "INVALID_IMAGE"
+    assert not files.storage.objects
+    assert store.documents == before
+    assert ImageFile.LOAD_TRUNCATED_IMAGES is allow_truncated
+    # Successful validation preserves the exact uploaded file, including provenance hash.
+    item = files.upload("demo-ad-01", 1, original, "image/jpeg", USER)
+    assert files.download(item.id) == (original, "image/jpeg")
+    assert ImageFile.LOAD_TRUNCATED_IMAGES is allow_truncated
 
 
 def test_analysis_routes_and_private_download(services):
