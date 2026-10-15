@@ -10,7 +10,8 @@
 Готовы чистый скоринг R1–R6, валидируемые модели доказательств, DEMO-набор из 8 ЖК и
 12 объявлений, Firebase Admin и вход через Firebase Authentication. Защищённые запросы
 требуют проверенный token с ролью analyst/admin. Без настройки Firebase отображается
-экран подключения среды. Реальный вход в облачный проект ещё требует credentials.
+экран подключения среды. Локальный запуск рабочего пространства требует собственной
+разрешённой Firebase-конфигурации; секреты не входят в исходники.
 
 Настройка: [Firebase и доступ аналитика](docs/firebase-setup.md).
 Windows: [пошаговый запуск](docs/windows-start.md).
@@ -43,17 +44,27 @@ Health проверяет процесс API, а не Firebase или Gemini. A/
 
 ## Сайт для организаторов
 
-Для сайта, доступного организаторам по ссылке, подготовлен отдельный путь:
-[Firebase Hosting + Cloud Run](docs/cloud-deployment.md). Cloud Run использует
-прикреплённую service account, а Gemini key — Secret Manager. Конфигурация подготовлена;
-реальный deployment и живой вход пока не проверены.
+Опубликованный сайт: https://saq-qurylys.web.app. Для просмотра нужен браузер и
+выданная владельцем приватно учётная запись аналитика; Docker, Python, Admin JSON
+и ключ Gemini посетителю сайта не нужны. API:
+https://saq-qurylys-api-722228028571.europe-west1.run.app.
+Владелец подтвердил вход, DEMO, создание объявления, реальный текстовый Gemini-анализ
+и ручное подтверждение R2 (10 → 35). Облачные история, PDF и анализ скриншота ещё
+требуют его проверки. Новые коммиты и PR не публикуются автоматически.
+
+Локальный запуск ниже создаёт отдельные процессы на вашем компьютере, но при
+подключении к Firebase использует выбранный облачный проект и его данные.
+Порядок публикации владельцем: [Hosting + Cloud Run](docs/cloud-deployment.md).
+При подготовке проверенной версии фиксируйте полный SHA: текущий `main` может
+не включать исправления из открытых PR. Ночная проверка ведётся в
+`test/night-release-readiness` от `fix/security-demo-hardening` (`d579566`).
 
 ## Запуск через Docker
 
 Требуются Docker Engine и Docker Compose v2. Из корня репозитория:
 
 ```bash
-cp .env.example .env
+test -e .env || cp .env.example .env
 docker compose up --build --wait
 ```
 
@@ -74,7 +85,21 @@ Bundle используется только во время установки 
 
 Требуются Python 3.12, [uv](https://docs.astral.sh/uv/getting-started/installation/)
 (проверено с 0.12.23), Node.js 24 LTS и npm. Зависимости зафиксированы в `uv.lock`
-и `package-lock.json`. Из корня скопируйте `.env.example` в `.env`.
+и `package-lock.json`. Из корня создайте `.env`, сохранив существующий:
+
+```bash
+test -e .env || cp .env.example .env
+```
+
+Для PDF WeasyPrint нужны системные библиотеки и шрифты. На Debian/Ubuntu:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core
+```
+
+В Docker они устанавливаются Dockerfile. Для Windows используйте Docker Desktop
+по отдельной инструкции; Linux-проверка не подтверждает нативный Windows-запуск.
 
 В первом терминале:
 
