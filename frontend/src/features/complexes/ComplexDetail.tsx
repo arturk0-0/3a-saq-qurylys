@@ -10,6 +10,7 @@ import { useApiQuery } from '@/lib/useApiQuery'
 import type { Advertisement, AuditEvent, Complex, Page } from '@/lib/types'
 import { EvidencePanel } from './EvidencePanel'
 import { RiskPanel } from './RiskPanel'
+import { PublicSources } from './PublicSources'
 
 function ComplexAdvertisements({ id }: { id: string }) {
   const [creating, setCreating] = useState(false)
@@ -51,6 +52,7 @@ function DocumentsPanel({ complex_, onChanged }: { complex_: Complex; onChanged:
     </div><FormField label="Реквизиты"><input name="reference" defaultValue={basis.reference} maxLength={500} /></FormField><FormField label="Источник проверки"><textarea name="source" defaultValue={basis.source} rows={3} maxLength={2000} /></FormField>
       <FormField label="Действует до (если указано)"><input name="validUntil" type="datetime-local" defaultValue={localDateTime(basis.validUntil)} /></FormField>
       {error && <ErrorState message={error} />}<div className="form-actions"><Button disabled={busy}>Сохранить проверку</Button><Button type="button" variant="outline" onClick={() => setEditing(false)}>Отмена</Button></div></form>}
+    <PublicSources complexId={complex_.id} demo={complex_.demo} />
   </div>
 }
 
