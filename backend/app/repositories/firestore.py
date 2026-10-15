@@ -23,6 +23,7 @@ COLLECTIONS = frozenset(
         "seedRuns",
         "users",
         "analysisRuns",
+        "usageLimits",
     }
 )
 

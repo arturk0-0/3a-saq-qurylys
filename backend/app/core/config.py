@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     firebase_credentials_path: Path | None = None
     firebase_storage_bucket: str = ""
     firebase_demo_only: bool = True
+    gemini_api_key: SecretStr = SecretStr("")
+    gemini_model: str = Field(default="", max_length=100, pattern=r"^[A-Za-z0-9._-]*$")
+    ai_daily_user_limit: int = Field(default=20, ge=1, le=1000)
+    ai_daily_global_limit: int = Field(default=100, ge=1, le=10000)
 
     @field_validator("firebase_credentials_path", mode="before")
     @classmethod

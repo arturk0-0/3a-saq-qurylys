@@ -11,8 +11,8 @@ export function createApiClient(getToken: () => Promise<string>): ApiClient {
     if (!path.startsWith('/api/v1/')) throw new Error('Invalid API path')
     const headers = new Headers(init.headers)
     headers.set('Authorization', `Bearer ${await getToken()}`)
-    if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json')
-    const timeout = AbortSignal.timeout(20000)
+    if (init.body && !(init.body instanceof FormData) && !(init.body instanceof Blob)) headers.set('Content-Type', 'application/json')
+    const timeout = AbortSignal.timeout(path.endsWith('/analyze') ? 90000 : 40000)
     const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout
     let response: Response
     try {
@@ -27,10 +27,14 @@ export function createApiClient(getToken: () => Promise<string>): ApiClient {
         : response.status === 403 ? 'Недостаточно прав для этого действия.'
         : response.status === 503 ? 'Сервис временно недоступен или ещё не настроен.'
         : response.status === 409 ? 'Данные изменились. Обновите страницу и повторите действие.'
+        : response.status === 429 ? 'Достигнут лимит AI-запросов. Повторите позже.'
+        : response.status === 413 ? 'Файл слишком большой. Максимум — 6 МБ.'
+        : response.status === 502 ? 'Внешний сервис вернул некорректный результат. Данные не подтверждены.'
         : 'Не удалось выполнить запрос. Проверьте данные и повторите.'
       throw new ApiError(response.status, typeof error.code === 'string' ? error.code : 'REQUEST_FAILED',
         message, typeof error.requestId === 'string' ? error.requestId : undefined)
     }
-    return response.json() as Promise<T>
+    if (response.headers.get('content-type')?.includes('application/json')) return response.json() as Promise<T>
+    return response.blob() as Promise<T>
   }
 }

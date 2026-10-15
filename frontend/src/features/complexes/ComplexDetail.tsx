@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DemoBadge, EmptyState, ErrorState, FormField, LoadingState, PageHeading } from '@/components/WorkspaceUI'
@@ -68,7 +68,8 @@ function HistoryPanel({ id }: { id: string }) {
 
 export function ComplexDetail() {
   const { id } = useParams()
-  const [tab, setTab] = useState('overview')
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState(searchParams.get('tab') === 'evidence' ? 'evidence' : 'overview')
   const { data: complex_, loading, error, refresh } = useApiQuery<Complex>(id ? `/api/v1/complexes/${encodeURIComponent(id)}` : null)
   if (loading) return <LoadingState />
   if (error) return <ErrorState message={error} retry={refresh} />

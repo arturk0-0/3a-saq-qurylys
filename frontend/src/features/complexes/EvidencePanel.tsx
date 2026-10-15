@@ -5,6 +5,7 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { errorMessage, formatDate } from '@/lib/labels'
 import { useApiQuery } from '@/lib/useApiQuery'
 import type { Advertisement, Complex, Evidence, Page } from '@/lib/types'
+import { EvidenceFile } from './EvidenceFile'
 
 const evidenceTypes = {
   advertisement: 'Текст объявления', legal_basis_review: 'Проверка правовых оснований',
@@ -104,6 +105,7 @@ export function EvidencePanel({ complex_, onChanged }: { complex_: Complex; onCh
           <blockquote>{item.excerpt}</blockquote><p className="text-sm text-muted-foreground">{item.sourceReference}</p><SourceLink url={item.sourceUrl} />
           <p className="mt-3 text-xs text-muted-foreground">Зафиксировано {formatDate(item.capturedAt)}{item.reviewer && ` · Проверил ${item.reviewer}, ${formatDate(item.reviewedAt)}`}</p>
           {item.sha256 && <p className="mt-2 break-all text-xs text-muted-foreground">SHA-256: {item.sha256}</p>}
+          {item.storagePath && <EvidenceFile id={item.id} />}
           {locked ? <p className="mt-3 text-xs text-muted-foreground">Источник поддерживает подтверждённый фактор. Для повторной проверки сначала пересмотрите фактор.</p>
             : <Button className="mt-4" variant="outline" size="sm" onClick={() => setReviewId(item.id)}>Проверить источник</Button>}
           {reviewId === item.id && <EvidenceReviewForm item={item} onCancel={() => setReviewId(null)} onSaved={() => { setReviewId(null); refresh(); onChanged() }} />}

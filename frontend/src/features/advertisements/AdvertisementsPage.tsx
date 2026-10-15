@@ -7,6 +7,7 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { errorMessage, formatDate } from '@/lib/labels'
 import { useApiQuery } from '@/lib/useApiQuery'
 import type { Advertisement, Complex, Page } from '@/lib/types'
+import { AnalysisPanel } from './AnalysisPanel'
 
 export function AdvertisementForm({ complexId, onSaved, onCancel }: { complexId?: string; onSaved: () => void; onCancel: () => void }) {
   const { api } = useAuth()
@@ -39,11 +40,14 @@ export function AdvertisementForm({ complexId, onSaved, onCancel }: { complexId?
 }
 
 export function AdvertisementCard({ ad }: { ad: Advertisement }) {
+  const [analysis, setAnalysis] = useState(false)
   return <article className="advertisement-card"><div className="flex flex-wrap items-center justify-between gap-2">
     <div><strong>{ad.platform}</strong><span className="ml-2 text-sm text-muted-foreground">@{ad.account}</span></div>{ad.demo && <DemoBadge />}</div>
     <p className="mt-2 text-xs text-muted-foreground">Опубликовано {formatDate(ad.publishedAt)} · Сохранено {formatDate(ad.capturedAt)}</p>
     <p className="ad-text">{ad.text}</p><div className="flex flex-wrap items-center gap-5"><SourceLink url={ad.sourceUrl} />
-      <Link to={`/complexes/${ad.complexId}`} className="detail-link">Открыть ЖК →</Link></div>
+      <Link to={`/complexes/${ad.complexId}`} className="detail-link">Открыть ЖК →</Link>
+      <Button variant="outline" size="sm" onClick={() => setAnalysis(!analysis)}>{analysis ? 'Скрыть анализ' : 'Скриншоты и AI-анализ'}</Button></div>
+    {analysis && <AnalysisPanel adId={ad.id} />}
   </article>
 }
 

@@ -3,11 +3,12 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { App } from './App'
 import { AuthContext, type Profile } from '@/features/auth/AuthProvider'
+import type { ApiClient } from '@/lib/http'
 
 const profile: Profile = { uid: 'analyst', role: 'analyst', email: 'analyst@example.test', displayName: null }
 const row = { id: 'demo-a', name: 'DEMO — Проверочный ЖК', address: 'Вымышленный адрес', city: 'Риддер', stage: 'under_construction',
   progress: { verifiedPercent: null, claimedPercent: 50 }, risk: { score: 35, zone: 'YELLOW' }, scenario: 'A' }
-function renderApp(api: ReturnType<typeof vi.fn>) {
+function renderApp(api: ApiClient) {
   return render(<AuthContext.Provider value={{ status: 'authenticated', profile, error: null,
     api, signIn: vi.fn(), logout: vi.fn() }}><MemoryRouter><App /></MemoryRouter></AuthContext.Provider>)
 }
