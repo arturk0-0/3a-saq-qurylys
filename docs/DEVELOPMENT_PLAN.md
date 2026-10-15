@@ -34,6 +34,7 @@ missing code. Do not reimplement these modules from scratch.
 | FE-01–03, FE-05–11; BE-01–12; RISK-01–04; AI extraction/review; signal/PDF | `main` at `0f7c23a`, including preceding feature branches | Live Firebase/Gemini, second-person review, second Windows machine |
 | QA-01–03, DOC-01–04 | `main` at `0f7c23a` | CI result via GitHub UI; live AI measurements and clean-device run |
 | FE-04 map; FE-12 keyboard tabs / fallback checks | `feat/FE-04-complex-map` · Codex | Feature-branch checks and review before merge |
+| QA-04 diagnostics; AI-06/08 reproducible evaluation inputs/runner | `feat/QA-04-connection-diagnostics` · Codex; based on map branch | Live credentials and measured responses still missing; merge map first |
 | AI-05 matching candidates, AI-06/08 measured live extraction | Not complete | Do not treat literal extracted names as candidate matching or mocked output as live measurements |
 | LINK-01–05, DRONE tasks, release/publication | Not started | Mandatory live workflow and release gates first |
 

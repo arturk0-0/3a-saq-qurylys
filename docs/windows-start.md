@@ -31,6 +31,7 @@ Copy-Item нужен только при первом запуске: не пе�
 
 ```powershell
 docker compose -f compose.yaml -f compose.firebase.yaml up --build --wait
+docker compose -f compose.yaml -f compose.firebase.yaml exec backend .venv/bin/python -m app.cli.check --online --require-ai
 docker compose -f compose.yaml -f compose.firebase.yaml exec backend .venv/bin/python -m app.cli.seed validate
 docker compose -f compose.yaml -f compose.firebase.yaml exec backend .venv/bin/python -m app.cli.seed import --project-confirm saq-qurylys --apply
 ```

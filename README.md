@@ -117,6 +117,9 @@ curl --fail http://127.0.0.1:5173/api/v1/health
 Health и экран настройки запускаются без секретов. Рабочее пространство требует
 Firebase Authentication и серверный Firebase Admin. Firebase project ID — `saq-qurylys`.
 Gemini использует серверный `GEMINI_API_KEY` и выбранный `GEMINI_MODEL`.
+Диагностика: `python -m app.cli.check --online --require-ai` из `backend/`;
+она проверяет доступ без генерации и изменения данных. Набор входов и команда
+для платного RU/KZ/image-прогона описаны в [методологии AI](docs/ai-methodology.md).
 Настройки `VITE_FIREBASE_*` предназначены
 только для browser SDK. Никогда не помещайте Admin credentials или Gemini key в `VITE_*`.
 Credentials храните вне Git; для монтирования используйте `compose.firebase.yaml`.
