@@ -10,7 +10,15 @@ from app.services.readiness import check_connections
 
 
 def settings(**values):
-    return Settings(_env_file=None, **values)
+    # _env_file=None disables dotenv, but does not disable process environment bindings.
+    defaults = {
+        "firebase_enabled": False,
+        "firebase_credentials_path": None,
+        "firebase_storage_bucket": "",
+        "gemini_api_key": "",
+        "gemini_model": "",
+    }
+    return Settings(_env_file=None, **(defaults | values))
 
 
 def test_missing_config_fails_without_starting_external_calls():
@@ -56,6 +64,8 @@ def test_gemini_metadata_is_read_only_and_never_leaks_keys_or_error_bodies(statu
     )
     result = next(item for item in checks if item.name == "Gemini model")
     assert result.status == ("ok" if status == 200 else "failed")
+    if status == 200:
+        assert "generateContent не выполнялся" in result.message
     assert secret not in json.dumps([item.__dict__ for item in checks])
 
 

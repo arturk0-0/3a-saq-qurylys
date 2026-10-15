@@ -24,8 +24,20 @@ Frontend независимо ведёт другой участник. Main и 
 
 1. Проверены удалённые heads: feature-база `dbeecb3`, main `0f7c23a`.
 2. Изучены AGENTS, PROJECT_SPEC, DEVELOPMENT_PLAN, WORK_LOG и существующий код.
-3. Запущен baseline backend suite; результат будет записан после завершения.
-4. Следующее: тесты реального Firestore query builder и курсоров, безопасная
-   классификация ошибок, проверка сигналов/PDF, deployment-инструкции.
+3. Baseline: 140 passed / 4 failed. Все четыре сбоя в readiness-тестах:
+   `_env_file=None` отключает dotenv, но не настройки процесса. Тестовый helper
+   теперь явно задаёт пустые credentials/model/bucket и выключенный Firebase;
+   настройки рабочего приложения не менялись.
+4. Готова классификация Gemini: `AI_NOT_CONFIGURED`, `AI_CREDENTIALS`,
+   `AI_ACCESS_DENIED`, `AI_MODEL_UNAVAILABLE`, `AI_PROVIDER_QUOTA`, `AI_TIMEOUT`,
+   `AI_NETWORK`, `AI_TEMPORARY`, `AI_REQUEST_REJECTED`, `AI_INVALID_RESPONSE`.
+   Логи содержат только фиксированный код/HTTP-статус; provider body, exception
+   text, source text, ключи и URL не выводятся. Нет fallback-модели; один повтор
+   только явных 502/503/504, без повтора timeout/неопределённого сетевого сбоя.
+   Некорректные формы JSON-конверта больше не приводят к необработанному 500.
+   Readiness прямо говорит: успешная metadata не подтверждает generateContent.
+5. Проверка этапа: 61 passed (Gemini errors / analysis / readiness / evaluation),
+   Ruff по изменённым файлам прошёл. Только MockTransport/тестовые адаптеры.
+6. Следующее: Firestore SDK query/cursor/index проверки, сигналы/PDF и deployment.
 
 Промежуточный отчёт. Ни новые исправления, ни release gates пока не завершены.
