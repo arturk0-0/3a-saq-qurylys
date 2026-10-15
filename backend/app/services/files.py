@@ -31,6 +31,10 @@ def validate_image(data: bytes, media_type: str) -> None:
                 if getattr(image, "n_frames", 1) != 1:
                     raise ValueError("Animated images are not accepted")
                 image.verify()
+            # JPEG/WebP verify() does not decode pixels. Reject truncated/corrupt data
+            # before storing it or paying for an AI request; keep the original bytes.
+            with Image.open(io.BytesIO(data)) as image:
+                image.load()
     except (
         ValueError,
         OSError,

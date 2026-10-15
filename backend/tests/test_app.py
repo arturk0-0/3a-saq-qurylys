@@ -62,18 +62,25 @@ def test_invalid_cors_configuration(origin):
         Settings(cors_origins=[origin], _env_file=None)
 
 
-def test_unhandled_error_does_not_leak_details():
+def test_unhandled_error_does_not_leak_details_or_escape_to_server_logs(caplog):
     app = create_app(Settings(_env_file=None))
 
     @app.get("/test-error")
     def fail():
         raise RuntimeError("private credential")
 
-    with TestClient(app, raise_server_exceptions=False) as client:
-        response = client.get("/test-error")
+    # Keep the default raise_server_exceptions=True: an exception reaching the ASGI
+    # server would otherwise produce an unsanitized Uvicorn traceback in production.
+    with TestClient(app) as client:
+        response = client.get("/test-error", headers={"Origin": "http://localhost:5173"})
     assert response.status_code == 500
     assert response.json()["code"] == "INTERNAL_ERROR"
     assert "private credential" not in response.text
+    assert "private credential" not in caplog.text
+    assert "exception_type=RuntimeError" in caplog.text
+    assert response.json()["requestId"] in caplog.text
+    assert response.json()["requestId"] == response.headers["x-request-id"]
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
     assert response.headers["cache-control"] == "no-store"
 
 

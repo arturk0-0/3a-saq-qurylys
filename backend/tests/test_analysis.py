@@ -209,6 +209,23 @@ def test_reject_unsafe_or_mislabeled_images(data, media):
         validate_image(data, media)
 
 
+@pytest.mark.parametrize("missing_bytes", [2, 5, 10])
+def test_truncated_jpeg_is_rejected_before_storage(services, missing_bytes):
+    _, files, store = services
+    buffer = io.BytesIO()
+    Image.new("RGB", (20, 20)).save(buffer, format="JPEG")
+    original = buffer.getvalue()
+    before = deepcopy(store.documents)
+    with pytest.raises(AppError) as error:
+        files.upload("demo-ad-01", 1, original[:-missing_bytes], "image/jpeg", USER)
+    assert error.value.code == "INVALID_IMAGE"
+    assert not files.storage.objects
+    assert store.documents == before
+    # Successful validation preserves the exact uploaded file, including provenance hash.
+    item = files.upload("demo-ad-01", 1, original, "image/jpeg", USER)
+    assert files.download(item.id) == (original, "image/jpeg")
+
+
 def test_analysis_routes_and_private_download(services):
     service, files, _ = services
     app = create_app(Settings(_env_file=None))
