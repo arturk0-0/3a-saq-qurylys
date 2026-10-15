@@ -1,0 +1,6 @@
+# Supply _IMAGE as an Artifact Registry URL. Cloud Build must be authorized in GCP.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    env: [DOCKER_BUILDKIT=1]
+    args: [build, --tag, '${_IMAGE}', backend]
+images: ['${_IMAGE}']

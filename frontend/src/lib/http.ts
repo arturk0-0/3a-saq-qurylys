@@ -1,3 +1,5 @@
+import { apiUrl } from './apiUrl'
+
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string, public requestId?: string) {
     super(message)
@@ -8,7 +10,7 @@ export type ApiClient = <T>(path: string, init?: RequestInit) => Promise<T>
 
 export function createApiClient(getToken: () => Promise<string>): ApiClient {
   return async <T>(path: string, init: RequestInit = {}): Promise<T> => {
-    if (!path.startsWith('/api/v1/')) throw new Error('Invalid API path')
+    const url = apiUrl(path)
     const headers = new Headers(init.headers)
     headers.set('Authorization', `Bearer ${await getToken()}`)
     if (init.body && !(init.body instanceof FormData) && !(init.body instanceof Blob)) headers.set('Content-Type', 'application/json')
@@ -16,7 +18,7 @@ export function createApiClient(getToken: () => Promise<string>): ApiClient {
     const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout
     let response: Response
     try {
-      response = await fetch(path, { ...init, headers, signal })
+      response = await fetch(url, { ...init, headers, signal })
     } catch (error) {
       if (init.signal?.aborted) throw error
       throw new ApiError(0, 'NETWORK_ERROR', 'Нет связи с сервером. Проверьте подключение и повторите.')

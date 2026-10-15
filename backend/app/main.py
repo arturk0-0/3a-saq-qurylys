@@ -47,7 +47,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse(
             status_code=status,
             content=body.model_dump(),
-            headers={"X-Request-ID": request_id},
+            headers={"X-Request-ID": request_id, "Cache-Control": "no-store"},
         )
 
     @application.middleware("http")
@@ -57,6 +57,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         request.state.request_id = str(uuid4())
         response = await call_next(request)
         response.headers["X-Request-ID"] = request.state.request_id
+        if request.url.path.startswith("/api/v1/"):
+            response.headers["Cache-Control"] = "no-store"
         return response
 
     @application.exception_handler(HTTPException)

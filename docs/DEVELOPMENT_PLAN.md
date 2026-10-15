@@ -39,6 +39,7 @@ missing code. Do not reimplement these modules from scratch.
 | AI-05 read-only name/alias candidates and human comparison | `feat/AI-05-complex-candidates` · Codex; includes preceding three branches | Review additive aliases/API contract; no automatic relinking; live extraction still unverified |
 | AI-06/08 measured live extraction | Not complete | Do not treat mocked output or evaluation inputs as live measurements |
 | FE-08 public-source shortcuts and source provenance | `feat/FE-08-public-registry-sources` · Codex; based on AI-05 | Manual links only; registry records/API not validated; see public-sources.md |
+| Optional hosted demo: Hosting + Cloud Run | `feat/DEPLOY-01-hosting-cloud-run` · Codex; based on public sources | Blaze confirmed by owner; deployment/IAM/Secret Manager/login require owner's Google authorization |
 | LINK-01–05, DRONE tasks, release/publication | Not started | Mandatory live workflow and release gates first |
 
 The implementation table is not a claim that release gates or all task acceptance

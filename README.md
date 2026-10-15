@@ -41,6 +41,13 @@ API предоставляет `GET /api/v1/health`, настройки CORS, о
 Поиск связей рекламы и drone-модуль пока не реализованы.
 Health проверяет процесс API, а не Firebase или Gemini. A/B/C проверены на синтетических данных.
 
+## Сайт для организаторов
+
+Для сайта, доступного организаторам по ссылке, подготовлен отдельный путь:
+[Firebase Hosting + Cloud Run](docs/cloud-deployment.md). Cloud Run использует
+прикреплённую service account, а Gemini key — Secret Manager. Конфигурация подготовлена;
+реальный deployment и живой вход пока не проверены.
+
 ## Запуск через Docker
 
 Требуются Docker Engine и Docker Compose v2. Из корня репозитория:

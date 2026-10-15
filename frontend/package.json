@@ -15,6 +15,7 @@
     "dev": "vite --host 0.0.0.0",
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && vite build",
+    "build:hosting": "node scripts/check-hosting-env.mjs && npm run build",
     "test": "vitest run"
   },
   "dependencies": {

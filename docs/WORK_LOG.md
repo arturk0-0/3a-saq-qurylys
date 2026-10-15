@@ -1,5 +1,24 @@
 # Статус реализации
 
+## Подготовка сайта для организаторов · 15 октября
+
+Владелец выбрал Hosting + Cloud Run и подтвердил Blaze. Текущая ветка
+`feat/DEPLOY-01-hosting-cloud-run` основана на публичных источниках (`ad6bf51`).
+Добавлены firebase.json Hosting SPA, прямой HTTPS API origin VITE_API_BASE_URL,
+проверка обязательной production-конфигурации (`npm run build:hosting`), Cloud Build
+с BuildKit, пример runtime env без ключей, allowlist загрузки исходников и
+`docs/cloud-deployment.md`. API помечает ответы no-store; CORS остаётся явным.
+Прямой API выбран из-за подтверждённого документацией 60-секундного лимита Hosting
+dynamic rewrites. Cloud Run будет использовать attached service account ADC, ключ
+Gemini — Secret Manager, без передачи Admin JSON организаторам/в среду Codex.
+
+Проверено локально: 25 frontend-тестов и build, 13 API app/CORS/cache тестов,
+Ruff; пять preflight-сценариев Hosting и 16 сценариев allowlist исходников.
+Полный backend-suite в этом проходе не повторялся. Cloud Build/IAM/Hosting/Cloud Run
+не выполнялись: отсутствует авторизованный Google Cloud CLI. Ветка — подготовка,
+не факт публикации. Следующий шаг владельца: Cloud Shell проекта saq-qurylys,
+включение Run/Cloud Build/Artifact Registry/Secret Manager APIs.
+
 ## Актуально после публикации среды · 15 октября
 
 Ветка `feat/FE-08-public-registry-sources` основана на AI-05 (`d3a3da1`).

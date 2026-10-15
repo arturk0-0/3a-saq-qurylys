@@ -18,6 +18,7 @@ def test_health(client):
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "service": "saq-qurylys-api"}
     UUID(response.headers["x-request-id"])
+    assert response.headers["cache-control"] == "no-store"
 
 
 def test_missing_route_has_typed_error(client):
@@ -27,6 +28,7 @@ def test_missing_route_has_typed_error(client):
     assert body["code"] == "HTTP_404"
     assert body["message"] == "Not Found"
     assert body["requestId"] == response.headers["x-request-id"]
+    assert response.headers["cache-control"] == "no-store"
 
 
 @pytest.mark.parametrize(
@@ -71,6 +73,27 @@ def test_unhandled_error_does_not_leak_details():
     assert response.status_code == 500
     assert response.json()["code"] == "INTERNAL_ERROR"
     assert "private credential" not in response.text
+    assert response.headers["cache-control"] == "no-store"
+
+
+def test_hosting_origin_preflight_allows_auth_headers_and_rejects_other_origins():
+    origin = "https://saq-qurylys.web.app"
+    app = create_app(Settings(_env_file=None, cors_origins=[origin]))
+    with TestClient(app) as client:
+        for candidate, status in [(origin, 200), ("https://other.example", 400)]:
+            response = client.options(
+                "/api/v1/complexes",
+                headers={
+                    "Origin": candidate,
+                    "Access-Control-Request-Method": "POST",
+                    "Access-Control-Request-Headers": "authorization,content-type",
+                },
+            )
+            assert response.status_code == status
+        response = client.get("/api/v1/complexes", headers={"Origin": origin})
+        assert response.status_code == 401
+        assert response.headers["access-control-allow-origin"] == origin
+        assert response.headers["cache-control"] == "no-store"
 
 
 def test_request_validation_does_not_echo_input():
