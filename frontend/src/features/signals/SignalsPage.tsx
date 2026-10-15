@@ -82,7 +82,9 @@ export function SignalDetail() {
   async function download() {
     setBusy(true); setDownloading(true); setActionError(null)
     try {
-      const url = URL.createObjectURL(await api<Blob>(`/api/v1/signals/${id}/report`))
+      const pdf = await api<Blob>(`/api/v1/signals/${id}/report`)
+      if (!(pdf instanceof Blob) || pdf.type.split(';')[0] !== 'application/pdf') throw new Error('Сервер не вернул PDF. Повторите позже или попросите администратора проверить адрес API.')
+      const url = URL.createObjectURL(pdf)
       const anchor = document.createElement('a')
       anchor.href = url; anchor.download = `saq-signal-${id}.pdf`; anchor.hidden = true
       document.body.append(anchor); anchor.click(); anchor.remove()

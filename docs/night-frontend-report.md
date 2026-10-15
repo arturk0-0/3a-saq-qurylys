@@ -18,7 +18,8 @@ backend, контракты, R1–R6, Firebase rules, deployment или общи
 русских описаний. Требуется проверка длинных строк, узких экранов, risk editor и
 отсутствующих loading/empty состояний истории сигнала.
 
-Работа начата; проверки и результаты будут дополняться завершёнными этапами.
+Ниже — завершённые этапы и итоговые проверки. Указания «пока» в этапах относятся
+к тому промежуточному состоянию, а не к итоговому результату.
 
 ## Этап 1 — понятные и безопасные ошибки
 
@@ -82,3 +83,64 @@ PDF скачивается приватным API-запросом через в
 signal comment после failed save/refresh/mock PDF download, отсутствие лишнего
 POST, skip link и route focus. Необработанных page errors нет; внешние запросы
 блокировались, попыток внешних запросов в прогоне не было.
+
+## Итог
+
+- **48 frontend-тестов passed**, TypeScript и Vite production build прошли.
+  Добавлена проверка, что HTML/не-PDF ответ нельзя скачать под видом PDF; исходное
+  решение не теряется. Правильный application/pdf Blob скачан также в Chromium.
+- Browser print PDF с тестовыми данными содержит DEMO и все R1–R6, без редактора
+  и кнопок сохранения (проверено извлечением текста). Это печать UI с адаптером,
+  не облачный WeasyPrint report.
+- Снимки для review включены в [frontend/qa](../frontend/qa/README.md). На снимках
+  тестовые API-данные, не фактическая Google/Firebase интеграция.
+- Backend/deploy/индексы/rules/API schemas/зависимости/lockfile не изменялись
+  относительно ac11efc. Никаких новых runtime функций, клиентского скоринга,
+  автоматического подтверждения, платных AI-запросов, live writes или deployment.
+- Рабочие коммиты отправлялись по этапам: `18f934b` (контекст), `7bf3036` (ошибки),
+  `73141dc` (review/layout/keyboard), `8031b20` (signal retries/PDF). Последующий
+  коммит завершает MIME guard, QA-снимки и этот отчёт.
+- PR направляется в `fix/backend-demo-reliability`, чтобы diff содержал только
+  frontend и этот отчёт. [Найти PR этой ветки](https://github.com/arturk0-0/3a-saq-qurylys/pulls?q=is%3Apr+head%3Afix%2Ffrontend-demo-usability).
+  Результат CI смотреть в Checks PR; локальные результаты не подменяют CI.
+
+## Проверить и опубликовать после review
+
+```bash
+cd frontend
+npm ci
+npm test
+npm run build
+```
+
+Для Hosting нужен именно `build:hosting` с собственным `.env.production.local`
+**в корне репозитория**, как в docs/cloud-deployment.md. Не публиковать обычную
+CI-сборку без production origin. В Cloud Shell из корня **актуальной этой ветки**
+можно скопировать существующую browser config первой публикации (если папка та же):
+
+```bash
+cp ~/saq-deploy/3a-saq-qurylys-feat-DEPLOY-01-hosting-cloud-run/.env.production.local .env.production.local
+cd frontend
+npm ci
+npm run build:hosting
+```
+
+Только после успешной сборки, из frontend:
+
+```bash
+cd ..
+npx firebase-tools@15.34.0 deploy --only hosting --project saq-qurylys
+```
+
+Скопированный файл содержит только public VITE browser config/API origin;
+не добавлять Gemini/Admin credentials и не коммитить .env. Если конфигурация уже
+есть в новой папке, сохранить её и проверить значения, не перезаписывать вслепую.
+Backend обновляется отдельно по docs/cloud-deployment.md, раздел 6; эта ветка уже
+включает ac11efc, но сама backend после него не меняет. Main не изменялся.
+
+После публикации владельцу проверить реальный вход, новые сообщения ошибок,
+полный AI/source/factor/signal workflow, приватный PDF/скриншот на своём устройстве.
+Живая ошибка истории требует проверки индексов/логов, её причина здесь не доказана.
+Chromium проверен локально; другие браузеры и полный аудит WCAG не выполнялись.
+Нужны второй reviewer и проверка интеграции после deployment; release gates не
+отмечены завершёнными по тестовым адаптерам. Работа не продолжается фоновым циклом.

@@ -115,3 +115,21 @@ it('downloads the private PDF through a temporary attached link without losing n
   ;(schedule.mock.calls[cleanupIndex][0] as () => void)()
   expect(revokeUrl).toHaveBeenCalledWith('blob:test-private-pdf')
 })
+
+it('does not save an HTML error page as a PDF or discard the decision text', async () => {
+  const makeUrl = vi.fn()
+  vi.stubGlobal('URL', class extends URL { static createObjectURL = makeUrl })
+  const api = vi.fn(async (path: string) => {
+    if (path.endsWith('/report')) return new Blob(['<html>Wrong API origin</html>'], { type: 'text/html' })
+    if (path.includes('/history')) return { items: [], nextCursor: null }
+    if (path.includes('/complexes/')) return { version: 1 }
+    return signalFixture()
+  })
+  renderSignal(api as ApiClient)
+  fireEvent.change(await screen.findByLabelText('Обоснование решения'), { target: { value: 'Решение не потеряно' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Скачать PDF' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('Сервер не вернул PDF')
+  expect(screen.getByLabelText('Обоснование решения')).toHaveValue('Решение не потеряно')
+  expect(makeUrl).not.toHaveBeenCalled()
+  expect(document.querySelector('a[download]')).toBeNull()
+})
