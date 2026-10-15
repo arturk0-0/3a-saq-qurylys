@@ -5,6 +5,7 @@ import { DemoBadge, EmptyState, ErrorState, EvidenceProvenance, FormField, Loadi
 import { useAuth } from '@/features/auth/AuthProvider'
 import { errorMessage, factorLabels, formatDate, statusLabels } from '@/lib/labels'
 import { useApiQuery } from '@/lib/useApiQuery'
+import { ApiError } from '@/lib/http'
 import type { AuditEvent, Complex, Evidence, Page, RiskResult } from '@/lib/types'
 
 type SignalStatus = 'draft' | 'pending_review' | 'confirmed' | 'returned'
@@ -23,25 +24,31 @@ export function CreateSignal() {
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [conflict, setConflict] = useState(false)
+  const [title, setTitle] = useState<string | null>(null)
+  const [reason, setReason] = useState('')
+  useEffect(() => { setTitle(null); setReason(''); setError(null); setConflict(false) }, [id])
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!complex_.data) return
     const form = new FormData(event.currentTarget)
-    setBusy(true); setError(null)
+    setBusy(true); setError(null); setConflict(false)
     try {
       const signal = await api<Signal>('/api/v1/signals', { method: 'POST', body: JSON.stringify({ complexId: id, expectedComplexVersion: complex_.data.version, title: form.get('title'), reason: form.get('reason') }) })
       navigate(`/signals/${signal.id}`)
-    } catch (error) { setError(errorMessage(error)) } finally { setBusy(false) }
+    } catch (error) { setError(errorMessage(error)); setConflict(error instanceof ApiError && error.status === 409) } finally { setBusy(false) }
   }
   if (!id) return <EmptyState title="Выберите ЖК"><Link to="/complexes">Открыть реестр</Link></EmptyState>
   if (complex_.loading) return <LoadingState />
   if (complex_.error) return <ErrorState message={complex_.error} retry={complex_.refresh} />
   return <><PageHeading eyebrow="Решение аналитика" title="Новый сигнал" description={complex_.data?.name || ''} />
     <section className="panel"><form className="editor-form" onSubmit={submit}><RiskBadge risk={complex_.data!.risk} />
-      <FormField label="Заголовок сигнала"><input name="title" required maxLength={500} defaultValue={`DEMO — проверка ${complex_.data?.name.replace(/^DEMO — /, '')}`} /></FormField>
-      <FormField label="Основание для проверки"><textarea name="reason" rows={4} required maxLength={2000} /></FormField>
+      <FormField label="Заголовок сигнала"><input name="title" required maxLength={500} value={title ?? `DEMO — проверка ${complex_.data?.name.replace(/^DEMO — /, '')}`} onChange={event => setTitle(event.target.value)} /></FormField>
+      <FormField label="Основание для проверки"><textarea name="reason" rows={4} required maxLength={2000} value={reason} onChange={event => setReason(event.target.value)} /></FormField>
       <p className="inline-notice">Будет создан черновик со снимком текущих проверенных данных. Подтверждение сигнала — отдельное действие. В органы ничего не отправляется.</p>
-      {error && <ErrorState message={error} />}<Button disabled={busy}>Создать черновик</Button></form></section></>
+      {error && <ErrorState message={error} />}
+      {conflict && <><p className="form-hint">Обновите данные ЖК и проверьте новый балл перед повторным сохранением. Заголовок и основание сохранятся; сигнал автоматически не отправляется.</p><Button type="button" variant="outline" onClick={() => { setError(null); setConflict(false); complex_.refresh() }}>Обновить данные ЖК</Button></>}
+      <Button disabled={busy || conflict}>Создать черновик</Button></form></section></>
 }
 
 export function SignalsPage() {

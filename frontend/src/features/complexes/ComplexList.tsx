@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Building2, Filter, Search, ShieldCheck, ShieldAlert, ClipboardCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DemoBadge, DetailLink, EmptyState, ErrorState, LoadingState, PageHeading, RiskBadge, ScrollableTable } from '@/components/WorkspaceUI'
@@ -8,12 +9,23 @@ import type { Complex, Page } from '@/lib/types'
 import { ComplexMap } from './ComplexMap'
 
 export function ComplexList({ overview = false }: { overview?: boolean }) {
-  const [query, setQuery] = useState('')
-  const [search, setSearch] = useState('')
-  const [city, setCity] = useState('')
-  const [zone, setZone] = useState('')
-  const [sort, setSort] = useState('risk')
-  const [cursor, setCursor] = useState('0')
+  const [urlParams, setUrlParams] = useSearchParams()
+  const search = urlParams.get('q') || ''
+  const city = urlParams.get('city') || ''
+  const zone = urlParams.get('zone') || ''
+  const sort = urlParams.get('sort') || 'risk'
+  const cursor = urlParams.get('cursor') || '0'
+  const [query, setQuery] = useState(search)
+  useEffect(() => { setQuery(search) }, [search])
+  function updateFilter(name: string, value: string) {
+    setUrlParams(previous => {
+      const next = new URLSearchParams(previous)
+      if (value) next.set(name, value)
+      else next.delete(name)
+      if (name !== 'cursor') next.delete('cursor')
+      return next
+    })
+  }
   const [showMap, setShowMap] = useState(false)
   const params = new URLSearchParams({ q: search, sort, cursor, limit: '50' })
   if (city) params.set('city', city)
@@ -34,15 +46,15 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
         <strong>{loading ? '—' : value}</strong><small>{title === 'Объектов в выборке' ? 'По текущему фильтру' : 'На текущей странице'}</small></div>)}</div>}
     <section className="panel">
       <div className="panel-heading"><div><h2>Жилые комплексы</h2><p>Внутренний реестр · синтетические DEMO-записи</p></div><div className="flex items-center gap-3"><Button variant="outline" aria-expanded={showMap} aria-controls="complex-map" onClick={() => setShowMap(!showMap)}>{showMap ? 'Скрыть карту' : 'Показать карту'}</Button><DemoBadge /></div></div>
-      <form className="filter-bar" onSubmit={(event) => { event.preventDefault(); setSearch(query); setCursor('0') }}>
+      <form className="filter-bar" onSubmit={(event) => { event.preventDefault(); updateFilter('q', query) }}>
         <label className="search-input"><Search size={17} /><input aria-label="Поиск ЖК" placeholder="Название, город или адрес" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
-        <select aria-label="Город" value={city} onChange={(event) => { setCity(event.target.value); setCursor('0') }}>
+        <select aria-label="Город" value={city} onChange={(event) => updateFilter('city', event.target.value)}>
           <option value="">Все города</option>{cities.map((name) => <option key={name}>{name}</option>)}
         </select>
-        <select aria-label="Приоритет" value={zone} onChange={(event) => { setZone(event.target.value); setCursor('0') }}>
+        <select aria-label="Приоритет" value={zone} onChange={(event) => updateFilter('zone', event.target.value)}>
           <option value="">Все приоритеты</option><option value="RED">Высокий</option><option value="YELLOW">Требует проверки</option><option value="GREEN">Низкий</option>
         </select>
-        <select aria-label="Сортировка" value={sort} onChange={(event) => { setSort(event.target.value); setCursor('0') }}><option value="risk">По баллу риска</option><option value="name">По названию</option></select>
+        <select aria-label="Сортировка" value={sort} onChange={(event) => updateFilter('sort', event.target.value)}><option value="risk">По баллу риска</option><option value="name">По названию</option></select>
         <Button type="submit" variant="outline"><Filter size={15} className="mr-2" />Найти</Button>
       </form>
       {showMap && !loading && !error && <div id="complex-map"><ComplexMap complexes={visible} /></div>}
@@ -56,8 +68,8 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
             <td><RiskBadge risk={complex_.risk} /></td><td><DetailLink to={`/complexes/${complex_.id}`}>Карточка</DetailLink></td>
           </tr>)}</tbody></table></ScrollableTable>}
       {data?.catalogLimited && <p className="inline-notice">Поиск ограничен первыми 500 записями. Уточните город; полный поиск требует расширения индекса.</p>}
-      {(cursor !== '0' || data?.nextCursor) && <div className="pagination"><Button variant="outline" onClick={() => setCursor('0')}>В начало</Button>
-        {data?.nextCursor && <Button variant="outline" onClick={() => setCursor(data.nextCursor!)}>Следующая страница</Button>}</div>}
+      {(cursor !== '0' || data?.nextCursor) && <div className="pagination"><Button variant="outline" onClick={() => updateFilter('cursor', '0')}>В начало</Button>
+        {data?.nextCursor && <Button variant="outline" onClick={() => updateFilter('cursor', data.nextCursor!)}>Следующая страница</Button>}</div>}
     </section>
     <p className="page-footnote">Высокий балл — основание для проверки, а не вывод о незаконности. Гипотезы AI не влияют на балл до подтверждения.</p>
   </>

@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { browserSessionPersistence, onIdTokenChanged, setPersistence, signInWithEmailAndPassword, signOut } from 'firebase/auth'
 import { firebaseAuth, missingFirebaseConfig } from '@/lib/firebase'
-import { createApiClient, type ApiClient } from '@/lib/http'
+import { ApiError, createApiClient, type ApiClient } from '@/lib/http'
 
 export interface Profile {
   uid: string
@@ -32,10 +32,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [error, setError] = useState<string | null>(null)
   const revision = useRef(0)
-  const api = useMemo(() => createApiClient(async () => {
-    if (!firebaseAuth?.currentUser) throw new Error('Требуется вход')
-    return firebaseAuth.currentUser.getIdToken()
-  }), [])
+  const api = useMemo<ApiClient>(() => {
+    const client = createApiClient(async () => {
+      if (!firebaseAuth?.currentUser) throw new ApiError(401, 'AUTH_REQUIRED', 'Сессия истекла. Войдите снова.')
+      try {
+        return await firebaseAuth.currentUser.getIdToken()
+      } catch (error) {
+        const code = error && typeof error === 'object' && 'code' in error ? error.code : null
+        if (['auth/user-token-expired', 'auth/invalid-user-token', 'auth/user-disabled', 'auth/user-not-found'].includes(String(code))) {
+          throw new ApiError(401, 'INVALID_TOKEN', 'Сессия истекла. Войдите снова.')
+        }
+        throw new ApiError(0, 'AUTH_UNAVAILABLE', 'Не удалось обновить доступ. Проверьте подключение и повторите.')
+      }
+    })
+    return async <T,>(path: string, init?: RequestInit): Promise<T> => {
+      const requestRevision = revision.current
+      try {
+        return await client<T>(path, init)
+      } catch (error) {
+        // A late response from an earlier session must not close a newer sign-in.
+        if (error instanceof ApiError && error.status === 401 && requestRevision === revision.current) {
+          revision.current += 1
+          setProfile(null)
+          setError('Сессия истекла. Войдите снова.')
+          setStatus('denied')
+        }
+        throw error
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (!firebaseAuth) return

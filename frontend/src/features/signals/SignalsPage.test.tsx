@@ -3,7 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { expect, it, vi } from 'vitest'
 import { AuthContext } from '@/features/auth/AuthProvider'
 import { ApiError, type ApiClient } from '@/lib/http'
-import { SignalDetail } from './SignalsPage'
+import { CreateSignal, SignalDetail } from './SignalsPage'
 
 it('requires a separate reason and sends the signal version for a return', async () => {
   const signal = { id: 's1', complexId: 'c1', title: 'Учебный сигнал', reason: 'Проверка',
@@ -132,4 +132,32 @@ it('does not save an HTML error page as a PDF or discard the decision text', asy
   expect(screen.getByLabelText('Обоснование решения')).toHaveValue('Решение не потеряно')
   expect(makeUrl).not.toHaveBeenCalled()
   expect(document.querySelector('a[download]')).toBeNull()
+})
+
+it('refreshes a stale complex version before retrying signal creation without losing the draft', async () => {
+  let version = 1
+  let writes = 0
+  const api = vi.fn(async (_path: string, init?: RequestInit) => {
+    if (init?.method === 'POST') {
+      writes++
+      if (writes === 1) { version = 2; throw new ApiError(409, 'CONFLICT', 'Данные изменились. Обновите страницу и повторите действие.') }
+      return { id: 'new-signal' }
+    }
+    return { id: 'c1', name: 'DEMO — Объект', version, risk: { score: 10, zone: 'GREEN' } }
+  })
+  render(<AuthContext.Provider value={{ status: 'authenticated', profile: null, error: null, api: api as ApiClient, signIn: vi.fn(), logout: vi.fn() }}>
+    <MemoryRouter initialEntries={['/signals/new?complex=c1']}><Routes><Route path="/signals/new" element={<CreateSignal />} /><Route path="/signals/:id" element={<p>Сигнал создан</p>} /></Routes></MemoryRouter>
+  </AuthContext.Provider>)
+  fireEvent.change(await screen.findByLabelText('Заголовок сигнала'), { target: { value: 'Мой заголовок' } })
+  fireEvent.change(screen.getByLabelText('Основание для проверки'), { target: { value: 'Текст проверки, введённый до конфликта' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Создать черновик' }))
+  await screen.findByRole('alert')
+  fireEvent.click(screen.getByRole('button', { name: 'Обновить данные ЖК' }))
+  expect(await screen.findByLabelText('Заголовок сигнала')).toHaveValue('Мой заголовок')
+  expect(screen.getByLabelText('Основание для проверки')).toHaveValue('Текст проверки, введённый до конфликта')
+  expect(writes).toBe(1)
+  fireEvent.click(screen.getByRole('button', { name: 'Создать черновик' }))
+  await screen.findByText('Сигнал создан')
+  expect(JSON.parse(String(api.mock.calls.filter(([, init]) => init?.method === 'POST').at(-1)![1]?.body)))
+    .toMatchObject({ expectedComplexVersion: 2, title: 'Мой заголовок', reason: 'Текст проверки, введённый до конфликта' })
 })
