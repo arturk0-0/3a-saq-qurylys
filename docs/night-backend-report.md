@@ -53,6 +53,20 @@ Frontend независимо ведёт другой участник. Main и 
    неизменности аудита при чтении, отсутствующих/скрытых сигналов, приватности
    revisions/report/history, typed index error с requestId/no-store и auth.
    Проверка этапа: 52 passed (Firestore queries / workspace / signals), Ruff прошёл.
-9. Следующее: дополнительные негативные проверки PDF/Storage и deployment-инструкции.
+9. PDF: OSError/RuntimeError рендерера теперь дают безопасный `PDF_RENDER_FAILED`
+   (503) вместо общего 500; слот рендеринга освобождается и данные не меняются.
+   Проверены занятые слоты (429 без запуска рендера), запрет local/network/data
+   resources, инертность пользовательской HTML/CSS-разметки, attachment/nosniff,
+   реальные PDF-байты, старый снимок после изменения ЖК и новый после resubmit.
+   Серверные переходы draft → pending → returned → pending → confirmed и
+   неизменяемые revisions проходили существующий тест и продолжают проходить.
+10. Проверены screenshot bytes/MIME/provenance через MockTransport: источник
+    остаётся proposed, без reviewer и без подтверждения платежа; это не оценка OCR.
+    Non-DEMO файл скрыт до обращения к Storage. Ошибки модели/ключа/прав/квоты
+    сохраняют только errorCode, не меняют факторы и не вызывают повторную генерацию
+    при повторном requestId; дневной счётчик расходуется один раз.
+11. Проверка этапа: 40 passed (signals / full vertical flow / analysis), Ruff прошёл.
+    Начата сборка локального backend Docker-образа. Следующее: проверка контейнера,
+    итоговый suite и deployment-инструкции. В живом проекте ничего не менялось.
 
 Промежуточный отчёт. Ни новые исправления, ни release gates пока не завершены.
