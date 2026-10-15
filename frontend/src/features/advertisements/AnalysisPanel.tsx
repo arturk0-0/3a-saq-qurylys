@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { ErrorState, FormField, LoadingState } from '@/components/WorkspaceUI'
+import { EditorHeading, ErrorState, FormField, LoadingState, ReviewGuide } from '@/components/WorkspaceUI'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { errorMessage, factorLabels, formatDate } from '@/lib/labels'
 import { useApiQuery } from '@/lib/useApiQuery'
@@ -53,9 +53,10 @@ export function AnalysisPanel({ adId }: { adId: string }) {
       setReviewId(null); hypotheses.refresh()
     } catch (error) { setError(errorMessage(error)) } finally { setBusy(false) }
   }
-  return <section className="mt-5 border-t border-border pt-5" aria-label="Анализ объявления">
+  return <section className="analysis-panel mt-5 border-t border-border pt-5" aria-label="Анализ объявления">
     <h3 className="font-semibold">AI-гипотезы · Gemini</h3>
     <p className="form-hint">AI предлагает цитаты для проверки. Он не устанавливает отсутствие разрешений и не подтверждает факторы риска.</p>
+    <ReviewGuide />
     {ad.loading ? <LoadingState /> : ad.error ? <ErrorState message={ad.error} retry={ad.refresh} /> : <>
       <form className="editor-form" onSubmit={upload}><FormField label="Добавить скриншот" hint="JPEG, PNG или WebP, до 6 МБ. Оригинал хранится приватно."><input name="image" type="file" accept="image/jpeg,image/png,image/webp" required disabled={busy} /></FormField><Button variant="outline" disabled={busy}>Загрузить</Button></form>
       <FormField label="Источник анализа"><select value={imageId} disabled={busy} onChange={(event) => setImageId(event.target.value)}><option value="">Текст объявления</option>{ad.data?.attachmentIds.map((id, index) => <option value={id} key={id}>Скриншот {index + 1}</option>)}</select></FormField>
@@ -74,7 +75,7 @@ export function AnalysisPanel({ adId }: { adId: string }) {
       <strong>{item.code} · {factorLabels[item.code]}</strong><p className="text-sm">{{ proposed: 'AI-гипотеза — не подтверждено', accepted: 'Принято для проверки доказательства', rejected: 'Гипотеза отклонена' }[item.status]}</p>
       <blockquote>{item.quote}</blockquote><p>{item.explanation}</p><p className="form-hint">Модель: {item.model}. {item.confidence !== null && `Самооценка модели: ${Math.round(item.confidence * 100)}% (не вероятность нарушения).`}</p>
       {item.status === 'proposed' && <Button size="sm" variant="outline" onClick={() => setReviewId(item.id)}>Рассмотреть гипотезу</Button>}
-      {reviewId === item.id && <form className="editor-form" onSubmit={(event) => review(event, item)}><FormField label="Решение по гипотезе"><select name="decision"><option value="accepted">Принять к проверке</option><option value="rejected">Отклонить</option></select></FormField><FormField label="Обоснование"><textarea name="notes" required maxLength={2000} /></FormField><Button disabled={busy}>Сохранить решение</Button></form>}
+      {reviewId === item.id && <form className="editor-form" onSubmit={(event) => review(event, item)}><EditorHeading>Рассмотрение гипотезы {item.code}</EditorHeading><FormField label="Решение по гипотезе"><select name="decision"><option value="accepted">Принять к проверке</option><option value="rejected">Отклонить</option></select></FormField><FormField label="Обоснование"><textarea name="notes" required maxLength={2000} /></FormField><div className="form-actions"><Button disabled={busy}>Сохранить решение</Button><Button type="button" variant="outline" disabled={busy} onClick={() => setReviewId(null)}>Отмена</Button></div></form>}
       {item.status === 'accepted' && <p className="inline-notice">Далее откройте ЖК → Доказательства, проверьте источник и отдельно подтвердите фактор в панели R1–R6. Балл пока не изменён.</p>}
       <Link className="detail-link mt-3" to={`/complexes/${ad.data?.complexId}?tab=evidence&source=${item.evidenceId}`}>К доказательству →</Link>
     </article>)}

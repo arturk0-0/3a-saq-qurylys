@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { NavLink, Route, Routes, Link } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, Route, Routes, Link, useLocation } from 'react-router-dom'
 import { Building2, LayoutDashboard, LogOut, Megaphone, ShieldCheck, FileCheck2, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfigurationNotice, useAuth } from '@/features/auth/AuthProvider'
@@ -17,9 +17,23 @@ const modules = [
   { path: '/signals', title: 'Сигналы', icon: FileCheck2 },
 ]
 
+function focusMainContent() {
+  const main = document.getElementById('main-content')
+  main?.focus({ preventScroll: true })
+  main?.scrollIntoView?.({ block: 'start' })
+}
+
 export function App() {
   const { status, profile, error, logout } = useAuth()
   const [logoutError, setLogoutError] = useState<string | null>(null)
+  const { pathname } = useLocation()
+  const previousPath = useRef(pathname)
+  useEffect(() => {
+    if (previousPath.current !== pathname && status === 'authenticated') {
+      focusMainContent()
+    }
+    previousPath.current = pathname
+  }, [pathname, status])
   if (status !== 'authenticated') return <div className="min-h-screen bg-muted px-4 py-16">
     {status === 'unavailable' ? <ConfigurationNotice />
       : status === 'loading' ? <p role="status" className="text-center">Проверяем доступ…</p>
@@ -33,7 +47,7 @@ export function App() {
       </section> : <LoginPage />}
   </div>
   return <div className="workspace-shell">
-    <a href="#main-content" className="skip-link">К содержимому</a>
+    <a href="#main-content" className="skip-link" onClick={event => { event.preventDefault(); focusMainContent() }}>К содержимому</a>
     <aside className="sidebar">
       <Link to="/" className="brand"><span className="brand-symbol"><ShieldCheck size={25} /></span><span>SAQ <b>QURYLYS</b><small>Система проверки рисков</small></span></Link>
       <div className="sidebar-label">РАБОЧЕЕ ПРОСТРАНСТВО</div>
@@ -51,7 +65,7 @@ export function App() {
         <div className="user-menu"><span className="avatar">{(profile?.displayName || profile?.email || 'А').slice(0, 1).toUpperCase()}</span><span><strong>{profile?.displayName || profile?.email || 'Аналитик'}</strong><small>{profile?.role === 'admin' ? 'Администратор' : 'Аналитик'}</small></span>
           <button type="button" className="icon-button" aria-label="Выйти" onClick={() => { logout().catch(() => setLogoutError('Не удалось выйти. Повторите.')) }}><LogOut size={18} /></button></div>
       </header>
-      <main id="main-content" className="workspace-content">
+      <main id="main-content" className="workspace-content" tabIndex={-1}>
         {logoutError && <p role="alert" className="inline-notice">{logoutError}</p>}
         <Routes>
           <Route path="/" element={<ComplexList overview />} />
