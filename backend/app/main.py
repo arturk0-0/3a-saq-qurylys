@@ -71,6 +71,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @application.exception_handler(AppError)
     async def app_error(request: Request, exc: AppError) -> JSONResponse:
+        if exc.status_code >= 500 or exc.status_code == 429:
+            logger.warning(
+                "Request failed: request_id=%s code=%s",
+                getattr(request.state, "request_id", "unknown"),
+                exc.code,
+            )
         response = error_response(request, exc.status_code, exc.code, exc.message)
         if exc.status_code == 401:
             response.headers["WWW-Authenticate"] = "Bearer"

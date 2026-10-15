@@ -6,10 +6,25 @@ Backend получает Firebase Admin ADC через отдельную при
 Приватный JSON-файл не нужен Cloud Run и не передаётся организаторам.
 Локальные Docker-инструкции остаются доступным способом проверки исходного кода.
 
-Blaze подтверждён владельцем. Реальный deployment **пока не выполнен**: у процесса
-Codex нет авторизованного gcloud/Firebase CLI. Настройки среды Codex не переносятся
-автоматически в Cloud Run или в сборку Hosting. Следующие операции выполняет
-владелец в Google Cloud Shell, где Google запрашивает его авторизацию напрямую.
+Blaze подтверждён владельцем. **15 октября владелец выполнил deployment через
+Cloud Shell:** https://saq-qurylys.web.app и
+https://saq-qurylys-api-722228028571.europe-west1.run.app.
+Начальный образ: `api:20261015-155826`, digest
+`sha256:6df8d7aa451fcb4cac034f9ee27176d7c952410ff7bf20b5fe73055d7d6afa1f`.
+Вход аналитика, seed, новое объявление, настоящий Gemini на одном русском тексте
+и подтверждение R2 (10 → 35/YELLOW) проверены владельцем. История сигнала показала
+ошибку; deployment индексов, облачный PDF и screenshot flow пока не подтверждены.
+
+В живой конфигурации выбрана `gemini-3.5-flash-lite`: generateContent прежней
+`gemini-2.5-flash-lite` вернул 404 «no longer available to new users», хотя metadata
+GET вернул 200. Это наблюдение в данном проекте, не гарантия доступности, качества
+или цены модели для другого аккаунта. Модель на сервере выбирается явно, без fallback.
+
+У процесса Codex нет подтверждённой авторизации владельца Google Cloud Shell.
+Ночные исправления ветки `fix/backend-demo-reliability` **не опубликованы на сайт**.
+Настройки среды Codex не переносятся в Cloud Run/Hosting автоматически. Команды
+ниже выполняет владелец в своём Cloud Shell; разделы 1–4 — первоначальная настройка,
+раздел 6 — продолжение уже опубликованного проекта.
 
 ## 1. Cloud Shell и API
 
@@ -59,10 +74,32 @@ gcloud secrets add-iam-policy-binding saq-gemini-api-key --member="serviceAccoun
 ```
 
 Убедиться, что Firestore и Storage созданы, Email/Password включён. Закрытые
-client rules/индексы развернуть по `docs/firebase-setup.md` с учётом существующих
-клиентов проекта. DEMO seed и роль аналитика назначает владелец один раз, используя
+client rules развернуть по `docs/firebase-setup.md` с учётом существующих
+клиентов проекта. Индексы — отдельный шаг (публикация Hosting их не создаёт):
+
+```bash
+npx firebase-tools@15.34.0 deploy --only firestore:indexes --project saq-qurylys
+```
+
+Дождаться готовности **всех нужных индексов** в Firebase Console → Firestore →
+Indexes: завершение CLI не означает окончания построения. Не соглашаться удалять
+неизвестные индексы других клиентов без проверки. В файле есть индексы auditLogs
+для entityId/complexId, с/без DEMO: createdAt DESC и явный __name__ ASC.
+
+DEMO seed и роль аналитика назначает владелец один раз, используя
 CLI seed/role из того же документа (локальные owner credentials либо ADC в
 авторизованной среде). Публичного endpoint назначения ролей/инициализации нет.
+Cloud Shell ADC можно настроить без JSON-ключа:
+
+```bash
+gcloud auth application-default login --no-launch-browser --scopes=openid,https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/userinfo.email
+gcloud auth application-default set-quota-project saq-qurylys
+```
+
+Все три scope указаны явно: у владельца gcloud прерывался при изменении набора
+scope OAuth-ответом. На странице Google разрешить запрошенные scopes; код вводить
+только в терминал. Owner ADC используется для разовой CLI-инициализации;
+не выдавать Firebase Auth Admin аккаунту runtime ради назначения одной роли.
 
 ## 3. Сборка и Cloud Run
 
@@ -82,13 +119,14 @@ gcloud run services describe saq-qurylys-api --region=europe-west1 --format='val
 Если repository/service account уже созданы, повторять create не нужно. Cloud
 Build использует свой build account; при IAM-ошибке нужно установить конкретный
 отказавший principal/permission и выдать ему необходимые build/repository права.
-Эти облачные IAM-команды здесь не выполнялись и не считаются проверенными.
+Первоначальную сборку/deployment владелец выполнил успешно. Это не означает,
+что команда сработает у другого build account без проверки его прав.
 Регион `europe-west1` — выбранный стартовый вариант; при требованиях к размещению
 данных или другой локации Firestore согласовать регион до создания ресурсов.
 
 Cloud Run принимает сетевые запросы браузера; FastAPI проверяет Firebase ID token
 и роль на каждом business endpoint. `--allow-unauthenticated` относится к сетевому
-IAM-вызову Cloud Run, не отменяет auth приложения. `/health` публичен. API отвечает
+IAM-вызову Cloud Run, не отменяет auth приложения. `/api/v1/health` публичен. API отвечает
 `Cache-Control: no-store`. CORS разрешает два стандартных Hosting origin проекта.
 
 ## 4. Сборка сайта и Hosting
@@ -134,8 +172,118 @@ Admin credential. Gemini/Admin secrets в Vite не попадают.
 - Выйти: данные защищённых API не должны читаться без токена.
 - Выключить компьютер владельца и повторить вход с другого устройства.
 
-Фактические URL, commit/image, дата и результаты фиксируются после реального
-deployment. Локальные tests/build не доказывают рабочие IAM, billing или deployment.
+Фактические URL/image и частичные результаты владельца указаны в начале документа.
+Незавершённые пункты нельзя считать прошедшими по локальным tests/build.
+
+## 6. Продолжение существующего deployment после review ночной ветки
+
+Эти команды **не выполнялись Codex в живом проекте**. Владелец запускает их после
+review изменений, проверки CI и исходников. Backend-ветка основана на dbeecb3;
+frontend другого участника проверяется/публикуется отдельно. Не брать старый main.
+Скачать актуальный ZIP `fix/backend-demo-reliability` и распаковать в новую папку
+Cloud Shell либо получить ветку через уже настроенный GitHub login. Перейти
+в корень с `deploy/cloudbuild.yaml` и проверить SHA/выбранную ветку, если есть Git.
+При ZIP-сборке проверить имена папки/файлов и выбранный commit на GitHub.
+
+### 6.1 Сначала проверить историю без смены образа
+
+Из корня актуальной копии выполнить index deploy, как в разделе 2, и дождаться
+готовности в Console. На сайте открыть историю и «Повторить». Если ошибка ушла,
+это подтверждает исправление deployment, но не завершает проверки PDF/Storage.
+Если не ушла — получить безопасные диагностические записи (не все логи подряд):
+
+```bash
+gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="saq-qurylys-api" AND (textPayload:"Firestore query failed:" OR textPayload:"Gemini request failed:" OR textPayload:"PDF render failed:" OR textPayload:"Request failed:")' --project=saq-qurylys --freshness=1h --limit=30 --format='table(timestamp,textPayload)'
+```
+
+После обновления backend `FIRESTORE_INDEX_REQUIRED` точно указывает на ответ
+провайдера о missing/building query index. Другой FailedPrecondition, IAM или
+network error этим кодом не помечается. Отсутствие записи в логах не доказывает,
+что индекс есть: сопоставить время запроса, service/revision и requestId ответа.
+Новая версия пишет `Request failed: request_id=… code=…` для 5xx/429 без заголовков,
+body или текста исключений; requestId совпадает с JSON/X-Request-ID ответа.
+
+### 6.2 Собрать и обновить только backend
+
+В корне проверенных исходников в Cloud Shell:
+
+```bash
+gcloud config set project saq-qurylys
+SAQ_IMAGE="europe-west1-docker.pkg.dev/saq-qurylys/saq-qurylys/api:backend-reliability-$(date -u +%Y%m%d-%H%M%S)"
+gcloud builds submit . --config=deploy/cloudbuild.yaml --substitutions="_IMAGE=$SAQ_IMAGE"
+```
+
+**Только после STATUS: SUCCESS**:
+
+```bash
+gcloud run services update saq-qurylys-api --region=europe-west1 --image="$SAQ_IMAGE"
+```
+
+Этот update сохраняет настроенные environment, Secret Manager references,
+runtime identity и ресурсные лимиты. Не копировать пустой env example поверх
+рабочих настроек; не использовать `--set-env-vars`, который заменяет набор.
+Не делать Hosting deploy из backend-ветки поверх параллельного frontend.
+Сохранить image/digest, commit и выведенное имя новой revision для проверки/отката.
+
+Если нужно явно сменить модель после проверки доступности/цены владельцем:
+
+```bash
+gcloud run services update saq-qurylys-api --region=europe-west1 --update-env-vars=GEMINI_MODEL=gemini-3.5-flash-lite
+```
+
+Пример runtime YAML оставлен без default model, чтобы не обещать доступность.
+Readiness `--online` делает только metadata GET, не тестирует платную генерацию.
+Даже HTTP 200 metadata и наличие generateContent в supportedGenerationMethods
+не гарантируют возможность вызова. Дневные счётчики учитывают попытки анализа,
+включая неуспешные; один requestId повторно не генерирует и не списывает счётчик.
+Это лимиты приложения, не денежный hard cap Google Cloud/Gemini.
+
+### 6.3 Проверки владельца после обновления
+
+```bash
+curl --fail-with-body --max-time 60 https://saq-qurylys-api-722228028571.europe-west1.run.app/api/v1/health
+curl -sS -o /dev/null -w '%{http_code}\n' https://saq-qurylys-api-722228028571.europe-west1.run.app/api/v1/complexes
+```
+
+Ожидание: health JSON status=ok, а второй запрос без token — 401. Они не проверяют
+доступ к Firestore/Storage/Gemini. Затем в браузере:
+
+1. История ЖК и сигнала открывается, «Далее» не повторяет/теряет события.
+2. Новый DEMO RU/KZ текст и PNG/JPEG screenshot обрабатываются настоящим Gemini.
+   Это платные вызовы; выполнять явно и ограниченно, фиксировать модель/результат.
+3. AI review и evidence review сами не меняют score; подтверждённый R2 добавляет
+   25 один раз. Проверить источник/оригинальный файл, без публичной Storage-ссылки.
+4. Draft → submit → return с причиной → submit → confirm; причины/автор/время
+   видны в истории. Изменение ЖК блокирует confirm старого snapshot (409).
+5. Скачать PDF из подтверждённого сигнала: оценка/источники/решение/DEMO/кириллица
+   читаемы. PDF_BUSY (429) означает занятый рендерер, PDF_RENDER_FAILED (503) —
+   сбой системного рендера; повтор не должен менять данные сигнала.
+6. После выхода прямые API-файлы/report/revisions/history недоступны (401).
+   Firestore/Storage client rules и bucket IAM проверять отдельно от API auth:
+   локальные тесты их deployment не подтверждают. Проверить также второе устройство.
+
+Диагностические API-коды Gemini: AI_NOT_CONFIGURED (нет key/model), AI_CREDENTIALS
+(неверный key/401), AI_ACCESS_DENIED (403/API access/key restrictions),
+AI_MODEL_UNAVAILABLE (404 generation), AI_PROVIDER_QUOTA (429), AI_TIMEOUT,
+AI_NETWORK, AI_TEMPORARY (5xx provider), AI_REQUEST_REJECTED (другой отказ запроса),
+AI_INVALID_RESPONSE (502, неверный/незавершённый JSON/цитата). Возвращаются только
+фиксированные безопасные сообщения, provider body не передаётся клиенту.
+Frontend-ветка может пока отображать общий текст: код виден в JSON ответа Network;
+UI-сопоставление кодов — отдельный интеграционный шаг с владельцем frontend.
+
+Откат backend при необходимости: выбрать **предыдущую проверенную** revision,
+не угадывать latest. Не откатывать Firebase данные или секреты:
+
+```bash
+gcloud run revisions list --service=saq-qurylys-api --region=europe-west1
+gcloud run services update-traffic saq-qurylys-api --region=europe-west1 --to-revisions=PREVIOUS_REVIEWED_REVISION=100
+```
+
+PREVIOUS_REVIEWED_REVISION заменить именем из списка. У первой публикации была
+revision `saq-qurylys-api-00001-b6j`, но позднее менялась модель, поэтому она не
+считается автоматически подходящей для отката. Откат трафика также не доказывает,
+что model/key старой revision ещё доступны. Cloud Run, сборки, образы, Storage,
+Firestore и Gemini тарифицируются отдельно; budget alerts не останавливают расходы.
 
 Источники: [Hosting/Cloud Run timeout](https://firebase.google.com/docs/hosting/cloud-run),
 [Cloud Run service identity](https://cloud.google.com/run/docs/configuring/services/service-identity).

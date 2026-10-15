@@ -2,12 +2,14 @@ from copy import deepcopy
 
 import pytest
 from fastapi.testclient import TestClient
+from weasyprint import HTML
 
 from app.api.dependencies import current_user
 from app.api.workspace import workspace_service
 from app.core.config import Settings
 from app.main import create_app
 from app.models.auth import Principal
+from app.services.reports import PDF_SLOTS, deny_resource
 from app.services.seed_data import build_demo_seed
 from app.services.workspace import WorkspaceService
 from tests.fakes import MemoryStore
@@ -87,12 +89,15 @@ def test_changed_complex_cannot_be_confirmed_from_stale_snapshot(workspace):
     before = deepcopy(store.documents)
     assert decide(client, signal, "confirm").status_code == 409
     assert store.documents == before
+    # Reports must keep the old snapshot until explicit return/resubmit.
+    assert "70 / 100" in client.get(f"/api/v1/signals/{signal['id']}/report?format=html").text
     returned = decide(client, signal, "return").json()
     refreshed = decide(client, returned, "submit").json()
     assert refreshed["snapshot"]["risk"]["score"] == 35
     assert signal["snapshot"]["risk"]["score"] == 70
     confirmed = decide(client, refreshed, "confirm").json()
     assert confirmed["status"] == "confirmed"
+    assert "35 / 100" in client.get(f"/api/v1/signals/{signal['id']}/report?format=html").text
 
 
 def test_versions_reason_and_actor_cannot_be_forged(workspace):
@@ -151,3 +156,146 @@ def test_non_demo_signal_is_hidden(workspace):
     store.documents["signals"][signal["id"]]["demo"] = False
     assert client.get(f"/api/v1/signals/{signal['id']}/report").status_code == 404
     assert client.get("/api/v1/signals").json()["items"] == []
+
+
+def test_history_pages_keep_ties_scope_and_all_decisions(workspace):
+    client, store = workspace
+    first = create(client)
+    second = create(client, "demo-complex-04")
+    pending = decide(client, first, "submit").json()
+    returned = decide(client, pending, "return").json()
+    pending = decide(client, returned, "submit").json()
+    decide(client, pending, "confirm")
+    # Firestore tie-break is createdAt DESC, document name ASC, not UUID time order.
+    for row in store.documents["auditLogs"].values():
+        row["createdAt"] = "2026-10-15T12:00:00+00:00"
+    hidden = deepcopy(next(iter(store.documents["auditLogs"].values())))
+    hidden.update(id="hidden-audit", demo=False, entityId=first["id"])
+    store.documents["auditLogs"][hidden["id"]] = hidden
+    before = deepcopy(store.documents)
+    cursor, events = None, []
+    for _ in range(4):
+        response = client.get(
+            f"/api/v1/signals/{first['id']}/history",
+            params={"limit": 2, **({"cursor": cursor} if cursor else {})},
+        )
+        assert response.status_code == 200
+        page = response.json()
+        events.extend(page["items"])
+        cursor = page["nextCursor"]
+        if cursor is None:
+            break
+    assert cursor is None and len(events) == 5
+    ids = [row["id"] for row in events]
+    assert ids == sorted(set(ids))
+    assert all(row["entityId"] == first["id"] and row["demo"] for row in events)
+    assert {row["details"].get("to") for row in events} == {
+        None,
+        "pending_review",
+        "returned",
+        "confirmed",
+    }
+    assert (
+        client.get(f"/api/v1/signals/{second['id']}/history", params={"cursor": ids[0]}).status_code
+        == 409
+    )
+    assert (
+        client.get(
+            f"/api/v1/signals/{first['id']}/history", params={"cursor": "deleted-row"}
+        ).status_code
+        == 409
+    )
+    assert store.documents == before
+
+
+@pytest.mark.parametrize("suffix", ["history", "revisions/1", "report", "report?format=html"])
+def test_missing_or_hidden_signal_cannot_expose_related_data(workspace, suffix):
+    client, store = workspace
+    signal = create(client)
+    store.documents["signals"][signal["id"]]["demo"] = False
+    before = deepcopy(store.documents)
+    assert client.get(f"/api/v1/signals/{signal['id']}/{suffix}").status_code == 404
+    assert client.get(f"/api/v1/signals/missing-signal/{suffix}").status_code == 404
+    assert store.documents == before
+
+
+@pytest.mark.parametrize("failure_type", [OSError, RuntimeError])
+def test_pdf_failure_is_safe_and_renderer_slot_is_released(
+    workspace, monkeypatch, caplog, failure_type
+):
+    client, store = workspace
+    signal = create(client)
+    before = deepcopy(store.documents)
+
+    def fail(*args, **kwargs):
+        raise failure_type("PRIVATE_FILE_PATH_AND_SECRET")
+
+    monkeypatch.setattr(HTML, "write_pdf", fail)
+    response = client.get(f"/api/v1/signals/{signal['id']}/report")
+    assert response.status_code == 503 and response.json()["code"] == "PDF_RENDER_FAILED"
+    assert response.headers["cache-control"] == "no-store"
+    assert "PRIVATE_FILE_PATH_AND_SECRET" not in response.text + caplog.text
+    # Rendering errors must not consume capacity permanently or mutate the signal.
+    acquired = [PDF_SLOTS.acquire(blocking=False) for _ in range(2)]
+    try:
+        assert acquired == [True, True]
+    finally:
+        for ok in acquired:
+            if ok:
+                PDF_SLOTS.release()
+    assert store.documents == before
+
+
+def test_busy_pdf_does_not_start_rendering_or_modify_data(workspace, monkeypatch):
+    client, store = workspace
+    signal = create(client)
+    before = deepcopy(store.documents)
+    monkeypatch.setattr(HTML, "write_pdf", lambda *a, **kw: pytest.fail("Must not render"))
+    acquired = [PDF_SLOTS.acquire(blocking=False) for _ in range(2)]
+    try:
+        assert acquired == [True, True]
+        response = client.get(f"/api/v1/signals/{signal['id']}/report")
+        assert response.status_code == 429 and response.json()["code"] == "PDF_BUSY"
+        assert response.headers["cache-control"] == "no-store"
+    finally:
+        for ok in acquired:
+            if ok:
+                PDF_SLOTS.release()
+    assert store.documents == before
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "file:///etc/passwd",
+        "http://169.254.169.254/",
+        "https://example.test/",
+        "data:text/plain,private",
+    ],
+)
+def test_pdf_fetcher_denies_local_network_and_inline_resources(url):
+    with pytest.raises(ValueError, match="resources are forbidden"):
+        deny_resource(url)
+
+
+def test_pdf_untrusted_fields_do_not_load_resources(workspace, monkeypatch):
+    client, store = workspace
+    signal = create(client)
+    row = store.documents["signals"][signal["id"]]
+    injected = (
+        '<style>@import url("https://example.test/private");</style><img src="file:///etc/passwd">'
+    )
+    row["reason"] = injected
+    row["reviewNotes"] = injected
+    row["snapshot"]["evidence"][0]["excerpt"] = injected
+    monkeypatch.setattr(
+        "app.services.reports.deny_resource",
+        lambda *a, **kw: pytest.fail("User-supplied markup must remain inert text"),
+    )
+    response = client.get(f"/api/v1/signals/{signal['id']}/report")
+    assert response.status_code == 200 and response.content.startswith(b"%PDF-")
+    assert (
+        response.headers["content-disposition"]
+        == f'attachment; filename="signal-{signal["id"]}.pdf"'
+    )
+    assert response.headers["x-content-type-options"] == "nosniff"

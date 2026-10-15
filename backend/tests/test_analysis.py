@@ -1,3 +1,4 @@
+import base64
 import io
 import json
 from copy import deepcopy
@@ -237,11 +238,75 @@ def test_analysis_routes_and_private_download(services):
         )
 
 
-def test_failed_provider_call_is_persisted_without_fake_output(services):
+@pytest.mark.parametrize(
+    "status,code",
+    [
+        (429, "AI_PROVIDER_QUOTA"),
+        (404, "AI_MODEL_UNAVAILABLE"),
+        (401, "AI_CREDENTIALS"),
+        (403, "AI_ACCESS_DENIED"),
+    ],
+)
+def test_failed_provider_call_is_persisted_without_fake_output(services, status, code):
     service, _, store = services
-    service.client = GeminiClient(settings(), httpx.MockTransport(lambda _: httpx.Response(429)))
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(status, json={"error": {"message": "PRIVATE PROVIDER DETAIL"}})
+
+    service.client = GeminiClient(settings(), httpx.MockTransport(handler))
     request = AnalysisRequest(request_id=uuid4(), expected_version=1)
-    with pytest.raises(AppError):
+    original = deepcopy(store.documents["complexes"])
+    with pytest.raises(AppError) as error:
         service.analyze("demo-ad-01", request, USER)
-    assert store.get("analysisRuns", str(request.request_id))["status"] == "failed"
+    assert error.value.code == code
+    failed = store.get("analysisRuns", str(request.request_id))
+    assert (failed["status"], failed["errorCode"]) == ("failed", code)
+    assert "PRIVATE PROVIDER DETAIL" not in json.dumps(failed)
     assert not store.documents.get("aiHypotheses")
+    with pytest.raises(AppError) as repeated:
+        service.analyze("demo-ad-01", request, USER)
+    assert repeated.value.status_code == 409 and len(calls) == 1
+    assert all(counter["count"] == 1 for counter in store.documents["usageLimits"].values())
+    assert store.documents["complexes"] == original
+
+
+def test_screenshot_bytes_and_provenance_survive_mocked_analysis(services):
+    service, files, store = services
+    image = files.upload("demo-ad-01", 1, png(), "image/png", USER)
+    quote = "Цитата из тестового ответа OCR; качество OCR здесь не проверяется."
+
+    def handler(request):
+        body = json.loads(request.content)
+        part = body["contents"][0]["parts"][1]["inlineData"]
+        assert part["mimeType"] == "image/png"
+        assert base64.b64decode(part["data"]) == png()
+        return mock_response(extraction(quote))
+
+    service.client = GeminiClient(settings(), httpx.MockTransport(handler))
+    result = service.analyze(
+        "demo-ad-01",
+        AnalysisRequest(request_id=uuid4(), expected_version=2, screenshot_id=image.id),
+        USER,
+    )
+    hypothesis = store.get("aiHypotheses", result["hypothesisIds"][0])
+    evidence = store.get("evidence", hypothesis["evidenceId"])
+    assert evidence["excerpt"] == quote and evidence["status"] == "proposed"
+    assert evidence["storagePath"] == image.storage_path
+    assert evidence["sha256"] == image.sha256
+    assert evidence["paymentOfferVerified"] is False and evidence["reviewer"] is None
+
+
+def test_hidden_image_is_not_read_from_storage(services, monkeypatch):
+    _, files, store = services
+    image = files.upload("demo-ad-01", 1, png(), "image/png", USER)
+    store.documents["evidence"][image.id]["demo"] = False
+    monkeypatch.setattr(files.storage, "get", lambda _: pytest.fail("Must not read hidden file"))
+    app = create_app(Settings(_env_file=None))
+    app.dependency_overrides[current_user] = lambda: USER
+    app.dependency_overrides[file_service] = lambda: files
+    with TestClient(app) as http:
+        response = http.get(f"/api/v1/evidence/{image.id}/file")
+    assert response.status_code == 404
+    assert response.headers["cache-control"] == "no-store"

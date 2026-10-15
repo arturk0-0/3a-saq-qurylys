@@ -70,14 +70,19 @@ def check_connections(
     if not online:
         return checks
 
-    def probe(name: str, operation: Callable[[], object], failure: str) -> None:
+    def probe(
+        name: str,
+        operation: Callable[[], object],
+        failure: str,
+        success: str = "Ответ сервиса получен; данные не изменялись.",
+    ) -> None:
         try:
             operation()
         except Exception:
             # Provider exceptions can contain tokens, private paths, URLs or user data.
             checks.append(Check(name, "failed", failure))
         else:
-            checks.append(Check(name, "ok", "Ответ сервиса получен; данные не изменялись."))
+            checks.append(Check(name, "ok", success))
 
     if firebase_configured:
         runtime = runtime_factory(settings)
@@ -123,5 +128,7 @@ def check_connections(
             "Gemini model",
             model_metadata,
             "Проверьте ключ, GEMINI_MODEL, включение API, ограничения ключа и доступ к Google API.",
+            "Metadata модели получена; generateContent не выполнялся. "
+            "Доступность генерации, billing и квота этим запросом не подтверждены.",
         )
     return checks
