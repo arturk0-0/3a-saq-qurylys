@@ -69,4 +69,92 @@ Frontend независимо ведёт другой участник. Main и 
     Начата сборка локального backend Docker-образа. Следующее: проверка контейнера,
     итоговый suite и deployment-инструкции. В живом проекте ничего не менялось.
 
-Промежуточный отчёт. Ни новые исправления, ни release gates пока не завершены.
+## Итог проверки
+
+- Backend: **203 passed**, Ruff `app tests` и compileall прошли. Один существующий
+  StarletteDeprecationWarning о httpx TestClient; зависимости/lockfile не менялись.
+- Docker build прошёл с frozen lockfile. Первая попытка не имела доступа к
+  deb.debian.org:80 из build sandbox; повтор со штатными proxy build args/host
+  network прошёл. TLS и подписи пакетов не отключались, Dockerfile не менялся.
+- Финальный локальный image: `saq-backend-reliability:night`, ID
+  `sha256:5fd1ce3d8617ebb5aee5151685eebf5b328807aa3390498c206aef7e245bdc4a`.
+  Это локальный образ, не Artifact Registry/Cloud Run deployment.
+- В образе (non-root, read-only root filesystem, `--network=none`) запущен Uvicorn:
+  health 200, закрытые registry/history/revisions/report/file без token дают 401,
+  no-store и точный CORS проверены. Полный API flow нового объявления → AI
+  гипотеза → ручной source/factor review → 35 → confirmed signal → настоящий
+  WeasyPrint PDF прошёл с **явными MemoryStore/MockTransport**, без Google-запросов.
+- Отдельный реальный PDF с русским и казахским текстом сгенерирован в образе;
+  pdftotext подтвердил ӘҒҚҢӨҰҮҺІ, DEMO, score 70/100, источники и reviewer.
+  Временный артефакт: `/tmp/saq-night-artifacts/kazakh-demo.pdf` (не коммитится).
+- Для 5xx/429 API пишет фиксированный код и requestId, совпадающий с JSON и
+  X-Request-ID; не пишет body, headers, токены или текст исключения. Отдельный тест
+  проверяет, что тестовый токен/объявление в лог не попадают.
+- Frontend, R1–R6, API payload schemas, dependencies, Firebase rules, main и
+  живая инфраструктура не изменены. Индексы уже соответствовали запросам;
+  менять определения без причины не потребовалось.
+
+## Что остаётся владельцу / другому участнику
+
+1. Review этой ветки и зелёный CI через GitHub; сам факт локальных тестов не CI.
+   Backend-PR направлять в `feat/DEPLOY-01-hosting-cloud-run`, чтобы не включать
+   в его diff всю цепочку feature-веток относительно старого main.
+2. История в живом проекте всё ещё требует проверки: развернуть существующие
+   индексы, дождаться готовности, повторить запрос и при ошибке прочитать только
+   диагностические логи. Причина исходного 503 **не установлена** этой задачей.
+3. Проверить реальные screenshot upload/download и Gemini RU/KZ/image, PDF в
+   Cloud Run, client rules/bucket IAM, второе устройство. Платные запросы выполняет
+   владелец явно; эти проверки за ночь не имитировались.
+4. Согласовать frontend-описания новых API error codes с участником frontend;
+   пока текущий UI может показывать общий текст для неизвестного кода.
+5. Никакие release gates/checklist не отмечены как пройденные и не слиты в main.
+
+## Повторить локальные проверки
+
+```bash
+cd backend
+uv run --frozen pytest -q
+uv run --frozen ruff check app tests
+uv run --frozen python -m compileall -q app
+cd ..
+docker build --tag saq-backend-reliability:night backend
+docker run --rm --network=none --read-only --tmpfs /tmp:rw,mode=1777 --env PYTHONPATH=/tmp/saq-tests:/app --env XDG_CACHE_HOME=/tmp/saq-cache --mount type=bind,src="$PWD/backend/tests",dst=/tmp/saq-tests/tests,readonly saq-backend-reliability:night .venv/bin/python -c 'from tests.test_vertical_flow import test_new_ad_to_reviewed_factor_signal_and_pdf; test_new_ad_to_reviewed_factor_signal_and_pdf(); print("Mocked vertical flow and native PDF: passed")'
+```
+
+В Codex использовать writable `UV_CACHE_DIR=/tmp/saq-uv-cache`. Если build sandbox
+требует прокси, передать штатные HTTP_PROXY/HTTPS_PROXY/http_proxy/https_proxy/
+NO_PROXY через одноимённые `--build-arg`, host network при необходимости и
+`--secret id=custom_ca,src="$SSL_CERT_FILE"` при наличии trust bundle. Не отключать
+TLS/signature verification; эти настройки машины не переносить в runtime Google.
+
+## Публикация после review — только владелец, не выполнялась Codex
+
+В Cloud Shell взять **актуальную эту ветку**, а не исходный ZIP dbeecb3/main.
+Из корня исходников с `deploy/cloudbuild.yaml`:
+
+```bash
+npx firebase-tools@15.34.0 deploy --only firestore:indexes --project saq-qurylys
+```
+
+Дождаться готовности индексов в Firebase Console; создание асинхронное. Затем:
+
+```bash
+SAQ_IMAGE="europe-west1-docker.pkg.dev/saq-qurylys/saq-qurylys/api:backend-reliability-$(date -u +%Y%m%d-%H%M%S)"
+gcloud builds submit . --config=deploy/cloudbuild.yaml --substitutions="_IMAGE=$SAQ_IMAGE"
+```
+
+Только после SUCCESS:
+
+```bash
+gcloud run services update saq-qurylys-api --region=europe-west1 --image="$SAQ_IMAGE"
+```
+
+Сохраняет текущую модель/Secret Manager/identity/ресурсы. Hosting из этой backend
+ветки не публиковать поверх параллельного frontend. Логи, проверки и откат:
+[cloud-deployment.md, раздел 6](cloud-deployment.md#6-продолжение-существующего-deployment-после-review-ночной-ветки).
+
+Промежуточные коммиты, отправленные по ходу задачи: `19f6864` (handoff), `ca18739`
+(Gemini), `18632b7` (история), `0827507` (PDF/приватность). Финальный HEAD смотреть
+в GitHub/`git rev-parse HEAD`; документация и correlation log добавлены следующим
+коммитом. Следующее действие — review/ручная облачная проверка, не новая реализация
+уже существующих модулей по старым незакрытым чекбоксам.

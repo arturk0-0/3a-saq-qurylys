@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from app.core.config import Settings
+from app.core.errors import AppError
 from app.main import create_app
 
 
@@ -114,3 +115,23 @@ def test_request_validation_does_not_echo_input():
 def test_cors_configuration_from_environment(monkeypatch):
     monkeypatch.setenv("CORS_ORIGINS", '["http://localhost:5173"]')
     assert Settings(_env_file=None).cors_origins == ["http://localhost:5173"]
+
+
+def test_integration_error_log_correlates_request_without_headers_or_body(caplog):
+    app = create_app(Settings(_env_file=None))
+
+    @app.post("/test-safe-error")
+    def fail():
+        raise AppError(503, "AI_MODEL_UNAVAILABLE", "Selected model is unavailable")
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/test-safe-error",
+            headers={"Authorization": "Bearer PRIVATE_TEST_TOKEN"},
+            json={"text": "PRIVATE_TEST_ADVERTISEMENT"},
+        )
+    assert response.status_code == 503
+    assert response.json()["requestId"] in caplog.text
+    assert "code=AI_MODEL_UNAVAILABLE" in caplog.text
+    assert "PRIVATE_TEST_TOKEN" not in caplog.text
+    assert "PRIVATE_TEST_ADVERTISEMENT" not in caplog.text
