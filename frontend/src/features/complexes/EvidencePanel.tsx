@@ -5,6 +5,7 @@ import { EditorHeading, EmptyState, ErrorState, EvidenceProvenance, FormField, L
 import { useAuth } from '@/features/auth/AuthProvider'
 import { errorMessage, formatDate, localDateTime } from '@/lib/labels'
 import { useApiQuery } from '@/lib/useApiQuery'
+import { useReviewRecord } from '@/lib/useReviewRecord'
 import type { Advertisement, Complex, Evidence, Page } from '@/lib/types'
 import { EvidenceFile } from './EvidenceFile'
 
@@ -48,10 +49,12 @@ function EvidenceForm({ complexId, onSaved, onCancel }: { complexId: string; onS
   </form>
 }
 
-export function EvidenceReviewForm({ item, onSaved, onCancel }: { item: Evidence; onSaved: () => void; onCancel: () => void }) {
+export function EvidenceReviewForm({ item: initialItem, onSaved, onCancel }: { item: Evidence; onSaved: () => void; onCancel: () => void }) {
   const { api } = useAuth()
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const record = useReviewRecord(initialItem, `/api/v1/evidence/${initialItem.id}`)
+  const item = record.current
+  const error = record.error
   const [decision, setDecision] = useState<'confirmed' | 'rejected'>('confirmed')
   const booleanFields: [keyof Evidence, string][] = item.type === 'legal_basis_review'
     ? [['applicableBasesChecked', 'Проверены все применимые правовые основания, включая гарантию'], ['legalAbsenceVerified', 'Документально установлено отсутствие применимых оснований']]
@@ -62,7 +65,7 @@ export function EvidenceReviewForm({ item, onSaved, onCancel }: { item: Evidence
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
-    setBusy(true); setError(null)
+    setBusy(true); record.clearError()
     try {
       const payload: Record<string, unknown> = { decision: form.get('decision'), notes: form.get('notes'), expectedVersion: item.version }
       for (const [field] of booleanFields) payload[field] = form.get(field) === 'on'
@@ -73,7 +76,7 @@ export function EvidenceReviewForm({ item, onSaved, onCancel }: { item: Evidence
       }
       await api(`/api/v1/evidence/${item.id}/decision`, { method: 'POST', body: JSON.stringify(payload) })
       onSaved()
-    } catch (error) { setError(errorMessage(error)) } finally { setBusy(false) }
+    } catch (error) { record.failed(error) } finally { setBusy(false) }
   }
   return <form className="editor-form review-form" onSubmit={submit} aria-busy={busy}><EditorHeading>Проверка источника</EditorHeading>
     {item.type === 'legal_basis_review' && <p className="inline-notice">Отсутствие записи в реестре или отдельного разрешения не доказывает R1. Нужна документальная проверка применимых оснований.</p>}
@@ -87,8 +90,10 @@ export function EvidenceReviewForm({ item, onSaved, onCancel }: { item: Evidence
     <FormField label="Результат проверки"><select name="decision" value={decision} disabled={busy} onChange={(event) => setDecision(event.target.value as 'confirmed' | 'rejected')}><option value="confirmed">Подтвердить источник и отмеченные факты</option><option value="rejected">Отклонить источник</option></select></FormField>
     <FormField label="Обоснование решения"><textarea name="notes" required disabled={busy} maxLength={5000} rows={3} /></FormField>
     <p className="form-hint">Это действие ещё не подтверждает фактор риска. Решение по фактору принимается в панели R1–R6.</p>
+    {item.version !== initialItem.version && <p className="inline-notice">Актуальная версия источника: {item.version}. {({ confirmed: 'Источник проверен', rejected: 'Источник отклонён', unknown: 'Источник не проверен', proposed: 'Требует проверки источника' })[item.status]}{item.reviewer && ` · ${item.reviewer}`}. Ваши поля сохранены; сверьте их с текущим источником перед повторным решением.</p>}
     {error && <ErrorState message={error} />}
-    <div className="form-actions"><Button disabled={busy}>{busy ? 'Сохраняем проверку…' : 'Сохранить проверку'}</Button><Button type="button" variant="outline" onClick={onCancel} disabled={busy}>Отмена</Button></div>
+    {record.conflict && <><p className="form-hint">Обновите источник перед повторным решением. Если он уже поддерживает подтверждённый фактор, сначала пересмотрите этот фактор в панели R1–R6.</p><Button type="button" variant="outline" disabled={record.refreshing} onClick={() => { void record.refresh() }}>{record.refreshing ? 'Обновляем источник…' : 'Обновить источник'}</Button></>}
+    <div className="form-actions"><Button disabled={busy || record.conflict || record.refreshing}>{busy ? 'Сохраняем проверку…' : 'Сохранить проверку'}</Button><Button type="button" variant="outline" onClick={onCancel} disabled={busy || record.refreshing}>Отмена</Button></div>
   </form>
 }
 

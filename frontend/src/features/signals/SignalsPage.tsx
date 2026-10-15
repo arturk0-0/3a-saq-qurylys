@@ -16,6 +16,16 @@ interface Signal extends Omit<SignalSummary, 'risk' | 'complexName'> {
   createdBy: string; reviewer: string | null; reviewedAt: string | null; reviewNotes: string
 }
 
+async function hasPdfHeader(blob: Blob): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result === '%PDF-')
+    reader.onerror = () => reject(new Error('Не удалось прочитать PDF. Повторите скачивание.'))
+    reader.onabort = () => reject(new Error('Чтение PDF прервано. Повторите скачивание.'))
+    reader.readAsText(blob.slice(0, 5))
+  })
+}
+
 export function CreateSignal() {
   const [params] = useSearchParams()
   const id = params.get('complex') || ''
@@ -90,7 +100,7 @@ export function SignalDetail() {
     setBusy(true); setDownloading(true); setActionError(null)
     try {
       const pdf = await api<Blob>(`/api/v1/signals/${id}/report`)
-      if (!(pdf instanceof Blob) || pdf.type.split(';')[0] !== 'application/pdf') throw new Error('Сервер не вернул PDF. Повторите позже или попросите администратора проверить адрес API.')
+      if (!(pdf instanceof Blob) || pdf.type.split(';')[0] !== 'application/pdf' || !await hasPdfHeader(pdf)) throw new Error('Сервер не вернул PDF. Повторите позже или попросите администратора проверить адрес API.')
       const url = URL.createObjectURL(pdf)
       const anchor = document.createElement('a')
       anchor.href = url; anchor.download = `saq-signal-${id}.pdf`; anchor.hidden = true

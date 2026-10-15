@@ -5,6 +5,7 @@ import signal
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.request
 from pathlib import Path
@@ -30,13 +31,16 @@ env = {
     if not key.startswith(("FIREBASE_", "GEMINI_", "VITE_"))
     and key != "GOOGLE_APPLICATION_CREDENTIALS"
 }
-env["PYTHONPATH"] = str(here)
+env["PYTHONPATH"] = os.pathsep.join([str(here), str(repo / "backend")])
 env["SAQ_QA_ARTIFACTS"] = str(out)
 backend_python = os.environ.get(
     "SAQ_BACKEND_PYTHON", str(repo / "backend/.venv/bin/python")
 )
 processes = []
 logs = []
+runtime = tempfile.TemporaryDirectory(prefix="saq-qa-runtime-")
+api_cwd = Path(runtime.name) / "backend"
+api_cwd.mkdir()
 try:
     for name, command, cwd in [
         (
@@ -52,7 +56,7 @@ try:
                 "8011",
                 "--no-access-log",
             ],
-            repo / "backend",
+            api_cwd,
         ),
         (
             "vite",
@@ -107,3 +111,4 @@ finally:
             process.wait()
     for logfile in logs:
         logfile.close()
+    runtime.cleanup()

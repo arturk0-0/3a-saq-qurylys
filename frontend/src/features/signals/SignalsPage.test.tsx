@@ -134,6 +134,24 @@ it('does not save an HTML error page as a PDF or discard the decision text', asy
   expect(document.querySelector('a[download]')).toBeNull()
 })
 
+it('rejects an HTML error even if a proxy incorrectly labels it application/pdf', async () => {
+  const makeUrl = vi.fn().mockReturnValue('blob:invalid-html')
+  vi.stubGlobal('URL', class extends URL { static createObjectURL = makeUrl })
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+  const api = vi.fn(async (path: string) => {
+    if (path.endsWith('/report')) return new Blob(['<html>Gateway error</html>'], { type: 'application/pdf' })
+    if (path.includes('/history')) return { items: [], nextCursor: null }
+    if (path.includes('/complexes/')) return { version: 1 }
+    return signalFixture()
+  })
+  renderSignal(api as ApiClient)
+  fireEvent.change(await screen.findByLabelText('Обоснование решения'), { target: { value: 'Проверка PDF не стирает решение' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Скачать PDF' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('Сервер не вернул PDF')
+  expect(makeUrl).not.toHaveBeenCalled()
+  expect(screen.getByLabelText('Обоснование решения')).toHaveValue('Проверка PDF не стирает решение')
+})
+
 it('refreshes a stale complex version before retrying signal creation without losing the draft', async () => {
   let version = 1
   let writes = 0

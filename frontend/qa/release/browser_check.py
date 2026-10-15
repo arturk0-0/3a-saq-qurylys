@@ -177,7 +177,8 @@ with sync_playwright() as p:
         page.reload()
         expect(page).to_have_url(re.compile(r"cursor=2"))
         page.get_by_role("button", name="В начало", exact=True).click()
-        page.unroute("**/api/v1/complexes?*", limited_history)
+        expect(page.get_by_role("region", name="Жилые комплексы")).to_be_visible()
+        page.unroute_all(behavior="wait")
         checkpoint(
             "catalog",
             "Search/filters/empty; card → back/forward/reload preserves search and page cursor",
@@ -304,12 +305,33 @@ with sync_playwright() as p:
         panel.get_by_label("Обоснование", exact=True).fill(
             "LOCAL TEST: принять только к проверке источника"
         )
+        hypothesis = api(page, "GET", f"/api/v1/advertisements/{ad['id']}/hypotheses")[
+            "items"
+        ][0]
+        api(
+            page,
+            "POST",
+            f"/api/v1/hypotheses/{hypothesis['id']}/decision",
+            {
+                "decision": "accepted",
+                "expectedVersion": hypothesis["version"],
+                "notes": "LOCAL TEST: concurrent hypothesis review",
+            },
+        )
         panel.get_by_role("button", name="Сохранить решение", exact=True).click()
+        expect(panel.get_by_role("alert")).to_contain_text("Данные изменились")
+        panel.get_by_role("button", name="Обновить результаты").click()
+        expect(
+            panel.get_by_text(re.compile("Несохранённый текст вашего решения"))
+        ).to_contain_text("LOCAL TEST: принять только к проверке источника")
         expect(
             panel.get_by_text("Принято для проверки доказательства", exact=True)
         ).to_be_visible()
         assert api(page, "GET", "/api/v1/complexes/demo-complex-04/risk")["score"] == 10
         panel.get_by_role("link", name="К доказательству").click()
+        page.reload()
+        expect(page.get_by_text("Источник, выбранный по ссылке")).to_be_focused()
+        page.set_viewport_size({"width": 375, "height": 812})
         evidence = page.locator("article.evidence-card").filter(has_text="135 000")
         evidence.get_by_role("button", name="Проверить источник", exact=True).click()
         evidence.get_by_label(
@@ -318,6 +340,30 @@ with sync_playwright() as p:
         evidence.get_by_label("Обоснование решения").fill(
             "LOCAL TEST: сверено с точным оригиналом"
         )
+        api(
+            page,
+            "POST",
+            f"/api/v1/evidence/{hypothesis['evidenceId']}/decision",
+            {
+                "decision": "rejected",
+                "expectedVersion": 1,
+                "notes": "LOCAL TEST concurrent source reviewer",
+            },
+        )
+        evidence.get_by_role("button", name="Сохранить проверку", exact=True).click()
+        expect(evidence.get_by_role("alert")).to_contain_text("Данные изменились")
+        evidence.get_by_role("button", name="Обновить источник", exact=True).focus()
+        page.keyboard.press("Enter")
+        expect(
+            evidence.get_by_text(re.compile("Актуальная версия источника: 2"))
+        ).to_be_visible()
+        expect(evidence.get_by_label("Обоснование решения")).to_have_value(
+            "LOCAL TEST: сверено с точным оригиналом"
+        )
+        expect(
+            evidence.get_by_label("Источник содержит прямое предложение внести платёж")
+        ).to_be_checked()
+        assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
         evidence.get_by_role("button", name="Сохранить проверку", exact=True).click()
         expect(evidence.get_by_text("Источник проверен", exact=True)).to_be_visible()
         assert api(page, "GET", "/api/v1/complexes/demo-complex-04/risk")["score"] == 10
@@ -328,11 +374,45 @@ with sync_playwright() as p:
         risk.get_by_label("Обоснование", exact=True).fill(
             "LOCAL TEST: отдельное подтверждение R2"
         )
+        mutate_complex(page)
+        risk.get_by_role("button", name="Сохранить решение", exact=True).click()
+        expect(risk.get_by_role("alert")).to_contain_text("Данные изменились")
+        risk.get_by_role("button", name="Обновить данные ЖК").click()
+        expect(risk.get_by_text(re.compile("Актуальная версия ЖК"))).to_be_visible()
+        expect(risk.get_by_label("Обоснование", exact=True)).to_have_value(
+            "LOCAL TEST: отдельное подтверждение R2"
+        )
+        expect(risk.get_by_role("checkbox", name=re.compile("135 000"))).to_be_checked()
         risk.get_by_role("button", name="Сохранить решение", exact=True).click()
         expect(risk.locator(".risk-total")).to_contain_text("35")
         checkpoint(
             "human review separation",
             "AI acceptance 10 → source review 10 → explicit R2 35; backend calculates risk",
+        )
+
+        page.get_by_role("tab", name="Документы", exact=True).click()
+        page.get_by_role("button", name="Пересмотреть", exact=True).click()
+        page.get_by_label("Реквизиты", exact=True).fill("LOCAL TEST reference retained")
+        page.get_by_label("Источник проверки", exact=True).fill(
+            "LOCAL TEST source retained"
+        )
+        mutate_complex(page)
+        page.get_by_role("button", name="Сохранить проверку", exact=True).click()
+        expect(page.get_by_role("alert")).to_contain_text("Данные изменились")
+        page.get_by_role("button", name="Обновить данные ЖК").click()
+        expect(page.get_by_label("Реквизиты", exact=True)).to_have_value(
+            "LOCAL TEST reference retained"
+        )
+        expect(page.get_by_label("Источник проверки", exact=True)).to_have_value(
+            "LOCAL TEST source retained"
+        )
+        page.get_by_role("button", name="Сохранить проверку", exact=True).click()
+        expect(
+            page.get_by_role("button", name="Пересмотреть", exact=True)
+        ).to_be_visible()
+        checkpoint(
+            "editor conflicts",
+            "Real concurrent AI/source/factor/basis decisions; explicit GET refresh; notes and selections retained at 375px, keyboard retry",
         )
 
         page.get_by_role("link", name="Создать сигнал").click()
@@ -431,6 +511,16 @@ with sync_playwright() as p:
             200,
             body="<html>TEST error page</html>",
             content_type="text/html",
+        )
+        page.get_by_role("button", name="Скачать PDF").click()
+        expect(page.get_by_role("alert")).to_contain_text("Сервер не вернул PDF")
+        assert not downloads
+        error_once(
+            page,
+            "**/api/v1/signals/*/report",
+            200,
+            body="<html>TEST mislabeled gateway error</html>",
+            content_type="application/pdf",
         )
         page.get_by_role("button", name="Скачать PDF").click()
         expect(page.get_by_role("alert")).to_contain_text("Сервер не вернул PDF")

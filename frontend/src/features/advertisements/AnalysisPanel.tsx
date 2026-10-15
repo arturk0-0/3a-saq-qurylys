@@ -24,6 +24,8 @@ export function AnalysisPanel({ adId }: { adId: string }) {
   const [error, setError] = useState<string | null>(null)
   const [imageId, setImageId] = useState('')
   const [reviewId, setReviewId] = useState<string | null>(null)
+  const [reviewNotes, setReviewNotes] = useState('')
+  const [reviewDecision, setReviewDecision] = useState('accepted')
   async function analyze() {
     if (!ad.data) return
     setBusy(true); setError(null)
@@ -50,7 +52,7 @@ export function AnalysisPanel({ adId }: { adId: string }) {
     setBusy(true); setError(null)
     try {
       await api(`/api/v1/hypotheses/${hypothesis.id}/decision`, { method: 'POST', body: JSON.stringify({ decision: form.get('decision'), notes: form.get('notes'), expectedVersion: hypothesis.version }) })
-      setReviewId(null); hypotheses.refresh()
+      setReviewId(null); setReviewNotes(''); hypotheses.refresh()
     } catch (error) { setError(errorMessage(error)) } finally { setBusy(false) }
   }
   return <section className="analysis-panel mt-5 border-t border-border pt-5" aria-label="Анализ объявления">
@@ -70,12 +72,14 @@ export function AnalysisPanel({ adId }: { adId: string }) {
       {run.status === 'succeeded' && Boolean(run.extraction?.mentionedComplexes.length) && <MatchingCandidates adId={adId} runId={run.id} />}
       {run.status === 'failed' && <p>Результат не сохранён как гипотеза. Код: {run.errorCode}</p>}</details>)}
     {runs.data?.nextCursor && <p className="form-hint">Показаны первые 100 запусков по ID. Полная история доступна в журнале ЖК.</p>}
-    <Button size="sm" variant="outline" disabled={busy} onClick={() => { runs.refresh(); hypotheses.refresh(); ad.refresh() }}>Обновить результаты</Button>
+    <Button size="sm" variant="outline" disabled={busy} onClick={() => { setError(null); runs.refresh(); hypotheses.refresh(); ad.refresh() }}>Обновить результаты</Button>
     {hypotheses.loading ? <LoadingState /> : hypotheses.error ? <ErrorState message={hypotheses.error} retry={hypotheses.refresh} /> : hypotheses.data?.items.map((item) => <article className="evidence-card mt-4" key={item.id}>
       <strong>{item.code} · {factorLabels[item.code]}</strong><p className="text-sm">{{ proposed: 'AI-гипотеза — не подтверждено', accepted: 'Принято для проверки доказательства', rejected: 'Гипотеза отклонена' }[item.status]}</p>
       <blockquote>{item.quote}</blockquote><p>{item.explanation}</p><p className="form-hint">Модель: {item.model}. {item.confidence !== null && `Самооценка модели: ${Math.round(item.confidence * 100)}% (не вероятность нарушения).`}</p>
-      {item.status === 'proposed' && <Button size="sm" variant="outline" onClick={() => setReviewId(item.id)}>Рассмотреть гипотезу</Button>}
-      {reviewId === item.id && <form className="editor-form" onSubmit={(event) => review(event, item)}><EditorHeading>Рассмотрение гипотезы {item.code}</EditorHeading><FormField label="Решение по гипотезе"><select name="decision"><option value="accepted">Принять к проверке</option><option value="rejected">Отклонить</option></select></FormField><FormField label="Обоснование"><textarea name="notes" required maxLength={2000} /></FormField><div className="form-actions"><Button disabled={busy}>Сохранить решение</Button><Button type="button" variant="outline" disabled={busy} onClick={() => setReviewId(null)}>Отмена</Button></div></form>}
+      {item.status === 'proposed' && <Button size="sm" variant="outline" disabled={busy} onClick={() => { if (reviewId !== item.id) { setReviewNotes(''); setReviewDecision('accepted') }; setReviewId(item.id) }}>Рассмотреть гипотезу</Button>}
+      {reviewId === item.id && (item.status === 'proposed'
+        ? <form className="editor-form" onSubmit={(event) => review(event, item)}><EditorHeading>Рассмотрение гипотезы {item.code}</EditorHeading><FormField label="Решение по гипотезе"><select name="decision" disabled={busy} value={reviewDecision} onChange={event => setReviewDecision(event.target.value)}><option value="accepted">Принять к проверке</option><option value="rejected">Отклонить</option></select></FormField><FormField label="Обоснование"><textarea name="notes" required maxLength={2000} disabled={busy} value={reviewNotes} onChange={event => setReviewNotes(event.target.value)} /></FormField><div className="form-actions"><Button disabled={busy}>Сохранить решение</Button><Button type="button" variant="outline" disabled={busy} onClick={() => setReviewId(null)}>Отмена</Button></div></form>
+        : <p className="inline-notice">Гипотеза уже рассмотрена. Несохранённый текст вашего решения: {reviewNotes || 'не введён'}. Повторное решение не отправлено.</p>)}
       {item.status === 'accepted' && <p className="inline-notice">Далее откройте ЖК → Доказательства, проверьте источник и отдельно подтвердите фактор в панели R1–R6. Балл пока не изменён.</p>}
       <Link className="detail-link mt-3" to={`/complexes/${ad.data?.complexId}?tab=evidence&source=${item.evidenceId}`}>К доказательству →</Link>
     </article>)}
