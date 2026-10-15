@@ -7,6 +7,7 @@ import { errorMessage, factorLabels, formatDate } from '@/lib/labels'
 import { useApiQuery } from '@/lib/useApiQuery'
 import type { Advertisement, Page } from '@/lib/types'
 import { EvidenceFile } from '@/features/complexes/EvidenceFile'
+import { MatchingCandidates } from './MatchingCandidates'
 
 interface Hypothesis { id: string; code: 'R2' | 'R3'; quote: string; explanation: string; confidence: number | null;
   status: 'proposed' | 'accepted' | 'rejected'; evidenceId: string; model: string; reviewer: string | null; version: number }
@@ -65,6 +66,7 @@ export function AnalysisPanel({ adId }: { adId: string }) {
     {runs.error && <ErrorState message={runs.error} retry={runs.refresh} />}
     {runs.data?.items.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((run) => <details className="my-3 text-sm" key={run.id}><summary>{formatDate(run.createdAt)} · {run.model} · {{ running: 'Запрос начат — обновите результат', failed: 'Анализ не выполнен', succeeded: 'Анализ завершён' }[run.status]}</summary>
       {run.extraction && <div className="inline-notice"><p>{run.extraction.uncertainty}</p><p>Названия из источника: {run.extraction.mentionedComplexes.join(', ') || 'не найдены'}. Привязку к ЖК выбирает аналитик.</p><p>Условия оплаты: {run.extraction.paymentTerms.join('; ') || 'не выделены'}.</p>{!run.extraction.hypotheses.length && <p>Поддержанных гипотез нет. Это не подтверждение безопасности объекта.</p>}</div>}
+      {run.status === 'succeeded' && Boolean(run.extraction?.mentionedComplexes.length) && <MatchingCandidates adId={adId} runId={run.id} />}
       {run.status === 'failed' && <p>Результат не сохранён как гипотеза. Код: {run.errorCode}</p>}</details>)}
     {runs.data?.nextCursor && <p className="form-hint">Показаны первые 100 запусков по ID. Полная история доступна в журнале ЖК.</p>}
     <Button size="sm" variant="outline" disabled={busy} onClick={() => { runs.refresh(); hypotheses.refresh(); ad.refresh() }}>Обновить результаты</Button>

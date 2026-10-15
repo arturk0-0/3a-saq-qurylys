@@ -10,9 +10,11 @@ from app.core.errors import AppError
 from app.core.firebase import FirebaseRuntime
 from app.models.analysis import AnalysisRequest, HypothesisDecision
 from app.models.common import Identifier
+from app.schemas.matching import MatchingCandidates
 from app.services.analysis import AnalysisService
 from app.services.files import MAX_UPLOAD, FileService, FirebaseFileStorage
 from app.services.gemini import GeminiClient
+from app.services.matching import match_candidates
 
 router = APIRouter(prefix="/api/v1", tags=["analysis"])
 
@@ -71,6 +73,16 @@ def hypotheses(
         limit=limit,
         extra_filters=[("advertisementId", "==", record_id)],
     )
+
+
+@router.get("/advertisements/{record_id}/matching-candidates", response_model=MatchingCandidates)
+def matching_candidates(
+    record_id: Identifier,
+    run_id: Identifier,
+    user: CurrentUser,
+    workspace: Workspace,
+):
+    return match_candidates(workspace, record_id, run_id)
 
 
 @router.post("/hypotheses/{record_id}/decision")

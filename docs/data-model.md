@@ -16,6 +16,12 @@ R1–R6 встроены в документ ЖК: так версия карт�
 
 ## Контракты
 
+Дополнение AI-05: необязательное поле ЖК `aliases` — до 20 явно заданных командой
+альтернативных названий, каждое до 500 символов. При чтении старых документов
+значение по умолчанию `[]`; миграция и перезапись существующего seed не нужны.
+`POST /complexes` принимает это поле. AI не редактирует его. Расширение проверяется
+в общей frontend/backend ветке и остаётся предметом командного review перед merge.
+
 - `GET /complexes?q=&city=&zone=&sort=risk&limit=50&cursor=0` — список, total,
   nextCursor. Поиск и сортировка ограничены 500 записями DEMO-каталога после
   фильтра города; `catalogLimited` сообщает достижение границы. Для большого
@@ -37,6 +43,13 @@ R1–R6 встроены в документ ЖК: так версия карт�
   основание нельзя совместить с подтверждённым R1.
 - `GET /complexes/{id}/history` — история по убыванию createdAt, ID как tie-breaker.
   Перед запуском развернуть индексы из firestore.indexes.json.
+- `GET /advertisements/{id}/matching-candidates?run_id={id}` — read-only кандидаты
+  для названий из сохранённого завершённого AI-запуска этого объявления. Чужой
+  ad/run — 422, незавершённый run — 409, нет доступа/DEMO-scope — стандартный отказ.
+  Возвращает runId, advertisementId, currentComplexId, catalogLimited и groups:
+  mention, ambiguous, candidateCount, candidatesLimited, candidates (complexId,
+  name, city, matchedBy=name|alias|partial_name, matchedName, demo). Не имеет поля
+  выбранного/подтверждённого совпадения и ничего не пишет в Firestore.
 
 Конфликт версии возвращает 409, неверный ввод 422; обновите карточку и пересмотрите
 решение. UI никогда не присылает reviewer и не считает баллы самостоятельно.

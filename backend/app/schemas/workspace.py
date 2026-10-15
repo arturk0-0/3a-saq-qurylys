@@ -25,6 +25,7 @@ class AdvertisementCreate(DomainModel):
 
 class ComplexCreate(DomainModel):
     name: ShortText
+    aliases: list[ShortText] = Field(default_factory=list, max_length=20)
     city: Literal["Усть-Каменогорск", "Риддер", "Алтай", "Серебрянск", "Шемонаиха", "Зайсан"]
     address: ShortText
     developer_id: Identifier

@@ -36,7 +36,8 @@ missing code. Do not reimplement these modules from scratch.
 | FE-04 map; FE-12 keyboard tabs / fallback checks | `feat/FE-04-complex-map` · Codex | Feature-branch checks and review before merge |
 | QA-04 diagnostics; AI-06/08 reproducible evaluation inputs/runner | `feat/QA-04-connection-diagnostics` · Codex; based on map branch | Live credentials and measured responses still missing; merge map first |
 | FE-12 form failures, progress-source rejection, overlapping map pins | `fix/FE-12-review-form-recovery` · Codex; based on diagnostics branch | 134 backend / 16 frontend tests; fixture-backed browser flow passed; review still required |
-| AI-05 matching candidates, AI-06/08 measured live extraction | Not complete | Do not treat literal extracted names as candidate matching or mocked output as live measurements |
+| AI-05 read-only name/alias candidates and human comparison | `feat/AI-05-complex-candidates` · Codex; includes preceding three branches | Review additive aliases/API contract; no automatic relinking; live extraction still unverified |
+| AI-06/08 measured live extraction | Not complete | Do not treat mocked output or evaluation inputs as live measurements |
 | LINK-01–05, DRONE tasks, release/publication | Not started | Mandatory live workflow and release gates first |
 
 The implementation table is not a claim that release gates or all task acceptance
