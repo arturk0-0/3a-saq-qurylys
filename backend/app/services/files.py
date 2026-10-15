@@ -9,6 +9,7 @@ from google.api_core.exceptions import GoogleAPICallError
 from PIL import Image, UnidentifiedImageError
 
 from app.core.errors import AppError, Conflict, IntegrationUnavailable
+from app.core.images import strict_image_validation
 from app.models.auth import Principal
 from app.models.common import utc_now
 from app.models.entities import Advertisement, Evidence
@@ -23,7 +24,7 @@ def validate_image(data: bytes, media_type: str) -> None:
     if not data or len(data) > MAX_UPLOAD:
         raise AppError(413, "FILE_SIZE", "Image must be between 1 byte and 6 MiB")
     try:
-        with warnings.catch_warnings():
+        with strict_image_validation(), warnings.catch_warnings():
             warnings.simplefilter("error", Image.DecompressionBombWarning)
             with Image.open(io.BytesIO(data)) as image:
                 if MEDIA.get(image.format) != media_type or image.width * image.height > 20_000_000:
