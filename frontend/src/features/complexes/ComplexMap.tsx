@@ -30,29 +30,47 @@ export function ComplexMap({ complexes }: { complexes: MapRecord[] }) {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).on('tileerror', () => { if (!disposed) setTileFailed(true) }).addTo(map)
         const bounds: [number, number][] = []
+        const groups = new Map<string, MapRecord[]>()
         for (const item of located) {
+          const key = `${item.coordinates!.latitude},${item.coordinates!.longitude}`
+          groups.set(key, [...(groups.get(key) || []), item])
+        }
+        for (const records of groups.values()) {
+          records.sort((a, b) => b.risk.score - a.risk.score || a.id.localeCompare(b.id))
+          const item = records[0]
           const point: [number, number] = [item.coordinates!.latitude, item.coordinates!.longitude]
           bounds.push(point)
-          const label = `${item.name}: ${item.risk.score}, ${zoneLabels[item.risk.zone]}`
+          const label = `${item.name}: ${item.risk.score}, ${zoneLabels[item.risk.zone]}${records.length > 1 ? `; объектов на метке: ${records.length}` : ''}`
           const pin = document.createElement('span')
           pin.className = `map-pin map-pin-${item.risk.zone.toLowerCase()}`
           pin.textContent = String(item.risk.score)
+          if (records.length > 1) {
+            const count = document.createElement('small')
+            count.className = 'map-pin-count'
+            count.textContent = String(records.length)
+            pin.append(count)
+          }
           const marker = L.marker(point, {
-            title: label, alt: label,
+            title: label, alt: label, zIndexOffset: item.risk.score * 10,
             icon: L.divIcon({ className: 'complex-map-marker', iconSize: [38, 38], iconAnchor: [19, 19],
               html: pin }),
           })
           marker.on('add', () => marker.getElement()?.setAttribute('aria-label', label)).addTo(map)
           // Source names are untrusted data: never interpolate them into popup HTML.
           const popup = document.createElement('div')
-          const title = document.createElement('strong')
-          title.textContent = item.name
-          const detail = document.createElement('p')
-          detail.textContent = `${item.city} · ${zoneLabels[item.risk.zone]} · ${item.risk.score}`
-          const link = document.createElement('a')
-          link.href = `/complexes/${encodeURIComponent(item.id)}`
-          link.textContent = 'Открыть карточку'
-          popup.append(title, detail, link)
+          for (const record of records) {
+            const section = document.createElement('section')
+            const title = document.createElement('strong')
+            title.textContent = record.name
+            const detail = document.createElement('p')
+            detail.textContent = `${record.city} · ${zoneLabels[record.risk.zone]} · ${record.risk.score}`
+            const link = document.createElement('a')
+            link.href = `/complexes/${encodeURIComponent(record.id)}`
+            link.textContent = 'Открыть карточку'
+            if (records.length > 1) link.setAttribute('aria-label', `Открыть карточку: ${record.name}`)
+            section.append(title, detail, link)
+            popup.append(section)
+          }
           marker.bindPopup(popup)
         }
         map.fitBounds(bounds, { padding: [32, 32], maxZoom: 13 })
@@ -76,6 +94,6 @@ export function ComplexMap({ complexes }: { complexes: MapRecord[] }) {
     {state === 'loading' && <p role="status" className="map-caption">Загружаем карту…</p>}
     {(state === 'failed' || tileFailed) && <p role="status" className="inline-notice">{state === 'failed' ? 'Карта недоступна.' : 'Не удалось загрузить часть подложки OpenStreetMap.'} Все объекты доступны в списке ниже.</p>}
     <div ref={container} className={`complex-map ${state === 'failed' ? 'hidden' : ''}`} role="region" aria-label="Карта жилых комплексов ВКО" />
-    <p className="map-caption">Метки показывают балл с сервера. Tab — выбор метки, Enter — сведения об объекте. Масштаб меняется кнопками +/−.</p>
+    <p className="map-caption">На общей точке показан наибольший балл и число ЖК; все карточки доступны в метке. Tab — выбор метки, Enter — сведения. Масштаб меняется кнопками +/−.</p>
   </div>
 }

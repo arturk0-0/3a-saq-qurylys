@@ -27,7 +27,9 @@ body { margin: 0; font-family: Inter, "Segoe UI", system-ui, sans-serif; color: 
 .complex-map-section { padding: 0 22px 16px; }
 .complex-map { height: 360px; width: 100%; border: 1px solid var(--border); border-radius: 10px; z-index: 0; }
 .map-caption { margin: 10px 0; color: var(--muted-foreground); font-size: 12px; }
-.map-pin { display: grid; place-items: center; width: 38px; height: 38px; border: 2px solid white; border-radius: 50%; font: 700 13px/1 system-ui, sans-serif; box-shadow: 0 2px 7px #0005; }
+.map-pin { position: relative; display: grid; place-items: center; width: 38px; height: 38px; border: 2px solid white; border-radius: 50%; font: 700 13px/1 system-ui, sans-serif; box-shadow: 0 2px 7px #0005; }
+.map-pin-count { position: absolute; top: -8px; right: -8px; background: #172b3a; color: #fff; border: 1px solid white; border-radius: 12px; min-width: 18px; padding: 3px; font-size: 10px; }
+.leaflet-popup-content section + section { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
 .map-pin-red { color: #fff; background: #b42318; }
 .map-pin-yellow { color: #3d2c00; background: #f6c44b; }
 .map-pin-green { color: #fff; background: #146b4b; }

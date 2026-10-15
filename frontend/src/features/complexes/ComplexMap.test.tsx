@@ -29,3 +29,14 @@ it('shows the server score, escapes source names, and survives tile outages and 
   await waitFor(() => expect(screen.getByRole('button', { name: `${record.name}: 70, Высокий приоритет` })).toBeInTheDocument())
   expect(screen.queryByRole('button', { name: `${record.name}: 35, Требует проверки` })).not.toBeInTheDocument()
 })
+
+it('keeps a high-priority complex visible when multiple records share coordinates', async () => {
+  const high = { ...record, id: 'high', name: 'DEMO — Приоритетный', risk: { score: 70, zone: 'RED' as const, factors: [] } }
+  render(<ComplexMap complexes={[record, high]} />)
+  const marker = await screen.findByRole('button', { name: /DEMO — Приоритетный: 70.*объектов на метке: 2/ })
+  expect(document.querySelectorAll('.leaflet-marker-icon')).toHaveLength(1)
+  expect(marker.querySelector('.map-pin')).toHaveClass('map-pin-red')
+  fireEvent.click(marker)
+  expect(screen.getByRole('link', { name: `Открыть карточку: ${record.name}` })).toHaveAttribute('href', '/complexes/demo-a')
+  expect(screen.getByRole('link', { name: `Открыть карточку: ${high.name}` })).toHaveAttribute('href', '/complexes/high')
+})

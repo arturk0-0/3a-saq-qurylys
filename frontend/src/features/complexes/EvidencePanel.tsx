@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { EmptyState, ErrorState, FormField, LoadingState, SourceLink, StatusBadge } from '@/components/WorkspaceUI'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { errorMessage, formatDate } from '@/lib/labels'
+import { errorMessage, formatDate, localDateTime } from '@/lib/labels'
 import { useApiQuery } from '@/lib/useApiQuery'
 import type { Advertisement, Complex, Evidence, Page } from '@/lib/types'
 import { EvidenceFile } from './EvidenceFile'
@@ -36,7 +36,9 @@ function EvidenceForm({ complexId, onSaved, onCancel }: { complexId: string; onS
   return <form className="editor-form" onSubmit={submit}><h2>Добавить доказательство</h2>
     <p className="form-hint">Новая запись будет иметь статус «Нет подтверждения». Проверка и решение по фактору — отдельные действия.</p>
     <FormField label="Тип источника"><select name="type" defaultValue="document">{Object.entries(evidenceTypes).filter(([key]) => key !== 'screenshot').map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></FormField>
-    <FormField label="Связанное объявление"><select name="advertisementId" defaultValue=""><option value="">Не связано с объявлением</option>{ads.data?.items.map((ad) => <option key={ad.id} value={ad.id}>{ad.account} · {ad.text.slice(0, 55)}</option>)}</select></FormField>
+    <FormField label="Связанное объявление"><select name="advertisementId" defaultValue="" disabled={ads.loading || Boolean(ads.error)}><option value="">Не связано с объявлением</option>{ads.data?.items.map((ad) => <option key={ad.id} value={ad.id}>{ad.account} · {ad.text.slice(0, 55)}</option>)}</select></FormField>
+    {ads.error && <ErrorState message={ads.error} retry={ads.refresh} />}
+    {ads.data?.nextCursor && <p className="form-hint">Показаны первые 100 объявлений по объекту.</p>}
     <FormField label="Ссылка на источник"><input name="sourceUrl" type="url" placeholder="https://…" /></FormField>
     <FormField label="Реквизиты документа / источник"><input name="sourceReference" maxLength={2000} placeholder="Номер, дата, автор документа" /></FormField>
     <FormField label="Точная цитата / выдержка"><textarea name="excerpt" required rows={4} maxLength={20000} /></FormField>
@@ -50,6 +52,7 @@ export function EvidenceReviewForm({ item, onSaved, onCancel }: { item: Evidence
   const { api } = useAuth()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [decision, setDecision] = useState<'confirmed' | 'rejected'>('confirmed')
   const booleanFields: [keyof Evidence, string][] = item.type === 'legal_basis_review'
     ? [['applicableBasesChecked', 'Проверены все применимые правовые основания, включая гарантию'], ['legalAbsenceVerified', 'Документально установлено отсутствие применимых оснований']]
     : ['advertisement', 'screenshot'].includes(item.type)
@@ -76,12 +79,12 @@ export function EvidenceReviewForm({ item, onSaved, onCancel }: { item: Evidence
     {item.type === 'legal_basis_review' && <p className="inline-notice">Отсутствие записи в реестре или отдельного разрешения не доказывает R1. Нужна документальная проверка применимых оснований.</p>}
     {booleanFields.map(([field, label]) => <label className="checkbox-field" key={field}><input type="checkbox" name={field} defaultChecked={Boolean(item[field])} /><span>{label}</span></label>)}
     {item.type === 'progress_report' && <div className="form-grid">
-      <FormField label="Заявленная готовность, %"><input name="claimedPercent" type="number" min={0} max={100} defaultValue={item.claimedPercent ?? ''} required /></FormField>
-      <FormField label="Проверенная готовность, %"><input name="verifiedPercent" type="number" min={0} max={100} defaultValue={item.verifiedPercent ?? ''} required /></FormField>
-      <FormField label="Дата заявления"><input name="claimedAt" type="datetime-local" required /></FormField><FormField label="Дата проверки"><input name="verifiedAt" type="datetime-local" required /></FormField>
-      <FormField label="Источник заявления"><input name="claimedSource" defaultValue={item.claimedSource} required /></FormField><FormField label="Источник проверки"><input name="verifiedSource" defaultValue={item.verifiedSource} required /></FormField>
+      <FormField label="Заявленная готовность, %"><input name="claimedPercent" type="number" min={0} max={100} defaultValue={item.claimedPercent ?? ''} required={decision === 'confirmed'} /></FormField>
+      <FormField label="Проверенная готовность, %"><input name="verifiedPercent" type="number" min={0} max={100} defaultValue={item.verifiedPercent ?? ''} required={decision === 'confirmed'} /></FormField>
+      <FormField label="Дата заявления"><input name="claimedAt" type="datetime-local" defaultValue={localDateTime(item.claimedAt)} required={decision === 'confirmed'} /></FormField><FormField label="Дата проверки"><input name="verifiedAt" type="datetime-local" defaultValue={localDateTime(item.verifiedAt)} required={decision === 'confirmed'} /></FormField>
+      <FormField label="Источник заявления"><input name="claimedSource" defaultValue={item.claimedSource} required={decision === 'confirmed'} /></FormField><FormField label="Источник проверки"><input name="verifiedSource" defaultValue={item.verifiedSource} required={decision === 'confirmed'} /></FormField>
     </div>}
-    <FormField label="Результат проверки"><select name="decision"><option value="confirmed">Подтвердить источник и отмеченные факты</option><option value="rejected">Отклонить источник</option></select></FormField>
+    <FormField label="Результат проверки"><select name="decision" value={decision} onChange={(event) => setDecision(event.target.value as 'confirmed' | 'rejected')}><option value="confirmed">Подтвердить источник и отмеченные факты</option><option value="rejected">Отклонить источник</option></select></FormField>
     <FormField label="Обоснование решения"><textarea name="notes" required maxLength={5000} rows={3} /></FormField>
     <p className="form-hint">Это действие ещё не подтверждает фактор риска. Решение по фактору принимается в панели R1–R6.</p>
     {error && <ErrorState message={error} />}

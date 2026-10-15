@@ -11,7 +11,7 @@ import { AnalysisPanel } from './AnalysisPanel'
 
 export function AdvertisementForm({ complexId, onSaved, onCancel }: { complexId?: string; onSaved: () => void; onCancel: () => void }) {
   const { api } = useAuth()
-  const { data } = useApiQuery<Page<Complex>>(complexId ? null : '/api/v1/complexes?limit=100&sort=name')
+  const complexes = useApiQuery<Page<Complex>>(complexId ? null : '/api/v1/complexes?limit=100&sort=name')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -28,14 +28,17 @@ export function AdvertisementForm({ complexId, onSaved, onCancel }: { complexId?
   }
   return <form className="editor-form" onSubmit={submit}><h2>Новое объявление</h2>
     <p className="form-hint">Сохраните оригинальный текст и ссылку. Оценка факторов выполняется отдельно.</p>
-    {!complexId && <FormField label="Жилой комплекс"><select name="complexId" required defaultValue=""><option value="" disabled>Выберите ЖК</option>{data?.items.map((row) => <option value={row.id} key={row.id}>{row.name}</option>)}</select></FormField>}
+    {!complexId && <><FormField label="Жилой комплекс"><select name="complexId" required defaultValue="" disabled={complexes.loading || Boolean(complexes.error)}><option value="" disabled>{complexes.loading ? 'Загружаем ЖК…' : 'Выберите ЖК'}</option>{complexes.data?.items.map((row) => <option value={row.id} key={row.id}>{row.name}</option>)}</select></FormField>
+      {complexes.error && <ErrorState message={complexes.error} retry={complexes.refresh} />}
+      {!complexes.loading && !complexes.error && !complexes.data?.items.length && <p className="inline-notice">В реестре нет ЖК. Администратор должен загрузить DEMO-набор.</p>}
+      {complexes.data?.nextCursor && <p className="form-hint">Показаны первые 100 ЖК. Нужный объект можно найти в реестре и добавить объявление из его карточки.</p>}</>}
     <div className="form-grid"><FormField label="Площадка"><input name="platform" required maxLength={500} placeholder="Например, Instagram" /></FormField>
       <FormField label="Аккаунт / автор"><input name="account" required maxLength={500} /></FormField></div>
     <FormField label="Оригинальная ссылка"><input name="sourceUrl" type="url" required placeholder="https://…" /></FormField>
     <FormField label="Дата публикации" hint="Введите время в часовом поясе вашего компьютера."><input name="publishedAt" type="datetime-local" required /></FormField>
     <FormField label="Текст объявления"><textarea name="text" required maxLength={20000} rows={5} placeholder="Вставьте текст без изменений" /></FormField>
     {error && <ErrorState message={error} />}
-    <div className="form-actions"><Button type="submit" disabled={busy}>{busy ? 'Сохраняем…' : 'Сохранить объявление'}</Button><Button type="button" variant="outline" disabled={busy} onClick={onCancel}>Отмена</Button></div>
+    <div className="form-actions"><Button type="submit" disabled={busy || (!complexId && (complexes.loading || Boolean(complexes.error) || !complexes.data?.items.length))}>{busy ? 'Сохраняем…' : 'Сохранить объявление'}</Button><Button type="button" variant="outline" disabled={busy} onClick={onCancel}>Отмена</Button></div>
   </form>
 }
 

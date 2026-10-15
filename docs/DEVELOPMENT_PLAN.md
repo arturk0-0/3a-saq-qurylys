@@ -35,6 +35,7 @@ missing code. Do not reimplement these modules from scratch.
 | QA-01–03, DOC-01–04 | `main` at `0f7c23a` | CI result via GitHub UI; live AI measurements and clean-device run |
 | FE-04 map; FE-12 keyboard tabs / fallback checks | `feat/FE-04-complex-map` · Codex | Feature-branch checks and review before merge |
 | QA-04 diagnostics; AI-06/08 reproducible evaluation inputs/runner | `feat/QA-04-connection-diagnostics` · Codex; based on map branch | Live credentials and measured responses still missing; merge map first |
+| FE-12 form failures, progress-source rejection, overlapping map pins | `fix/FE-12-review-form-recovery` · Codex; based on diagnostics branch | 134 backend / 16 frontend tests; fixture-backed browser flow passed; review still required |
 | AI-05 matching candidates, AI-06/08 measured live extraction | Not complete | Do not treat literal extracted names as candidate matching or mocked output as live measurements |
 | LINK-01–05, DRONE tasks, release/publication | Not started | Mandatory live workflow and release gates first |
 

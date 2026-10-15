@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { DemoBadge, EmptyState, ErrorState, FormField, LoadingState, PageHeading } from '@/components/WorkspaceUI'
 import { AdvertisementCard, AdvertisementForm } from '@/features/advertisements/AdvertisementsPage'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { basisLabels, errorMessage, formatDate, stageLabels } from '@/lib/labels'
+import { basisLabels, errorMessage, formatDate, localDateTime, stageLabels } from '@/lib/labels'
 import { useApiQuery } from '@/lib/useApiQuery'
 import type { Advertisement, AuditEvent, Complex, Page } from '@/lib/types'
 import { EvidencePanel } from './EvidencePanel'
@@ -49,7 +49,7 @@ function DocumentsPanel({ complex_, onChanged }: { complex_: Complex; onChanged:
       <FormField label="Тип основания"><select name="type" defaultValue={basis.type}>{Object.entries(basisLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></FormField>
       <FormField label="Статус проверки"><select name="status" defaultValue={basis.status}><option value="unknown">Не проверено</option><option value="confirmed">Подтверждено</option><option value="disproved">Опровергнуто</option></select></FormField>
     </div><FormField label="Реквизиты"><input name="reference" defaultValue={basis.reference} maxLength={500} /></FormField><FormField label="Источник проверки"><textarea name="source" defaultValue={basis.source} rows={3} maxLength={2000} /></FormField>
-      <FormField label="Действует до (если указано)"><input name="validUntil" type="datetime-local" defaultValue={basis.validUntil ? new Date(new Date(basis.validUntil).getTime() - new Date(basis.validUntil).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''} /></FormField>
+      <FormField label="Действует до (если указано)"><input name="validUntil" type="datetime-local" defaultValue={localDateTime(basis.validUntil)} /></FormField>
       {error && <ErrorState message={error} />}<div className="form-actions"><Button disabled={busy}>Сохранить проверку</Button><Button type="button" variant="outline" onClick={() => setEditing(false)}>Отмена</Button></div></form>}
   </div>
 }
