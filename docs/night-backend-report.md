@@ -71,7 +71,8 @@ Frontend независимо ведёт другой участник. Main и 
 
 ## Итог проверки
 
-- Backend: **203 passed**, Ruff `app tests` и compileall прошли. Один существующий
+- Backend: **203 passed**, Ruff `app tests`, `ruff format --check .` (65 файлов)
+  и compileall прошли. Один существующий
   StarletteDeprecationWarning о httpx TestClient; зависимости/lockfile не менялись.
 - Docker build прошёл с frozen lockfile. Первая попытка не имела доступа к
   deb.debian.org:80 из build sandbox; повтор со штатными proxy build args/host
@@ -115,6 +116,7 @@ Frontend независимо ведёт другой участник. Main и 
 cd backend
 uv run --frozen pytest -q
 uv run --frozen ruff check app tests
+uv run --frozen ruff format --check .
 uv run --frozen python -m compileall -q app
 cd ..
 docker build --tag saq-backend-reliability:night backend
@@ -158,3 +160,9 @@ gcloud run services update saq-qurylys-api --region=europe-west1 --image="$SAQ_I
 в GitHub/`git rev-parse HEAD`; документация и correlation log добавлены следующим
 коммитом. Следующее действие — review/ручная облачная проверка, не новая реализация
 уже существующих модулей по старым незакрытым чекбоксам.
+
+PR создан: https://github.com/arturk0-0/3a-saq-qurylys/pull/1
+(base `feat/DEPLOY-01-hosting-cloud-run`, head `fix/backend-demo-reliability`).
+Результат CI смотреть в Checks этого PR; локальные проверки выше не заменяют CI
+или второго reviewer. GitHub API создания PR в этой сессии доступен, в отличие
+от исторического ограничения в WORK_LOG. Статус main не менялся.
