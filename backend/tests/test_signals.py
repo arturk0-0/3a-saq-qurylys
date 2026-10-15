@@ -151,3 +151,64 @@ def test_non_demo_signal_is_hidden(workspace):
     store.documents["signals"][signal["id"]]["demo"] = False
     assert client.get(f"/api/v1/signals/{signal['id']}/report").status_code == 404
     assert client.get("/api/v1/signals").json()["items"] == []
+
+
+def test_history_pages_keep_ties_scope_and_all_decisions(workspace):
+    client, store = workspace
+    first = create(client)
+    second = create(client, "demo-complex-04")
+    pending = decide(client, first, "submit").json()
+    returned = decide(client, pending, "return").json()
+    pending = decide(client, returned, "submit").json()
+    decide(client, pending, "confirm")
+    # Firestore tie-break is createdAt DESC, document name ASC, not UUID time order.
+    for row in store.documents["auditLogs"].values():
+        row["createdAt"] = "2026-10-15T12:00:00+00:00"
+    hidden = deepcopy(next(iter(store.documents["auditLogs"].values())))
+    hidden.update(id="hidden-audit", demo=False, entityId=first["id"])
+    store.documents["auditLogs"][hidden["id"]] = hidden
+    before = deepcopy(store.documents)
+    cursor, events = None, []
+    for _ in range(4):
+        response = client.get(
+            f"/api/v1/signals/{first['id']}/history",
+            params={"limit": 2, **({"cursor": cursor} if cursor else {})},
+        )
+        assert response.status_code == 200
+        page = response.json()
+        events.extend(page["items"])
+        cursor = page["nextCursor"]
+        if cursor is None:
+            break
+    assert cursor is None and len(events) == 5
+    ids = [row["id"] for row in events]
+    assert ids == sorted(set(ids))
+    assert all(row["entityId"] == first["id"] and row["demo"] for row in events)
+    assert {row["details"].get("to") for row in events} == {
+        None,
+        "pending_review",
+        "returned",
+        "confirmed",
+    }
+    assert (
+        client.get(f"/api/v1/signals/{second['id']}/history", params={"cursor": ids[0]}).status_code
+        == 409
+    )
+    assert (
+        client.get(
+            f"/api/v1/signals/{first['id']}/history", params={"cursor": "deleted-row"}
+        ).status_code
+        == 409
+    )
+    assert store.documents == before
+
+
+@pytest.mark.parametrize("suffix", ["history", "revisions/1", "report", "report?format=html"])
+def test_missing_or_hidden_signal_cannot_expose_related_data(workspace, suffix):
+    client, store = workspace
+    signal = create(client)
+    store.documents["signals"][signal["id"]]["demo"] = False
+    before = deepcopy(store.documents)
+    assert client.get(f"/api/v1/signals/{signal['id']}/{suffix}").status_code == 404
+    assert client.get(f"/api/v1/signals/missing-signal/{suffix}").status_code == 404
+    assert store.documents == before

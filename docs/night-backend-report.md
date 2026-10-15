@@ -38,6 +38,21 @@ Frontend независимо ведёт другой участник. Main и 
    Readiness прямо говорит: успешная metadata не подтверждает generateContent.
 5. Проверка этапа: 61 passed (Gemini errors / analysis / readiness / evaluation),
    Ruff по изменённым файлам прошёл. Только MockTransport/тестовые адаптеры.
-6. Следующее: Firestore SDK query/cursor/index проверки, сигналы/PDF и deployment.
+6. Проверены реальные protobuf-запросы Firestore SDK с заменённым stream RPC:
+   обе истории (entityId/complexId), DEMO/non-DEMO фильтры, createdAt DESC +
+   document name ASC, курсор из даты и DocumentReference, limit+1. Все четыре
+   запроса соответствуют существующим определениям `firestore.indexes.json`;
+   лишние индексы не добавлялись. Это не проверка фактического deployment индексов.
+7. Исправлен подтверждённый edge case: курсор на audit-документ без createdAt
+   раньше давал KeyError/500, теперь 409 с предложением обновить страницу.
+   Удалённый курсор, другой сигнал или non-DEMO scope также отклоняются.
+   Missing/building-index FailedPrecondition получает `FIRESTORE_INDEX_REQUIRED`
+   (503), без provider body/console URL. Другие precondition/permission/network
+   ошибки не объявляются отсутствием индекса.
+8. Добавлены API-проверки tie timestamps и страниц без повторов, изоляции историй,
+   неизменности аудита при чтении, отсутствующих/скрытых сигналов, приватности
+   revisions/report/history, typed index error с requestId/no-store и auth.
+   Проверка этапа: 52 passed (Firestore queries / workspace / signals), Ruff прошёл.
+9. Следующее: дополнительные негативные проверки PDF/Storage и deployment-инструкции.
 
 Промежуточный отчёт. Ни новые исправления, ни release gates пока не завершены.

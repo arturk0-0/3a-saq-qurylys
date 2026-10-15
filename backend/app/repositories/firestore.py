@@ -3,11 +3,11 @@ import re
 from collections.abc import Callable
 from typing import Any
 
-from google.api_core.exceptions import AlreadyExists, GoogleAPICallError
+from google.api_core.exceptions import AlreadyExists, FailedPrecondition, GoogleAPICallError
 from google.cloud import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
-from app.core.errors import Conflict, IntegrationUnavailable
+from app.core.errors import AppError, Conflict, IntegrationUnavailable
 from app.repositories.store import Document, T, UnitOfWork
 
 logger = logging.getLogger(__name__)
@@ -27,6 +27,20 @@ COLLECTIONS = frozenset(
         "usageLimits",
     }
 )
+
+
+def firestore_error(exc: GoogleAPICallError, operation: str) -> AppError:
+    # Missing/building indexes are FailedPrecondition, but not every precondition
+    # failure is about an index. Never echo the provider message or console URL.
+    if isinstance(exc, FailedPrecondition) and "requires an index" in str(exc).lower():
+        logger.error("Firestore %s failed: code=FIRESTORE_INDEX_REQUIRED", operation)
+        return AppError(
+            503,
+            "FIRESTORE_INDEX_REQUIRED",
+            "Firestore query index is missing or building; check deployment indexes",
+        )
+    logger.error("Firestore %s failed: %s", operation, type(exc).__name__)
+    return IntegrationUnavailable("Firestore")
 
 
 def validate_path(collection: str, record_id: str | None = None) -> None:
@@ -68,8 +82,7 @@ class FirestoreStore:
             snapshot = self.db.collection(collection).document(record_id).get(timeout=10)
             return snapshot.to_dict() if snapshot.exists else None
         except GoogleAPICallError as exc:
-            logger.error("Firestore read failed: %s", type(exc).__name__)
-            raise IntegrationUnavailable("Firestore") from None
+            raise firestore_error(exc, "read") from None
 
     def list(
         self,
@@ -93,15 +106,18 @@ class FirestoreStore:
             cursor = {"__name__": self.db.collection(collection).document(after_id)}
             if newest_first:
                 row = self.get(collection, after_id)
-                if not row or any(row.get(f) != v for f, _, v in filters or []):
+                if (
+                    not row
+                    or not row.get("createdAt")
+                    or any(row.get(f) != v for f, _, v in filters or [])
+                ):
                     raise Conflict("Cursor no longer exists in this query")
                 cursor["createdAt"] = row["createdAt"]
             query = query.start_after(cursor)
         try:
             return [snapshot.to_dict() for snapshot in query.limit(limit).stream(timeout=10)]
         except GoogleAPICallError as exc:
-            logger.error("Firestore query failed: %s", type(exc).__name__)
-            raise IntegrationUnavailable("Firestore") from None
+            raise firestore_error(exc, "query") from None
 
     def atomic(self, operation: Callable[[UnitOfWork], T]) -> T:
         @firestore.transactional
@@ -113,5 +129,4 @@ class FirestoreStore:
         except AlreadyExists:
             raise Conflict("Record already exists") from None
         except GoogleAPICallError as exc:
-            logger.error("Firestore transaction failed: %s", type(exc).__name__)
-            raise IntegrationUnavailable("Firestore") from None
+            raise firestore_error(exc, "transaction") from None
