@@ -44,4 +44,14 @@ describe('analyst workspace', () => {
     expect(await screen.findByText('Объявлений пока нет')).toBeInTheDocument()
     expect(api).toHaveBeenLastCalledWith('/api/v1/advertisements?limit=50', expect.any(Object))
   })
+
+  it('keeps registry records available when the map has no coordinates', async () => {
+    const api = vi.fn().mockResolvedValue({ items: [{ ...row, coordinates: null }], total: 1, nextCursor: null })
+    renderApp(api)
+    await screen.findByText('Проверочный ЖК')
+    fireEvent.click(screen.getByRole('button', { name: 'Показать карту' }))
+    expect(screen.getByRole('button', { name: 'Скрыть карту' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('status')).toHaveTextContent('нет объектов с координатами')
+    expect(screen.getByRole('link', { name: 'Карточка' })).toHaveAttribute('href', '/complexes/demo-a')
+  })
 })

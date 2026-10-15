@@ -23,3 +23,31 @@ it('opens a specific evidence link even when it is absent from the first page', 
   expect(screen.getByRole('tab', { name: 'Доказательства' })).toHaveAttribute('aria-selected', 'true')
   expect(screen.getByText('Источник, выбранный по ссылке')).toBeInTheDocument()
 })
+
+it('navigates tabs by keyboard with one tab stop and a labelled panel', async () => {
+  const complex = { id: 'c1', city: 'Риддер', name: 'DEMO — Объект', address: 'DEMO', demo: true,
+    developer: { name: 'DEMO', bin: '000000000001' }, stage: 'under_construction',
+    progress: { claimedPercent: 50, verifiedPercent: null }, factors: [],
+    risk: { score: 0, zone: 'GREEN', factors: [] } }
+  const api = vi.fn(async (path: string) => path === '/api/v1/complexes/c1' ? complex : { items: [], nextCursor: null })
+  render(<AuthContext.Provider value={{ status: 'authenticated', profile: null, error: null, api: api as ApiClient, signIn: vi.fn(), logout: vi.fn() }}>
+    <MemoryRouter initialEntries={['/complexes/c1']}><Routes><Route path="/complexes/:id" element={<ComplexDetail />} /></Routes></MemoryRouter>
+  </AuthContext.Provider>)
+  const overview = await screen.findByRole('tab', { name: 'Обзор' })
+  overview.focus()
+  fireEvent.keyDown(overview, { key: 'ArrowRight' })
+  const ads = screen.getByRole('tab', { name: 'Объявления' })
+  expect(ads).toHaveFocus()
+  expect(ads).toHaveAttribute('aria-selected', 'true')
+  expect(overview).toHaveAttribute('tabindex', '-1')
+  expect(screen.getByRole('tabpanel', { name: 'Объявления' })).toBeInTheDocument()
+  fireEvent.keyDown(ads, { key: 'End' })
+  expect(screen.getByRole('tab', { name: 'История' })).toHaveFocus()
+  fireEvent.keyDown(screen.getByRole('tab', { name: 'История' }), { key: 'ArrowRight' })
+  expect(overview).toHaveFocus()
+  fireEvent.keyDown(overview, { key: 'ArrowLeft' })
+  expect(screen.getByRole('tab', { name: 'История' })).toHaveFocus()
+  fireEvent.keyDown(screen.getByRole('tab', { name: 'История' }), { key: 'Home' })
+  expect(overview).toHaveAttribute('tabindex', '0')
+  expect(overview).toHaveFocus()
+})

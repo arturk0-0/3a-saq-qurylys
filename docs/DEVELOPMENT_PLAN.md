@@ -23,6 +23,23 @@
 
 ## 1. Plan by day / milestones
 
+### Implementation hand-off · 15 October
+
+Before taking an unchecked task, read this table and `docs/WORK_LOG.md`, then inspect
+remote branches. An unchecked box can mean **awaiting live verification/review**, not
+missing code. Do not reimplement these modules from scratch.
+
+| Implementation | Branch / merged commit | Remaining verification |
+| --- | --- | --- |
+| FE-01–03, FE-05–11; BE-01–12; RISK-01–04; AI extraction/review; signal/PDF | `main` at `0f7c23a`, including preceding feature branches | Live Firebase/Gemini, second-person review, second Windows machine |
+| QA-01–03, DOC-01–04 | `main` at `0f7c23a` | CI result via GitHub UI; live AI measurements and clean-device run |
+| FE-04 map; FE-12 keyboard tabs / fallback checks | `feat/FE-04-complex-map` · Codex | Feature-branch checks and review before merge |
+| AI-05 matching candidates, AI-06/08 measured live extraction | Not complete | Do not treat literal extracted names as candidate matching or mocked output as live measurements |
+| LINK-01–05, DRONE tasks, release/publication | Not started | Mandatory live workflow and release gates first |
+
+The implementation table is not a claim that release gates or all task acceptance
+criteria have passed. Checkboxes below retain the plan's review/merge requirements.
+
 | Date | Must be demonstrated by end of day | Main owner |
 | --- | --- | --- |
 | **14 Oct** | Repo and permissions, agreed contracts, frontend/backend skeleton, dev commands | A+B+C |

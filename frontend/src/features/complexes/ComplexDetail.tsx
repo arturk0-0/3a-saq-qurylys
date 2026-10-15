@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -77,9 +77,17 @@ export function ComplexDetail() {
   if (error) return <ErrorState message={error} retry={refresh} />
   if (!complex_) return <EmptyState title="ЖК не найден" />
   const tabs = [['overview', 'Обзор'], ['ads', 'Объявления'], ['documents', 'Документы'], ['evidence', 'Доказательства'], ['history', 'История']]
+  function navigateTabs(event: KeyboardEvent<HTMLDivElement>) {
+    const current = tabs.findIndex(([key]) => key === tab)
+    const next = { ArrowRight: (current + 1) % tabs.length, ArrowLeft: (current + tabs.length - 1) % tabs.length, Home: 0, End: tabs.length - 1 }[event.key]
+    if (next === undefined) return
+    event.preventDefault()
+    setTab(tabs[next][0])
+    event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus()
+  }
   return <><Link to="/complexes" className="back-link"><ArrowLeft size={16} /> К реестру</Link>
     <PageHeading eyebrow={`Карточка объекта · ${complex_.city}`} title={complex_.name.replace(/^DEMO — /, '')} description={complex_.address} action={<div className="flex items-center gap-4">{complex_.demo && <DemoBadge />}<Link className="detail-link" to={`/signals/new?complex=${complex_.id}`}>Создать сигнал →</Link></div>} />
-    <div className="detail-layout"><section className="panel min-w-0"><div className="tabs" role="tablist" aria-label="Разделы карточки">{tabs.map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={tab === key} aria-controls={`panel-${key}`} id={`tab-${key}`} onClick={() => setTab(key)}>{label}</button>)}</div>
+    <div className="detail-layout"><section className="panel min-w-0"><div className="tabs" role="tablist" aria-label="Разделы карточки" onKeyDown={navigateTabs}>{tabs.map(([key, label]) => <button key={key} type="button" role="tab" tabIndex={tab === key ? 0 : -1} aria-selected={tab === key} aria-controls={`panel-${key}`} id={`tab-${key}`} onClick={() => setTab(key)}>{label}</button>)}</div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {tab === 'overview' && <div className="content-pad"><div className="object-illustration"><MapPin size={26} /><span>{complex_.city} · Восточно-Казахстанская область</span></div>
           <h2 className="mt-6">Сведения об объекте</h2><dl className="details-grid"><div><dt>Застройщик</dt><dd>{complex_.developer?.name}</dd></div><div><dt>БИН (вымышленный)</dt><dd>{complex_.developer?.bin}</dd></div>

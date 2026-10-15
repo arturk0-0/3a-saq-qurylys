@@ -5,6 +5,7 @@ import { DemoBadge, DetailLink, EmptyState, ErrorState, LoadingState, PageHeadin
 import { cities, stageLabels } from '@/lib/labels'
 import { useApiQuery } from '@/lib/useApiQuery'
 import type { Complex, Page } from '@/lib/types'
+import { ComplexMap } from './ComplexMap'
 
 export function ComplexList({ overview = false }: { overview?: boolean }) {
   const [query, setQuery] = useState('')
@@ -13,6 +14,7 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
   const [zone, setZone] = useState('')
   const [sort, setSort] = useState('risk')
   const [cursor, setCursor] = useState('0')
+  const [showMap, setShowMap] = useState(false)
   const params = new URLSearchParams({ q: search, sort, cursor, limit: '50' })
   if (city) params.set('city', city)
   if (zone) params.set('zone', zone)
@@ -31,7 +33,7 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
       <div className={`stat-card stat-${tone}`} key={title}><Icon size={21} /><span>{title}</span>
         <strong>{loading ? '—' : value}</strong><small>{title === 'Объектов в выборке' ? 'По текущему фильтру' : 'На текущей странице'}</small></div>)}</div>}
     <section className="panel">
-      <div className="panel-heading"><div><h2>Жилые комплексы</h2><p>Внутренний реестр · синтетические DEMO-записи</p></div><DemoBadge /></div>
+      <div className="panel-heading"><div><h2>Жилые комплексы</h2><p>Внутренний реестр · синтетические DEMO-записи</p></div><div className="flex items-center gap-3"><Button variant="outline" aria-expanded={showMap} aria-controls="complex-map" onClick={() => setShowMap(!showMap)}>{showMap ? 'Скрыть карту' : 'Показать карту'}</Button><DemoBadge /></div></div>
       <form className="filter-bar" onSubmit={(event) => { event.preventDefault(); setSearch(query); setCursor('0') }}>
         <label className="search-input"><Search size={17} /><input aria-label="Поиск ЖК" placeholder="Название, город или адрес" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
         <select aria-label="Город" value={city} onChange={(event) => { setCity(event.target.value); setCursor('0') }}>
@@ -43,6 +45,7 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
         <select aria-label="Сортировка" value={sort} onChange={(event) => { setSort(event.target.value); setCursor('0') }}><option value="risk">По баллу риска</option><option value="name">По названию</option></select>
         <Button type="submit" variant="outline"><Filter size={15} className="mr-2" />Найти</Button>
       </form>
+      {showMap && !loading && !error && <div id="complex-map"><ComplexMap complexes={visible} /></div>}
       {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={refresh} />
         : !visible.length ? <EmptyState title="ЖК не найдены"><p>Измените фильтры или попросите администратора загрузить DEMO-набор.</p></EmptyState>
         : <div className="table-scroll"><table className="data-table"><thead><tr><th>Жилой комплекс</th><th>Город / этап</th><th>Готовность</th><th>Приоритет проверки</th><th><span className="sr-only">Карточка</span></th></tr></thead>
