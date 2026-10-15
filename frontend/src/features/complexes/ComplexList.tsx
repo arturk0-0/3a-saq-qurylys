@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Building2, Filter, Search, ShieldCheck, ShieldAlert, ClipboardCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { DemoBadge, DetailLink, EmptyState, ErrorState, LoadingState, PageHeading, RiskBadge } from '@/components/WorkspaceUI'
+import { DemoBadge, DetailLink, EmptyState, ErrorState, LoadingState, PageHeading, RiskBadge, ScrollableTable } from '@/components/WorkspaceUI'
 import { cities, stageLabels } from '@/lib/labels'
 import { useApiQuery } from '@/lib/useApiQuery'
 import type { Complex, Page } from '@/lib/types'
@@ -48,13 +48,13 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
       {showMap && !loading && !error && <div id="complex-map"><ComplexMap complexes={visible} /></div>}
       {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={refresh} />
         : !visible.length ? <EmptyState title="ЖК не найдены"><p>Измените фильтры или попросите администратора загрузить DEMO-набор.</p></EmptyState>
-        : <div className="table-scroll"><table className="data-table"><thead><tr><th>Жилой комплекс</th><th>Город / этап</th><th>Готовность</th><th>Приоритет проверки</th><th><span className="sr-only">Карточка</span></th></tr></thead>
+        : <ScrollableTable label="Жилые комплексы"><table className="data-table"><thead><tr><th>Жилой комплекс</th><th>Город / этап</th><th>Готовность</th><th>Приоритет проверки</th><th><span className="sr-only">Карточка</span></th></tr></thead>
           <tbody>{visible.map((complex_) => <tr key={complex_.id}>
             <td><strong>{complex_.name.replace(/^DEMO — /, '')}</strong><span>{complex_.address}</span>{complex_.scenario && <small>Сценарий {complex_.scenario}</small>}</td>
             <td><strong>{complex_.city}</strong><span>{stageLabels[complex_.stage]}</span></td>
             <td><strong>{complex_.progress.verifiedPercent === null ? 'Не проверено' : `${complex_.progress.verifiedPercent}%`}</strong><span>Заявлено: {complex_.progress.claimedPercent ?? '—'}%</span></td>
             <td><RiskBadge risk={complex_.risk} /></td><td><DetailLink to={`/complexes/${complex_.id}`}>Карточка</DetailLink></td>
-          </tr>)}</tbody></table></div>}
+          </tr>)}</tbody></table></ScrollableTable>}
       {data?.catalogLimited && <p className="inline-notice">Поиск ограничен первыми 500 записями. Уточните город; полный поиск требует расширения индекса.</p>}
       {(cursor !== '0' || data?.nextCursor) && <div className="pagination"><Button variant="outline" onClick={() => setCursor('0')}>В начало</Button>
         {data?.nextCursor && <Button variant="outline" onClick={() => setCursor(data.nextCursor!)}>Следующая страница</Button>}</div>}

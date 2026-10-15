@@ -2,7 +2,7 @@ import { useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { DemoBadge, EmptyState, ErrorState, FormField, LoadingState, PageHeading } from '@/components/WorkspaceUI'
+import { DemoBadge, EmptyState, ErrorState, FormField, LoadingState, PageHeading, ReviewGuide } from '@/components/WorkspaceUI'
 import { AdvertisementCard, AdvertisementForm } from '@/features/advertisements/AdvertisementsPage'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { basisLabels, errorMessage, formatDate, localDateTime, stageLabels } from '@/lib/labels'
@@ -89,6 +89,7 @@ export function ComplexDetail() {
   }
   return <><Link to="/complexes" className="back-link"><ArrowLeft size={16} /> К реестру</Link>
     <PageHeading eyebrow={`Карточка объекта · ${complex_.city}`} title={complex_.name.replace(/^DEMO — /, '')} description={complex_.address} action={<div className="flex items-center gap-4">{complex_.demo && <DemoBadge />}<Link className="detail-link" to={`/signals/new?complex=${complex_.id}`}>Создать сигнал →</Link></div>} />
+    <ReviewGuide />
     <div className="detail-layout"><section className="panel min-w-0"><div className="tabs" role="tablist" aria-label="Разделы карточки" onKeyDown={navigateTabs}>{tabs.map(([key, label]) => <button key={key} type="button" role="tab" tabIndex={tab === key ? 0 : -1} aria-selected={tab === key} aria-controls={`panel-${key}`} id={`tab-${key}`} onClick={() => setTab(key)}>{label}</button>)}</div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {tab === 'overview' && <div className="content-pad"><div className="object-illustration"><MapPin size={26} /><span>{complex_.city} · Восточно-Казахстанская область</span></div>
