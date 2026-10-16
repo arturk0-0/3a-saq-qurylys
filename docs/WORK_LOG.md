@@ -209,3 +209,16 @@ AI и файлы: коммит aa41a8f, отправлен в GitHub.
 113 backend-тестов, 7 frontend-тестов; Docker images собраны, оба контейнера
 healthy, health напрямую и через frontend proxy отвечают, закрытый API даёт 401.
 Рендер PDF проверен внутри контейнера. Live Firebase/Gemini по-прежнему не проверены.
+
+## Единый кандидат и настоящий SDK · 16 октября 2026
+
+Отдельная ветка `release/demo-candidate` объединяет backend `82e61d5` и
+frontend/QA друга `8dce105`, без изменения main или исходных веток.
+Добавлен opt-in Firestore emulator runner с loopback/demo-project guards,
+исключением credentials и отдельной CI job. Пройдено 251 обычных backend-тестов,
+10 настоящих локальных SDK integration tests, 61 frontend-тест и production build;
+15 Chromium-групп с 498 локальными запросами без page errors/external requests.
+Gemini/Auth/Storage в этих QA-проверках явно тестовые; WeasyPrint PDF настоящий.
+Эмулятор не проверяет production indexes/IAM и не включается в обычный runtime.
+Независимое review, облачная приёмка, второй Windows-компьютер и публикация
+остаются отдельными gates. Подробности: `docs/release-candidate-report.md`.

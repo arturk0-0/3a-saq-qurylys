@@ -40,10 +40,16 @@ missing code. Do not reimplement these modules from scratch.
 | AI-06/08 measured live extraction | Not complete | Do not treat mocked output or evaluation inputs as live measurements |
 | FE-08 public-source shortcuts and source provenance | `feat/FE-08-public-registry-sources` · Codex; based on AI-05 | Manual links only; registry records/API not validated; see public-sources.md |
 | Optional hosted demo: Hosting + Cloud Run | `feat/DEPLOY-01-hosting-cloud-run` · Codex; based on public sources | Blaze confirmed by owner; deployment/IAM/Secret Manager/login require owner's Google authorization |
+| Backend error handling, SDK/contention and private uploads | PR #1, #3, #4; included in `release/demo-candidate` | Branch checks passed; independent review, main merge and owner deployment remain |
+| Review UX and release browser/organiser package | PR #2 + `test/night-release-readiness` at `8dce105`; included in `release/demo-candidate` | Local Linux/Chromium checks passed; live/Windows and independent review remain |
+| Unified candidate + real SDK local integration | `release/demo-candidate`; see `docs/release-candidate-report.md` | Local emulator is QA only; does not prove production indexes/IAM/Storage or Gemini quality |
 | LINK-01–05, DRONE tasks, release/publication | Not started | Mandatory live workflow and release gates first |
 
 The implementation table is not a claim that release gates or all task acceptance
 criteria have passed. Checkboxes below retain the plan's review/merge requirements.
+Owner-reported hosted results: login/DEMO, new-ad Gemini analysis and explicit R2
+confirmation changed 10→35. No automated cloud verification is implied. Cloud signal
+history/index readiness, PDF, screenshot analysis and second-device checks remain.
 
 | Date | Must be demonstrated by end of day | Main owner |
 | --- | --- | --- |
