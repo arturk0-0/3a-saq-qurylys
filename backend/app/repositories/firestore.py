@@ -3,7 +3,13 @@ import re
 from collections.abc import Callable
 from typing import Any
 
-from google.api_core.exceptions import AlreadyExists, FailedPrecondition, GoogleAPICallError
+from google.api_core.exceptions import (
+    Aborted,
+    AlreadyExists,
+    FailedPrecondition,
+    GoogleAPICallError,
+    RetryError,
+)
 from google.cloud import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
@@ -29,7 +35,7 @@ COLLECTIONS = frozenset(
 )
 
 
-def firestore_error(exc: GoogleAPICallError, operation: str) -> AppError:
+def firestore_error(exc: GoogleAPICallError | RetryError, operation: str) -> AppError:
     # Missing/building indexes are FailedPrecondition, but not every precondition
     # failure is about an index. Never echo the provider message or console URL.
     if isinstance(exc, FailedPrecondition) and "requires an index" in str(exc).lower():
@@ -81,7 +87,7 @@ class FirestoreStore:
         try:
             snapshot = self.db.collection(collection).document(record_id).get(timeout=10)
             return snapshot.to_dict() if snapshot.exists else None
-        except GoogleAPICallError as exc:
+        except (GoogleAPICallError, RetryError) as exc:
             raise firestore_error(exc, "read") from None
 
     def list(
@@ -116,7 +122,7 @@ class FirestoreStore:
             query = query.start_after(cursor)
         try:
             return [snapshot.to_dict() for snapshot in query.limit(limit).stream(timeout=10)]
-        except GoogleAPICallError as exc:
+        except (GoogleAPICallError, RetryError) as exc:
             raise firestore_error(exc, "query") from None
 
     def atomic(self, operation: Callable[[UnitOfWork], T]) -> T:
@@ -128,5 +134,11 @@ class FirestoreStore:
             return execute(self.db.transaction(max_attempts=3))
         except AlreadyExists:
             raise Conflict("Record already exists") from None
-        except GoogleAPICallError as exc:
+        except ValueError as exc:
+            # The SDK wraps max-attempt contention in ValueError, with Aborted as
+            # its explicit cause. Do not hide unrelated callback/programming errors.
+            if isinstance(exc.__cause__, Aborted):
+                raise Conflict() from None
+            raise
+        except (GoogleAPICallError, RetryError) as exc:
             raise firestore_error(exc, "transaction") from None

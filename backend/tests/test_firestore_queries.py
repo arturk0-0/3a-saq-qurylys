@@ -5,7 +5,12 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from google.api_core.exceptions import FailedPrecondition, PermissionDenied, ServiceUnavailable
+from google.api_core.exceptions import (
+    FailedPrecondition,
+    PermissionDenied,
+    RetryError,
+    ServiceUnavailable,
+)
 from google.auth.credentials import AnonymousCredentials
 from google.cloud import firestore
 from google.cloud.firestore_v1.types import StructuredQuery
@@ -131,6 +136,10 @@ def test_history_cursor_cannot_escape_scope_or_use_deleted_invalid_row(
         ),
         (PermissionDenied("PRIVATE_PROVIDER_URL"), "INTEGRATION_UNAVAILABLE"),
         (ServiceUnavailable("PRIVATE_PROVIDER_URL"), "INTEGRATION_UNAVAILABLE"),
+        (
+            RetryError("PRIVATE_PROVIDER_URL", ServiceUnavailable("PRIVATE_CAUSE")),
+            "INTEGRATION_UNAVAILABLE",
+        ),
     ],
 )
 def test_query_failure_never_leaks_provider_text_or_mislabels_preconditions(
