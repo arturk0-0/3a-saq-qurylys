@@ -217,8 +217,7 @@ def test_sdk_atomic_failure_does_not_persist_partial_business_or_audit(db):
 def test_real_transactions_prevent_lost_parallel_factor_review(workspace):
     start = Barrier(2)
 
-    def decide(index):
-        start.wait(timeout=10)
+    def apply(index):
         try:
             return workspace.factor_decision(
                 "demo-complex-01",
@@ -233,8 +232,18 @@ def test_real_transactions_prevent_lost_parallel_factor_review(workspace):
         except Conflict as error:
             return error
 
+    def decide(index):
+        start.wait(timeout=10)
+        return apply(index)
+
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(decide, range(2)))
+    if all(isinstance(result, Conflict) for result in results):
+        # Bounded SDK retries may let both contenders return 409. Before an
+        # explicit caller retry, prove that neither changed business/audit data.
+        assert workspace.complex("demo-complex-01").version == 1
+        assert workspace.page("auditLogs", complex_id="demo-complex-01")["items"] == []
+        results[0] = apply(0)
     assert sum(isinstance(result, Conflict) for result in results) == 1
     complex_ = workspace.complex_detail("demo-complex-01")
     assert complex_["version"] == 2 and complex_["risk"]["score"] == 10
