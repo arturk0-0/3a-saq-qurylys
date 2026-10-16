@@ -111,8 +111,8 @@ section {{ margin-top: 18px; }}
 h1, h2, h3 {{ break-after: avoid; }} tr {{ break-inside: avoid; }}
 p, blockquote {{ orphans: 3; widows: 3; }}
 .provenance {{ padding: 8px; border: 1px solid #b4c9c8; background: #f1f6f3; }}
-th:nth-child(1) {{ width: 38%; }} th:nth-child(2) {{ width: 18%; }}
-th:nth-child(3) {{ width: 10%; }} th:nth-child(4) {{ width: 34%; }}
+col:nth-child(1) {{ width: 38%; }} col:nth-child(2) {{ width: 23%; }}
+col:nth-child(3) {{ width: 8%; }} col:nth-child(4) {{ width: 31%; }}
 </style><body><p class="demo">DEMO — вымышленные данные.
 Не является выводом о незаконности.</p>
 <h1>{esc(signal.title)}</h1><p>Сигнал {esc(signal.id)} · версия {signal.version}
@@ -123,7 +123,7 @@ th:nth-child(3) {{ width: 10%; }} th:nth-child(4) {{ width: 34%; }}
 <h2>Приоритет проверки: {s.risk.score} / 100 · {s.risk.zone} — {ZONE_LABELS[s.risk.zone]}</h2>
 <p>Снимок версии ЖК {s.complex.version}, зафиксирован {esc(s.captured_at.isoformat())}.
 Последующие изменения карточки сюда не включены. Гипотезы AI не дают баллов.</p>
-<table><thead><tr><th>Фактор</th><th>Статус</th><th>Баллы</th><th>Источники</th></tr>
+<table><colgroup><col><col><col><col></colgroup><thead><tr><th>Фактор</th><th>Статус</th><th>Баллы</th><th>Источники</th></tr>
 </thead><tbody>{rows}</tbody></table>
 <h2>Правовое основание</h2><p>{esc(BASIS_LABELS[s.complex.legal_basis.type])} ·
 {esc(VERIFICATION_LABELS[s.complex.legal_basis.status])}<br>{esc(s.complex.legal_basis.reference)}
