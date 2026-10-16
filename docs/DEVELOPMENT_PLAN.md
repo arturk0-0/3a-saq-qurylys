@@ -6,11 +6,23 @@
 
 ## 0. People, links and responsibilities
 
-| Role | Member | Primary ownership | Reviews |
+Команда состоит из **двух человек**. Буквы A/B ниже — роли участников,
+а A/B/C в тест-кейсах — названия сценариев риска, они не переименовываются.
+
+| Участник | Кто | Основная зона | Review |
 | --- | --- | --- | --- |
-| **A — Frontend & product** | **[fill name]** | UI/UX, navigation, forms, client integration, demo/pitch | C's AI UX, B's API clarity |
-| **B — Backend & infrastructure** | **[fill name]** | FastAPI, Firebase, Auth, Storage, CI, Docker, PDF, security | A's integration |
-| **C — AI & risk** | **[fill name]** | Gemini, parsing ads/images, matching, scoring/tests, seed | B's backend rules |
+| **A — frontend и материалы показа** | **Друг владельца + его Codex** | Весь `frontend/**`, читаемость, навигация, адаптивность, доступность, frontend-тесты; пользовательские инструкции, текст питча и снимки UI | B проверяет PR; A через Codex проверяет потребительскую сторону API B |
+| **B — backend, AI и выпуск** | **Владелец проекта + его Codex** | FastAPI, Firebase/Auth/Storage, Gemini, R1–R6, данные/seed, PDF, безопасность, CI/Docker/deploy, договорённости API, GitHub release и облачная приёмка | A даёт независимое review через свой Codex; B отвечает за интеграцию |
+
+Бывшая роль **C (AI & risk)** объединена с B. Третьего исполнителя нет.
+Новые имена владельцев в GitHub не выдумываются: задачи обозначены ролями A/B.
+
+Подробные границы файлов, очереди и готовые промпты:
+[два участника и запуск Codex](two-person-team.md).
+Очереди в GitHub: [друг A — #9](https://github.com/arturk0-0/3a-saq-qurylys/issues/9),
+[владелец B — #8](https://github.com/arturk0-0/3a-saq-qurylys/issues/8).
+Другу достаточно подключённого к этому репозиторию Codex и одного стартового
+сообщения из этой инструкции. Доступы в облачные кабинеты и секреты ему не нужны.
 
 - **GitHub:** https://github.com/arturk0-0/3a-saq-qurylys
 - **Firebase project ID:** `saq-qurylys` | Console: https://console.firebase.google.com/u/0/project/saq-qurylys/overview
@@ -39,11 +51,12 @@ missing code. Do not reimplement these modules from scratch.
 | AI-05 read-only name/alias candidates and human comparison | `feat/AI-05-complex-candidates` · Codex; includes preceding three branches | Review additive aliases/API contract; no automatic relinking; live extraction still unverified |
 | AI-06/08 measured live extraction | Not complete | Do not treat mocked output or evaluation inputs as live measurements |
 | FE-08 public-source shortcuts and source provenance | `feat/FE-08-public-registry-sources` · Codex; based on AI-05 | Manual links only; registry records/API not validated; see public-sources.md |
-| Optional hosted demo: Hosting + Cloud Run | `feat/DEPLOY-01-hosting-cloud-run` · Codex; based on public sources | Blaze confirmed by owner; deployment/IAM/Secret Manager/login require owner's Google authorization |
-| Backend error handling, SDK/contention and private uploads | PR #1, #3, #4; included in `release/demo-candidate` | Branch checks passed; independent review, main merge and owner deployment remain |
-| Review UX and release browser/organiser package | PR #2 + `test/night-release-readiness` at `8dce105`; included in `release/demo-candidate` | Local Linux/Chromium checks passed; live/Windows and independent review remain |
-| Unified candidate + real SDK local integration | [PR #5](https://github.com/arturk0-0/3a-saq-qurylys/pull/5), `release/demo-candidate`; see `docs/release-candidate-report.md` | Local emulator is QA only; does not prove production indexes/IAM/Storage or Gemini quality |
-| LINK-01–05, DRONE tasks, release/publication | Not started | Mandatory live workflow and release gates first |
+| Hosted demo: Hosting + Cloud Run | Published `main` / `effb87f`, API revision `00003-sxb` | Owner confirmed hosting/API, indexes and manual workflow; new PRs are not deployed automatically |
+| Backend error handling, SDK/contention and private uploads | PR #1, #3, #4 included via merged PR #5 (`effb87f`) | Published; do not merge historical stacked PRs separately |
+| Review UX and release browser/organiser package | PR #2 + `8dce105`, included via merged PR #5 | Published; owner reports manual checks completed |
+| Unified candidate + real SDK local integration | [PR #5](https://github.com/arturk0-0/3a-saq-qurylys/pull/5), merged `effb87f`; see `docs/release-candidate-report.md` | Main CI passed; owner published. Local emulator remains QA only |
+| LINK-01–05 | [PR #7](https://github.com/arturk0-0/3a-saq-qurylys/pull/7), после дизайна PR #6 | Реализация и локальные тесты готовы; review и публикация/облачная приёмка впереди |
+| DRONE tasks, release/publication | Не начаты | Опциональные drone-критерии уточнить; release/publicity — отдельные действия владельца |
 
 The implementation table is not a claim that release gates or all task acceptance
 criteria have passed. Checkboxes below retain the plan's review/merge requirements.
@@ -51,25 +64,31 @@ Owner-reported hosted results: login/DEMO, new-ad Gemini analysis and explicit R
 confirmation changed 10→35. No automated cloud verification is implied. Cloud signal
 history/index readiness, PDF, screenshot analysis and second-device checks remain.
 
+**Обновление владельца, 16 октября:** история, PDF и анализ изображения
+успешно продемонстрированы; затем владелец сообщил о завершении всех ручных
+проверок. Строки выше описывают прежнюю передачу работы. Это не автоматическая
+облачная проверка новых PR. P1 LINK-01–05 реализованы в отдельной ветке;
+см. `docs/advertising-trace.md`. Чекбоксы сохраняют требования review/merge.
+
 | Date | Must be demonstrated by end of day | Main owner |
 | --- | --- | --- |
-| **14 Oct** | Repo and permissions, agreed contracts, frontend/backend skeleton, dev commands | A+B+C |
-| **15 Oct** | Firebase config + initial DEMO collections/seed + ЖК list + pure scoring engine/tests | A+B+C |
-| **16 Oct** | Complex/details, advertisement manual add, evidence & documents, Gemini text extraction | A+B+C |
-| **17 Oct** | Screenshot analysis, AI hypotheses, reviewer accept/reject, 3 correct score scenarios | A+B+C |
-| **18 Oct** | End-to-end flow, signal review/return and PDF, first smoke test on clean machine | A+B+C |
-| **19 Oct** | QA / security / CI / docs; only if stable, «Рекламный след» and limited drone bonus | A+B+C |
-| **20 Oct** | Verify fresh clone, demo credentials, source/documentation, publish repo, record commit SHA before cutoff | A+B+C |
-| **21 Oct** | Live demo/pitch using fixed reviewed version, backup recording | A+B+C |
+| **14 Oct** | Repo and permissions, agreed contracts, frontend/backend skeleton, dev commands | A+B |
+| **15 Oct** | Firebase config + initial DEMO collections/seed + ЖК list + pure scoring engine/tests | A+B |
+| **16 Oct** | Complex/details, advertisement manual add, evidence & documents, Gemini text extraction | A+B |
+| **17 Oct** | Screenshot analysis, AI hypotheses, reviewer accept/reject, 3 correct score scenarios | A+B |
+| **18 Oct** | End-to-end flow, signal review/return and PDF, first smoke test on clean machine | A+B |
+| **19 Oct** | QA / security / CI / docs; only if stable, «Рекламный след» and limited drone bonus | A+B |
+| **20 Oct** | Verify fresh clone, demo credentials, source/documentation, publish repo, record commit SHA before cutoff | A+B |
+| **21 Oct** | Live demo/pitch using fixed reviewed version, backup recording | A+B |
 
 **Release gates:** G0 skeleton runs; G1 data & scoring; G2 AI new-input flow; G3 analyst signal/PDF; G4 secure reproducible reviewer build. Do not start P2 before G3.
 
 ## 2. P0 task checklist — all mandatory modules
 
-### A. Product and frontend
+### Frontend и пользовательские материалы — A
 
-- [ ] **PM-01 · A · 14 Oct:** Confirm organisers' exact submission time, judge test procedure, expected drone criteria and any permitted public data sources.
-- [ ] **PM-02 · A · 14 Oct:** Create initial project issues with owner, priority, acceptance criteria and a branch naming scheme.
+- [ ] **PM-01 · B · 14 Oct:** Confirm organisers' exact submission time, judge test procedure, expected drone criteria and any permitted public data sources.
+- [ ] **PM-02 · B · 14 Oct:** Create initial project issues with owner, priority, acceptance criteria and a branch naming scheme.
 - [ ] **FE-01 · A · 14–15 Oct:** Set up Vite + React + strict TS, Tailwind, shadcn/ui, React Router, navigation shell and layout.
 - [ ] **FE-02 · A · 15 Oct:** Design reusable controls: risk badge, document status, evidence status, loading/error/empty states, confirmations.
 - [ ] **FE-03 · A · 15–16 Oct:** Overview dashboard with search, risk-zone filter, sort, quick link to ≥8 demo ЖК.
@@ -83,7 +102,7 @@ history/index readiness, PDF, screenshot analysis and second-device checks remai
 - [ ] **FE-11 · A · 18–19 Oct:** Signal card with human Confirm / Return, reason, activity history and print/PDF actions.
 - [ ] **FE-12 · A · 19 Oct:** Verify responsive desktop layout (including 1366×768), keyboard accessibility, meaningful error/empty/loading states.
 
-### B. Backend, Firestore and security
+### Backend, Firestore и безопасность — B
 
 - [ ] **BE-01 · B · 14 Oct:** FastAPI with `/api/v1/health`, settings, Pydantic, typed error response and CORS limited to expected local frontend origins.
 - [ ] **BE-02 · B · 14–15 Oct:** Configure Firebase Admin server-side; document safe credentials via `.env.example`; do not commit private keys.
@@ -99,52 +118,52 @@ history/index readiness, PDF, screenshot analysis and second-device checks remai
 - [ ] **BE-12 · B · 18–19 Oct:** Docker Compose builds/runs frontend/backend locally and uses *online* Firebase/Gemini; document commands.
 - [ ] **BE-13 · B · 19 Oct:** Verify Firestore/Storage access control, no public document uploads, secret scanning, quotas and error handling.
 
-### C. Gemini analysis and deterministic risk
+### Gemini и детерминированный риск — B
 
-- [ ] **RISK-01 · C · 15 Oct:** Implement pure server-side `calculate_risk(factors)` with official R1–R6 weights; score capped at 100.
-- [ ] **RISK-02 · C · 15 Oct:** Zones GREEN 0–24 / RED ≥60 with R1+R2 / YELLOW otherwise, including ≥60 without R1+R2.
-- [ ] **RISK-03 · C · 15 Oct:** Ensure UNKNOWN/PROPOSED/REJECTED = 0 and inability to verify basis does not imply R1.
-- [ ] **RISK-04 · C · 15–16 Oct:** Unit tests for A=35/YELLOW, B=70/RED, C=10/GREEN and missing-source exception conditions.
-- [ ] **AI-01 · C · 16 Oct:** Design AI JSON extraction schema, prompting, source quote/candidate/confidence/uncertainty; Pydantic validation.
-- [ ] **AI-02 · C · 16 Oct:** Gemini server-side client, configurable model/API key, timeouts/retries/quota errors, no raw secrets in logs.
-- [ ] **AI-03 · C · 16–17 Oct:** Analyze **new** Russian ad text and detect paid reservation/deposit as *proposal* with exact excerpt.
-- [ ] **AI-04 · C · 17 Oct:** Analyze screenshot/image with Gemini; return structured terms, amount, source quote and uncertainty.
-- [ ] **AI-05 · C · 17 Oct:** Candidate match to known ЖК by name/aliases; ambiguous matches require analyst selection.
-- [ ] **AI-06 · C · 17 Oct:** Test Kazakh text, low-quality screenshot and harmless ad to identify false positives; record results.
-- [ ] **AI-07 · C · 17–18 Oct:** Integrate proposal→review→confirmed factor; model must never automatically set legal confirmation/score.
-- [ ] **AI-08 · C · 18 Oct:** Describe model/prompt/version, limits and measured behavior on unseen inputs in docs.
+- [ ] **RISK-01 · B · 15 Oct:** Implement pure server-side `calculate_risk(factors)` with official R1–R6 weights; score capped at 100.
+- [ ] **RISK-02 · B · 15 Oct:** Zones GREEN 0–24 / RED ≥60 with R1+R2 / YELLOW otherwise, including ≥60 without R1+R2.
+- [ ] **RISK-03 · B · 15 Oct:** Ensure UNKNOWN/PROPOSED/REJECTED = 0 and inability to verify basis does not imply R1.
+- [ ] **RISK-04 · B · 15–16 Oct:** Unit tests for A=35/YELLOW, B=70/RED, C=10/GREEN and missing-source exception conditions.
+- [ ] **AI-01 · B · 16 Oct:** Design AI JSON extraction schema, prompting, source quote/candidate/confidence/uncertainty; Pydantic validation.
+- [ ] **AI-02 · B · 16 Oct:** Gemini server-side client, configurable model/API key, timeouts/retries/quota errors, no raw secrets in logs.
+- [ ] **AI-03 · B · 16–17 Oct:** Analyze **new** Russian ad text and detect paid reservation/deposit as *proposal* with exact excerpt.
+- [ ] **AI-04 · B · 17 Oct:** Analyze screenshot/image with Gemini; return structured terms, amount, source quote and uncertainty.
+- [ ] **AI-05 · B · 17 Oct:** Candidate match to known ЖК by name/aliases; ambiguous matches require analyst selection.
+- [ ] **AI-06 · B · 17 Oct:** Test Kazakh text, low-quality screenshot and harmless ad to identify false positives; record results.
+- [ ] **AI-07 · B · 17–18 Oct:** Integrate proposal→review→confirmed factor; model must never automatically set legal confirmation/score.
+- [ ] **AI-08 · B · 18 Oct:** Describe model/prompt/version, limits and measured behavior on unseen inputs in docs.
 
-### D. Integration, demonstration and release
+### Интеграция и выпуск — основной ответственный B; UI QA и материалы — A
 
-- [ ] **INT-01 · A+B+C · 14–15 Oct:** Freeze basic complex/ad/evidence/AI-result/score JSON contracts with sample fixtures.
-- [ ] **INT-02 · A+B+C · 16–17 Oct:** UI calls real backend/Firestore; no hidden stub response falsely presented as AI or live government data.
-- [ ] **INT-03 · A+B+C · 18 Oct:** Demonstrate from newly entered ad to reviewed R2, score, signal decision and PDF.
-- [ ] **INT-04 · A+B+C · 18–19 Oct:** Run three mandatory scenarios with corresponding demo objects, screenshots and expected scores.
-- [ ] **QA-01 · B+C · 18 Oct:** Backend pytest risk/auth/validation; no confirmed risk without evidence/reviewer.
+- [ ] **INT-01 · B · 14–15 Oct:** Freeze basic complex/ad/evidence/AI-result/score JSON contracts with sample fixtures.
+- [ ] **INT-02 · B · 16–17 Oct:** UI calls real backend/Firestore; no hidden stub response falsely presented as AI or live government data.
+- [ ] **INT-03 · B · 18 Oct:** Demonstrate from newly entered ad to reviewed R2, score, signal decision and PDF.
+- [ ] **INT-04 · B · 18–19 Oct:** Run three mandatory scenarios with corresponding demo objects, screenshots and expected scores.
+- [ ] **QA-01 · B · 18 Oct:** Backend pytest risk/auth/validation; no confirmed risk without evidence/reviewer.
 - [ ] **QA-02 · A · 19 Oct:** Frontend typecheck/build and core interaction tests, errors and empty states.
 - [ ] **QA-03 · B · 19 Oct:** CI checks Python style/tests and TS typecheck/build for each PR to main.
-- [ ] **QA-04 · A+B+C · 19–20 Oct:** Fresh Git clone on a second device/account with Internet; prove `.env`/Firebase/Gemini configuration and local startup.
+- [ ] **QA-04 · B · 19–20 Oct:** Fresh Git clone on a second device/account with Internet; prove `.env`/Firebase/Gemini configuration and local startup.
 - [ ] **SEC-01 · B · 19–20 Oct:** Ensure `.gitignore` and entire Git history do not expose private service-account JSON, Gemini keys or user information; rotate any exposed keys.
-- [ ] **DOC-01 · B · 19 Oct:** Complete `README.md` (why, capabilities, tech stack, architecture, setup, env, seed, demo, known limitations).
-- [ ] **DOC-02 · C · 19 Oct:** Add `docs/risk-rules.md`, `docs/ai-methodology.md` and API examples.
+- [ ] **DOC-01 · B · 19 Oct:** Integrate A's user-facing material and complete `README.md` (why, capabilities, tech stack, architecture, setup, env, seed, demo, known limitations).
+- [ ] **DOC-02 · B · 19 Oct:** Add `docs/risk-rules.md`, `docs/ai-methodology.md` and API examples.
 - [ ] **DOC-03 · B · 19 Oct:** Add `docs/data-model.md`, `docs/architecture.md`, Firebase index/rules setup and system diagram.
 - [ ] **DOC-04 · A · 19 Oct:** Add `docs/demo-scenarios.md` with step-by-step clicks and expected results.
-- [ ] **RELEASE-01 · A+B+C · 20 Oct:** Approve green CI, correct README URLs; record immutable commit SHA; create submission tag.
-- [ ] **RELEASE-02 · A · 20 Oct:** Switch repo from private to public **before** deadline; verify access without login; submit URL/commit as required.
-- [ ] **PITCH-01 · A+B+C · 20 Oct:** Practice timed live demo; prepare backup recording for outage, never substitute prerecorded results for live AI without disclosure.
+- [ ] **RELEASE-01 · B · 20 Oct:** Approve green CI, correct README URLs; record immutable commit SHA; create submission tag.
+- [ ] **RELEASE-02 · B · 20 Oct:** Switch repo from private to public **before** deadline; verify access without login; submit URL/commit as required.
+- [ ] **PITCH-01 · A · 20 Oct:** Prepare a timed pitch script, UI illustrations and a backup-demo checklist in repository files; B rehearses the live deployment and records the backup with private access. Clearly distinguish recordings/test adapters from live AI.
 
 ## 3. P1 differentiator — «Рекламный след» (after P0)
 
-- [ ] **LINK-01 · C · 18–19 Oct:** Normalize shared phone numbers (+7/8), WhatsApp URLs, website domains and alias names.
-- [ ] **LINK-02 · C · 18–19 Oct:** Propose ad-to-ad links with explicit evidence; optionally add image perceptual hashes / embedding similarity.
+- [ ] **LINK-01 · B · 18–19 Oct:** Normalize shared phone numbers (+7/8), WhatsApp URLs, website domains and alias names.
+- [ ] **LINK-02 · B · 18–19 Oct:** Propose ad-to-ad links with explicit evidence; optionally add image perceptual hashes / embedding similarity.
 - [ ] **LINK-03 · B · 19 Oct:** Persist proposed/confirmed/rejected links with provenance and reviewer/audit metadata.
 - [ ] **LINK-04 · A · 19 Oct:** Show related ads/accounts in a graph or clear list; navigate directly to shared evidence.
-- [ ] **LINK-05 · A+C · 19 Oct:** Demonstrate two fictional accounts sharing a number; do not infer common ownership or change base R1–R6 scoring.
+- [ ] **LINK-05 · B · 19 Oct:** Demonstrate two fictional accounts sharing a number; do not infer common ownership or change base R1–R6 scoring.
 
 ## 4. P2 optional drone inspection (only with spare time)
 
-- [ ] **DRONE-01 · A+B · after P0:** Add photo upload to selected ЖК with private Storage handling.
-- [ ] **DRONE-02 · C · after P0:** Define configurable checklist pending organisers' criteria; Gemini classifies `visible / not_visible / uncertain`.
+- [ ] **DRONE-01 · B · after P0:** Own private Storage/backend upload contract; A implements its frontend only after the criteria and API are agreed.
+- [ ] **DRONE-02 · B · after P0:** Define configurable checklist pending organisers' criteria; Gemini classifies `visible / not_visible / uncertain`.
 - [ ] **DRONE-03 · A · after P0:** Show marked results and human review; no claim of confirmed noncompliance on one photograph.
 - [ ] **DRONE-04 · B · after P0:** Save separate inspection report/evidence trail; do not touch core advertising-law score.
 
@@ -266,13 +285,14 @@ README should include: problem, territory, who uses app, module list, tech stack
 
 | Date | Issue | Owner | Action | Status |
 | --- | --- | --- | --- | --- |
-| 14 Oct | Precise final GitHub cutoff and access hand-off | A | Ask organisers | OPEN |
-| 14 Oct | No official property permit registry/API | B+C | Demo internal records with explicit provenance | ACCEPTED |
-| 14 Oct | Gemini cost/quotas and Firebase Storage billing | B+C | Validate budget, usage limits and account setup | OPEN |
-| 14 Oct | Drone inspection checklist not specified | A | Obtain official criteria before promising full compliance detection | OPEN |
-| 14 Oct | Repo currently private; public for assessment | A | Switch before code-review cutoff, verify anonymously | OPEN |
+| 14 Oct | Precise final GitHub cutoff and access hand-off | B | Ask organisers | OPEN |
+| 14 Oct | No official property permit registry/API | B | Demo internal records with explicit provenance | ACCEPTED |
+| 14 Oct | Gemini cost/quotas and Firebase Storage billing | B | Validate budget, usage limits and account setup | OPEN |
+| 14 Oct | Drone inspection checklist not specified | B | Obtain official criteria before promising full compliance detection | OPEN |
+| 14 Oct | Repo currently private; public for assessment | B | Switch before code-review cutoff, verify anonymously | OPEN |
 
 **Decision log:**
+- 16 Oct: по поручению владельца команда сокращена до двух ролей: A (друг, frontend/пользовательские материалы), B (владелец, backend/AI/инфраструктура/выпуск). Очереди и границы — в `two-person-team.md`; старые номера задач и правила риска сохранены.
 - 14 Oct: East Kazakhstan only; internal protected UI; public GitHub source at submission; React/Vite/TS + FastAPI + Firebase Auth/Firestore/Storage + Gemini API; backend/front-end locally runnable with internet.
 - 14 Oct: AI proposes; reviewer confirms; scoring algorithm deterministic; no fake government API; demo data only.
 - 14 Oct: Base five modules before ad-network graph; drone optional.

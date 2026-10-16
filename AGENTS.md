@@ -9,6 +9,29 @@ This file is the repository-level operating guide. Read it **before** editing co
 - Hackathon: Codemasters 8.0, 14–21 October 2026. Submission includes **public GitHub source** and instructions to run locally. The application itself is access-controlled and can connect over the Internet to external APIs.
 - No access to closed government registries. The mandatory internal registry is made of **clearly labeled synthetic DEMO records** and optional manually entered documentary evidence. Do not fabricate a live registry integration.
 
+## Two-person ownership
+
+The team has **two** contributors; current queues and copy/paste prompts are in
+[`docs/two-person-team.md`](docs/two-person-team.md), assignments in
+[`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md). GitHub queues:
+[A / friend #9](https://github.com/arturk0-0/3a-saq-qurylys/issues/9),
+[B / owner #8](https://github.com/arturk0-0/3a-saq-qurylys/issues/8).
+
+- **A = the owner's friend and their Codex:** owns all `frontend/**` and the
+  user/demo documents listed in the team guide. Develop/test using the existing
+  isolated QA adapters. No Firebase/Google Cloud login, production credentials,
+  paid AI calls or deployment is required for this queue.
+- **B = the repository owner and their Codex:** owns backend, AI/risk, persistence,
+  security, infrastructure, shared contracts and release. The former C role is
+  merged into B. B integrates/reviews frontend PRs; avoid parallel frontend edits.
+- Follow the role given in the user's prompt; do not ask again when it is known.
+  Before taking work inspect remote branches/open PRs and the current role queue.
+  A records hand-off in `docs/frontend-handoff.md`; B consolidates `WORK_LOG.md`
+  and the shared plan, avoiding simultaneous edits of those files.
+- Do not recreate existing features from unchecked acceptance boxes. The team
+  guide lists pending PRs and how to choose a base without losing newer work.
+  API/schema changes are coordinated between A (consumer) and B (server/AI).
+
 ## Locked technology choices
 
 - Web: **React + TypeScript + Vite**, **Tailwind CSS + shadcn/ui**.
@@ -89,7 +112,7 @@ This is a target layout, not a reason to generate unused placeholder files. Add 
 - Commit coherent changes, open PRs, ask another teammate for review, require passing CI before squash merge. Update task checkbox and PR link in team plan after merging.
 - Before writing code: inspect current repository, read affected interfaces and task spec, propose a brief implementation plan. If the task has ambiguities impacting legality/data security/API compatibility, ask rather than guess.
 - Before marking work done: run relevant tests/lint/build; report what changed, how to test, known limitations and PR/commit reference. **Do not claim tests passed if they were not run.**
-- API contracts, database shapes and R1–R6 rules need agreement across frontend/backend/AI owners before they are changed.
+- API contracts, database shapes and R1–R6 rules need agreement between A (frontend) and B (backend/AI) before they are changed.
 
 ## Practical first milestone
 
