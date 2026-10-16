@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button'
 import { DemoBadge, EmptyState, ErrorState, FormField, LoadingState, PageHeading, ReviewGuide } from '@/components/WorkspaceUI'
 import { AdvertisementCard, AdvertisementForm } from '@/features/advertisements/AdvertisementsPage'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { basisLabels, errorMessage, formatDate, localDateTime, stageLabels } from '@/lib/labels'
+import { basisLabels, formatDate, localDateTime, stageLabels } from '@/lib/labels'
 import { useApiQuery } from '@/lib/useApiQuery'
+import { useReviewRecord } from '@/lib/useReviewRecord'
 import type { Advertisement, AuditEvent, Complex, Page } from '@/lib/types'
 import { EvidencePanel } from './EvidencePanel'
 import { RiskPanel } from './RiskPanel'
@@ -24,23 +25,25 @@ function ComplexAdvertisements({ id }: { id: string }) {
   </>
 }
 
-function DocumentsPanel({ complex_, onChanged }: { complex_: Complex; onChanged: () => void }) {
+function DocumentsPanel({ complex_: initialComplex, onChanged }: { complex_: Complex; onChanged: () => void }) {
   const { api } = useAuth()
+  const record = useReviewRecord(initialComplex, `/api/v1/complexes/${initialComplex.id}`)
+  const complex_ = record.current
   const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const error = record.error
   const basis = complex_.legalBasis
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
-    setBusy(true); setError(null)
+    setBusy(true); record.clearError()
     try {
       await api(`/api/v1/complexes/${complex_.id}/legal-basis`, { method: 'PATCH', body: JSON.stringify({
         basis: { type: form.get('type'), status: form.get('status'), reference: form.get('reference'), source: form.get('source'),
           validUntil: form.get('validUntil') ? new Date(String(form.get('validUntil'))).toISOString() : null }, expectedVersion: complex_.version,
       }) })
       setEditing(false); onChanged()
-    } catch (error) { setError(errorMessage(error)) } finally { setBusy(false) }
+    } catch (error) { record.failed(error) } finally { setBusy(false) }
   }
   return <div className="content-pad"><div className="flex items-center justify-between gap-3"><h2>Правовое основание</h2><Button variant="outline" onClick={() => setEditing(!editing)}>Пересмотреть</Button></div>
     <dl className="details-grid"><div><dt>Тип</dt><dd>{basisLabels[basis.type]}</dd></div><div><dt>Статус</dt><dd>{{ unknown: 'Не проверено', confirmed: 'Подтверждено', disproved: 'Опровергнуто' }[basis.status]}</dd></div>
@@ -51,7 +54,10 @@ function DocumentsPanel({ complex_, onChanged }: { complex_: Complex; onChanged:
       <FormField label="Статус проверки"><select name="status" defaultValue={basis.status}><option value="unknown">Не проверено</option><option value="confirmed">Подтверждено</option><option value="disproved">Опровергнуто</option></select></FormField>
     </div><FormField label="Реквизиты"><input name="reference" defaultValue={basis.reference} maxLength={500} /></FormField><FormField label="Источник проверки"><textarea name="source" defaultValue={basis.source} rows={3} maxLength={2000} /></FormField>
       <FormField label="Действует до (если указано)"><input name="validUntil" type="datetime-local" defaultValue={localDateTime(basis.validUntil)} /></FormField>
-      {error && <ErrorState message={error} />}<div className="form-actions"><Button disabled={busy}>Сохранить проверку</Button><Button type="button" variant="outline" onClick={() => setEditing(false)}>Отмена</Button></div></form>}
+      {complex_.version !== initialComplex.version && <p className="inline-notice">Актуальная версия ЖК: {complex_.version}. Текущие сведения показаны выше. Ваши поля сохранены; сверьте их перед повторным решением.</p>}
+      {error && <ErrorState message={error} />}
+      {record.conflict && <Button type="button" variant="outline" disabled={record.refreshing} onClick={() => { void record.refresh() }}>{record.refreshing ? 'Обновляем данные…' : 'Обновить данные ЖК'}</Button>}
+      <div className="form-actions"><Button disabled={busy || record.conflict || record.refreshing}>Сохранить проверку</Button><Button type="button" variant="outline" disabled={busy || record.refreshing} onClick={() => setEditing(false)}>Отмена</Button></div></form>}
     <PublicSources complexId={complex_.id} demo={complex_.demo} />
   </div>
 }
