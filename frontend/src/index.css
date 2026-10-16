@@ -124,3 +124,23 @@ summary:focus-visible { outline: 3px solid #419c8d; outline-offset: 3px; }
   .text-action { min-height: 44px; }
 }
 @media print { .sidebar, .topbar, .form-actions, .tabs, .back-link, .review-guide, .editor-form { display: none !important; }.workspace-shell, .detail-layout { display: block; }.workspace-content { padding: 0; }.panel { border: 0; }.risk-panel { break-inside: avoid; max-height: none; overflow: visible; }.table-scroll { overflow: visible; }.data-table { min-width: 0; } }
+/* P1 advertising trace: source-to-source comparison, separate from R1–R6. */
+.trace-panel { padding: 22px; margin-top: 22px; border: 1px solid #c3d0d6; border-radius: 10px; background: #f3f6f8; }
+.trace-panel > .panel-heading { padding: 0; flex-wrap: wrap; }
+.trace-panel h3 { font-size: 22px; font-weight: 700; }
+.trace-card { margin-top: 18px; background: #fff; }
+.trace-card-heading { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: start; }
+.trace-card h4 { font-size: 17px; font-weight: 700; }
+.trace-status { display: inline-block; font-size: 14px; border-radius: 5px; padding: 4px 8px; }
+.trace-status-proposed { background: #eeeafa; color: #51378d; }
+.trace-status-confirmed { background: #e3f3e9; color: #11583c; }
+.trace-status-rejected { background: #eaf0f3; color: #455865; }
+.trace-match { margin: 20px 0; }
+.trace-match > strong { font-size: 16px; }
+.trace-quotes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 10px; }
+.trace-quotes span { color: #526471; font-size: 14px; }
+.trace-quotes blockquote { font-size: 16px; margin: 6px 0; background: #edf5f3; color: #203f47; }
+.trace-review-result { margin-top: 16px; padding: 12px; border-left: 3px solid #277565; background: #edf5f3; }
+.trace-empty { padding: 22px 0; }
+.advertisement-card:focus { outline: 3px solid #419c8d; outline-offset: 3px; scroll-margin-top: 20px; }
+@media (max-width: 700px) { .trace-panel { padding: 16px; }.trace-quotes { grid-template-columns: 1fr; } }

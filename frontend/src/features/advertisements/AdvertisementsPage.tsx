@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { useId, useState, type FormEvent } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DemoBadge, EmptyState, ErrorState, FormField, LoadingState, PageHeading, SourceLink } from '@/components/WorkspaceUI'
@@ -8,6 +8,7 @@ import { errorMessage, formatDate } from '@/lib/labels'
 import { useApiQuery } from '@/lib/useApiQuery'
 import type { Advertisement, Complex, Page } from '@/lib/types'
 import { AnalysisPanel } from './AnalysisPanel'
+import { TracePanel } from './TracePanel'
 
 export function AdvertisementForm({ complexId, onSaved, onCancel }: { complexId?: string; onSaved: () => void; onCancel: () => void }) {
   const { api } = useAuth()
@@ -44,13 +45,17 @@ export function AdvertisementForm({ complexId, onSaved, onCancel }: { complexId?
 
 export function AdvertisementCard({ ad }: { ad: Advertisement }) {
   const [analysis, setAnalysis] = useState(false)
+  const [trace, setTrace] = useState(false)
+  const traceId = useId()
   return <article className="advertisement-card"><div className="flex flex-wrap items-center justify-between gap-2">
     <div><strong>{ad.platform}</strong><span className="ml-2 text-sm text-muted-foreground">@{ad.account}</span></div>{ad.demo && <DemoBadge />}</div>
     <p className="mt-2 text-xs text-muted-foreground">Опубликовано {formatDate(ad.publishedAt)} · Сохранено {formatDate(ad.capturedAt)}</p>
     <p className="ad-text">{ad.text}</p><div className="flex flex-wrap items-center gap-5"><SourceLink url={ad.sourceUrl} />
       <Link to={`/complexes/${ad.complexId}`} className="detail-link">Открыть ЖК →</Link>
-      <Button variant="outline" size="sm" onClick={() => setAnalysis(!analysis)}>{analysis ? 'Скрыть анализ' : 'Скриншоты и AI-анализ'}</Button></div>
+      <Button variant="outline" size="sm" onClick={() => setAnalysis(!analysis)}>{analysis ? 'Скрыть анализ' : 'Скриншоты и AI-анализ'}</Button>
+      <Button variant="outline" size="sm" aria-expanded={trace} aria-controls={traceId} onClick={() => setTrace(!trace)}>{trace ? 'Скрыть рекламный след' : 'Рекламный след'}</Button></div>
     {analysis && <AnalysisPanel adId={ad.id} />}
+    <div id={traceId}>{trace && <TracePanel adId={ad.id} />}</div>
   </article>
 }
 
@@ -66,5 +71,15 @@ export function AdvertisementsPage() {
       : !data?.items.length ? <EmptyState title="Объявлений пока нет"><p>Добавьте первую публикацию или загрузите DEMO-набор.</p></EmptyState>
       : <div className="space-y-4">{data.items.map((ad) => <AdvertisementCard key={ad.id} ad={ad} />)}</div>}
     {(cursor || data?.nextCursor) && <div className="pagination"><Button variant="outline" onClick={() => setCursor('')}>В начало</Button>{data?.nextCursor && <Button variant="outline" onClick={() => setCursor(data.nextCursor!)}>Далее</Button>}</div>}
+  </>
+}
+
+
+export function AdvertisementDetail() {
+  const { id } = useParams()
+  const query = useApiQuery<Advertisement>(id ? `/api/v1/advertisements/${encodeURIComponent(id)}` : null)
+  return <><PageHeading eyebrow="Оригинал публикации" title="Объявление" description="Источник, AI-анализ и связи с другими сохранёнными объявлениями." />
+    <Link to="/advertisements" className="back-link">← Все объявления</Link>
+    {query.loading ? <LoadingState /> : query.error ? <ErrorState message={query.error} retry={query.refresh} /> : query.data ? <AdvertisementCard key={query.data.id} ad={query.data} /> : null}
   </>
 }
