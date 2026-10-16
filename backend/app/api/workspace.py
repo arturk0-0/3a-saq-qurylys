@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, Request
 
 from app.api.dependencies import CurrentUser, get_runtime
 from app.core.firebase import FirebaseRuntime
+from app.models.ad_trace import AdLink, TraceDecision, TraceSave
 from app.models.common import Identifier
 from app.models.entities import Advertisement, Evidence
 from app.models.risk import RiskResult, RiskZone, VerificationStatus
@@ -16,6 +17,7 @@ from app.schemas.workspace import (
     FactorDecision,
     LegalBasisUpdate,
 )
+from app.services.ad_links import AdLinksService
 from app.services.risk import calculate_risk
 from app.services.workspace import WorkspaceService
 
@@ -162,3 +164,22 @@ def history(
     limit: Limit = 50,
 ) -> dict:
     return service.page("auditLogs", complex_id=record_id, after_id=cursor, limit=limit)
+
+
+@router.get("/advertisements/{record_id}/trace")
+def advertisement_trace(record_id: Identifier, user: CurrentUser, service: Workspace) -> dict:
+    return AdLinksService(service).candidates(record_id)
+
+
+@router.post("/advertisements/{record_id}/trace", response_model=AdLink)
+def propose_ad_link(
+    record_id: Identifier, payload: TraceSave, user: CurrentUser, service: Workspace
+) -> AdLink:
+    return AdLinksService(service).save(record_id, payload, user)
+
+
+@router.post("/ad-links/{record_id}/decision", response_model=AdLink)
+def review_ad_link(
+    record_id: Identifier, payload: TraceDecision, user: CurrentUser, service: Workspace
+) -> AdLink:
+    return AdLinksService(service).decide(record_id, payload, user)
