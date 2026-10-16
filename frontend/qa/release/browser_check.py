@@ -295,7 +295,42 @@ with sync_playwright() as p:
         expect(panel.get_by_label("Источник анализа")).not_to_have_value("")
         panel.get_by_role("button", name="Открыть скриншот").click()
         expect(panel.get_by_role("img")).to_be_visible()
+        expect(panel.locator(".selected-source")).to_contain_text("Скриншот 1")
+        expect(panel.get_by_text("Загружен файл", exact=False)).to_contain_text(
+            "synthetic.png"
+        )
+        for width, height in [(1366, 768), (375, 812), (320, 700)]:
+            page.set_viewport_size({"width": width, "height": height})
+            assert page.evaluate(
+                "document.documentElement.scrollWidth <= innerWidth"
+            ), width
+        page.set_viewport_size({"width": 1366, "height": 768})
+        panel.scroll_into_view_if_needed()
+        page.screenshot(path=str(OUT / "desktop-analysis.png"), full_page=True)
+        page.set_viewport_size({"width": 375, "height": 812})
+        page.screenshot(path=str(OUT / "mobile-analysis.png"), full_page=True)
+        page.set_viewport_size({"width": 1366, "height": 768})
+        assert (
+            panel.locator("blockquote").first.evaluate(
+                "el => parseFloat(getComputedStyle(el).fontSize)"
+            )
+            >= 16
+        )
+        source_select = panel.get_by_label("Источник анализа")
+        source_select.focus()
+        page.keyboard.press("Space")
+        if page.evaluate("CSS.supports('appearance', 'base-select')"):
+            page.wait_for_function(
+                "document.querySelector('.analysis-panel select').matches(':open')"
+            )
+            page.wait_for_timeout(200)  # Capture the finished 160 ms picker transition.
+        page.screenshot(path=str(OUT / "source-dropdown.png"))
+        page.keyboard.press("Escape")
+        page.emulate_media(reduced_motion="reduce")
+        assert panel.evaluate("el => getComputedStyle(el).animationName") == "none"
+        page.emulate_media(reduced_motion="no-preference")
         panel.get_by_label("Источник анализа").select_option("")
+        expect(panel.locator(".selected-source")).to_contain_text("Текст объявления")
         checkpoint(
             "screenshots",
             "Wrong MIME, >6 MiB rejected; corrupt PNG rejected; valid PNG stored/read with private local API",
@@ -589,7 +624,10 @@ with sync_playwright() as p:
         empty_panel.get_by_role(
             "button", name="Анализировать выбранный источник"
         ).click()
-        empty_panel.get_by_text(re.compile("Анализ завершён")).click()
+        empty_panel.locator(".analysis-history > summary").click()
+        empty_panel.locator(".analysis-history").get_by_text(
+            re.compile("Анализ завершён")
+        ).click()
         expect(
             empty_panel.get_by_text(
                 "Поддержанных гипотез нет. Это не подтверждение безопасности объекта."
