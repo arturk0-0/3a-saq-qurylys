@@ -276,13 +276,14 @@ def test_real_transactions_enforce_global_ai_quota(workspace):
         config,
     )
     start = Barrier(2)
+    requests = [AnalysisRequest(request_id=uuid4(), expected_version=1) for _ in range(2)]
 
     def analyze(index):
         start.wait(timeout=10)
         try:
             return service.analyze(
                 "demo-ad-01",
-                AnalysisRequest(request_id=uuid4(), expected_version=1),
+                requests[index],
                 Principal(uid=f"local-quota-user-{index}", role="analyst"),
             )
         except AppError as error:
@@ -292,7 +293,21 @@ def test_real_transactions_enforce_global_ai_quota(workspace):
         results = list(pool.map(analyze, range(2)))
     failures = [result for result in results if isinstance(result, AppError)]
     assert len(failures) == 1
-    assert (failures[0].status_code, failures[0].code) == (429, "AI_DAILY_LIMIT")
+    failure = failures[0]
+    assert len(calls) == 1  # No second provider call even on exhausted SDK retries.
+    if (failure.status_code, failure.code) == (409, "CONFLICT"):
+        # Real SDK contention may exhaust three attempts before reading the winner's
+        # committed quota. Explicit caller retry uses the SAME idempotency key;
+        # the application must still enforce the quota after contention settles.
+        index = next(i for i, result in enumerate(results) if isinstance(result, AppError))
+        with pytest.raises(AppError) as retried:
+            service.analyze(
+                "demo-ad-01",
+                requests[index],
+                Principal(uid=f"local-quota-user-{index}", role="analyst"),
+            )
+        failure = retried.value
+    assert (failure.status_code, failure.code) == (429, "AI_DAILY_LIMIT")
     assert len(calls) == 1
     assert len(workspace.page("analysisRuns")["items"]) == 1
     assert workspace.complex_detail("demo-complex-01")["risk"]["score"] == 35
