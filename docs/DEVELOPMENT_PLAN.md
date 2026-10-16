@@ -42,7 +42,7 @@ missing code. Do not reimplement these modules from scratch.
 | Optional hosted demo: Hosting + Cloud Run | `feat/DEPLOY-01-hosting-cloud-run` · Codex; based on public sources | Blaze confirmed by owner; deployment/IAM/Secret Manager/login require owner's Google authorization |
 | Backend error handling, SDK/contention and private uploads | PR #1, #3, #4; included in `release/demo-candidate` | Branch checks passed; independent review, main merge and owner deployment remain |
 | Review UX and release browser/organiser package | PR #2 + `test/night-release-readiness` at `8dce105`; included in `release/demo-candidate` | Local Linux/Chromium checks passed; live/Windows and independent review remain |
-| Unified candidate + real SDK local integration | `release/demo-candidate`; see `docs/release-candidate-report.md` | Local emulator is QA only; does not prove production indexes/IAM/Storage or Gemini quality |
+| Unified candidate + real SDK local integration | [PR #5](https://github.com/arturk0-0/3a-saq-qurylys/pull/5), `release/demo-candidate`; see `docs/release-candidate-report.md` | Local emulator is QA only; does not prove production indexes/IAM/Storage or Gemini quality |
 | LINK-01–05, DRONE tasks, release/publication | Not started | Mandatory live workflow and release gates first |
 
 The implementation table is not a claim that release gates or all task acceptance
