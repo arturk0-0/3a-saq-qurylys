@@ -227,3 +227,6 @@ node_modules/
 credentials/
 *-service-account*.json
 !frontend/src/lib/
+# Local diagnostics and live AI evaluation outputs (not release evidence until reviewed).
+artifacts/
+deploy/cloud-run.env.yaml

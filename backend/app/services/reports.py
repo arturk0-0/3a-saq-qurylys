@@ -1,10 +1,13 @@
+import logging
 from html import escape
 from threading import BoundedSemaphore
 
 from app.core.errors import AppError, IntegrationUnavailable
+from app.core.images import IMAGE_DECODER_LOCK
 from app.models.signals import Signal
 
 PDF_SLOTS = BoundedSemaphore(2)
+logger = logging.getLogger(__name__)
 STATUSES = {
     "draft": "Черновик",
     "pending_review": "На проверке",
@@ -91,9 +94,18 @@ def render_pdf(signal: Signal) -> bytes:
         raise AppError(429, "PDF_BUSY", "PDF renderer is busy; try later")
     try:
         try:
-            from weasyprint import HTML
+            # Its first import changes a global Pillow option. Do not race the
+            # strict decoder used to validate uploaded evidence in another thread.
+            with IMAGE_DECODER_LOCK:
+                from weasyprint import HTML
         except (ImportError, OSError):
             raise IntegrationUnavailable("PDF system libraries") from None
-        return HTML(string=report_html(signal), url_fetcher=deny_resource).write_pdf()
+        try:
+            return HTML(string=report_html(signal), url_fetcher=deny_resource).write_pdf()
+        except (OSError, RuntimeError) as exc:
+            logger.error("PDF render failed: exception_type=%s", type(exc).__name__)
+            raise AppError(
+                503, "PDF_RENDER_FAILED", "PDF renderer is unavailable; try later"
+            ) from None
     finally:
         PDF_SLOTS.release()

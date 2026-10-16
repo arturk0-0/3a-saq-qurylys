@@ -50,6 +50,7 @@ class Progress(DomainModel):
 class Complex(DomainModel):
     id: Identifier
     name: ShortText
+    aliases: list[ShortText] = Field(default_factory=list, max_length=20)
     city: Literal["Усть-Каменогорск", "Риддер", "Алтай", "Серебрянск", "Шемонаиха", "Зайсан"]
     region: Literal["ВКО"] = "ВКО"
     address: ShortText

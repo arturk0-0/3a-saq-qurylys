@@ -1,0 +1,14 @@
+# Explicit source-upload allowlist for Cloud Build. No local .env, credentials,
+# frontend configuration, attachments, node_modules or virtual environments.
+*
+!backend/
+!backend/Dockerfile
+!backend/.dockerignore
+!backend/pyproject.toml
+!backend/uv.lock
+!backend/app/
+!backend/app/**/
+!backend/app/**/*.py
+!backend/app/cli/ai_cases.json
+!deploy/
+!deploy/cloudbuild.yaml

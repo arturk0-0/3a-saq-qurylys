@@ -5,10 +5,11 @@ import warnings
 from typing import Protocol
 from uuid import uuid4
 
-from google.api_core.exceptions import GoogleAPICallError
+from google.api_core.exceptions import GoogleAPICallError, RetryError
 from PIL import Image, UnidentifiedImageError
 
 from app.core.errors import AppError, Conflict, IntegrationUnavailable
+from app.core.images import strict_image_validation
 from app.models.auth import Principal
 from app.models.common import utc_now
 from app.models.entities import Advertisement, Evidence
@@ -23,7 +24,7 @@ def validate_image(data: bytes, media_type: str) -> None:
     if not data or len(data) > MAX_UPLOAD:
         raise AppError(413, "FILE_SIZE", "Image must be between 1 byte and 6 MiB")
     try:
-        with warnings.catch_warnings():
+        with strict_image_validation(), warnings.catch_warnings():
             warnings.simplefilter("error", Image.DecompressionBombWarning)
             with Image.open(io.BytesIO(data)) as image:
                 if MEDIA.get(image.format) != media_type or image.width * image.height > 20_000_000:
@@ -31,6 +32,10 @@ def validate_image(data: bytes, media_type: str) -> None:
                 if getattr(image, "n_frames", 1) != 1:
                     raise ValueError("Animated images are not accepted")
                 image.verify()
+            # JPEG/WebP verify() does not decode pixels. Reject truncated/corrupt data
+            # before storing it or paying for an AI request; keep the original bytes.
+            with Image.open(io.BytesIO(data)) as image:
+                image.load()
     except (
         ValueError,
         OSError,
@@ -58,7 +63,7 @@ class FirebaseFileStorage:
             self.runtime.bucket().blob(path).upload_from_string(
                 data, content_type=media_type, if_generation_match=0, timeout=30
             )
-        except GoogleAPICallError:
+        except (GoogleAPICallError, RetryError):
             raise IntegrationUnavailable("Storage upload") from None
 
     def get(self, path: str) -> bytes:
@@ -69,7 +74,7 @@ class FirebaseFileStorage:
                 .blob(path)
                 .download_as_bytes(start=0, end=MAX_UPLOAD, timeout=30)
             )
-        except GoogleAPICallError:
+        except (GoogleAPICallError, RetryError):
             raise IntegrationUnavailable("Storage download") from None
 
     def delete(self, path: str) -> None:
@@ -77,6 +82,10 @@ class FirebaseFileStorage:
             self.runtime.bucket().blob(path).delete(timeout=10)
         except Exception:
             logger.error("Orphan upload cleanup failed; inspect private evidence objects")
+
+
+class _UploadVersionConflict(Conflict):
+    """The upload callback rejected a version before any transactional write."""
 
 
 class FileService:
@@ -115,7 +124,7 @@ class FileService:
             )
             complex_ = self.workspace.complex(ad.complex_id, tx)
             if current.version != version:
-                raise Conflict()
+                raise _UploadVersionConflict()
             current.attachment_ids.append(item.id)
             current.version += 1
             event = audit_event(
@@ -128,6 +137,14 @@ class FileService:
 
         try:
             return self.workspace.store.atomic(operation)
+        except _UploadVersionConflict:
+            # This callback made no writes and did not commit. The unique upload
+            # belongs only to this rejected attempt, so it is safe to remove.
+            try:
+                self.storage.delete(path)
+            except Exception:
+                logger.error("Orphan upload cleanup failed; inspect private evidence objects")
+            raise
         except Exception:
             # Do not delete after an uncertain Firestore commit: an object could already be
             # referenced. Unreferenced private objects may be cleaned by an administrator.

@@ -16,6 +16,7 @@ export interface LegalBasis {
 }
 export interface Complex {
   id: string; name: string; city: string; region: string; address: string; developerId: string
+  aliases?: string[]
   stage: 'planning' | 'under_construction' | 'commissioned'
   coordinates: { latitude: number; longitude: number } | null
   progress: { claimedPercent: number | null; verifiedPercent: number | null; claimedAt: string | null;

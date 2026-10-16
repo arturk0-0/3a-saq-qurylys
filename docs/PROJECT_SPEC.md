@@ -16,6 +16,12 @@
 
 **Data limitations.** Organisers will not give closed registries or state API credentials. The app must provide its own **internal** housing-complex database built from marked demo/seed data, manual documents and optional lawful public-source imports. No interface should misleadingly label fictional permit records as confirmed government data.
 
+**Additional sources, 15 Oct (user-supplied hackathon chat context).** Public links
+including Homeportal, E-License, Qazreestr and an Ashyq Data dataset are catalogued
+in [public-sources.md](public-sources.md). They support optional manual verification;
+they do not imply a working API, complete dataset or a change to R1–R6. The original
+six-page PDF was reread and its mandatory scenarios remain consistent with this spec.
+
 **Open source vs access.** For code assessment the repository must be publicly accessible by the deadline; the **running application** is login-protected and not publicly deployed by default. Judges may run the client and FastAPI locally with internet connectivity. Firebase (hosted DB/auth/storage) and Gemini API are remote. Local ML/LLM is not required.
 
 ## 2. Mandatory end-to-end journey (REQUIRED)

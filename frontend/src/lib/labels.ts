@@ -1,4 +1,5 @@
 import type { FactorCode, VerificationStatus } from './types'
+import { ApiError } from './http'
 
 export const factorLabels: Record<FactorCode, string> = {
   R1: 'Отсутствие применимого правового основания',
@@ -22,4 +23,12 @@ export function formatDate(value: string | null | undefined) {
   if (Number.isNaN(date.getTime())) return 'Некорректная дата'
   return new Intl.DateTimeFormat('ru-KZ', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Qyzylorda' }).format(date)
 }
-export function errorMessage(error: unknown) { return error instanceof Error ? error.message : 'Не удалось выполнить действие' }
+export function localDateTime(value: string | null | undefined) {
+  if (!value) return ''
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '' : new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+}
+export function errorMessage(error: unknown) {
+  if (error instanceof ApiError && error.requestId) return `${error.message} Код обращения: ${error.requestId}`
+  return error instanceof Error ? error.message : 'Не удалось выполнить действие'
+}

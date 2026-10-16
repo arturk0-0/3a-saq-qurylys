@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { ErrorState, FormField, LoadingState } from '@/components/WorkspaceUI'
+import { EditorHeading, ErrorState, FormField, LoadingState, ReviewGuide } from '@/components/WorkspaceUI'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { errorMessage, factorLabels, formatDate } from '@/lib/labels'
 import { useApiQuery } from '@/lib/useApiQuery'
 import type { Advertisement, Page } from '@/lib/types'
 import { EvidenceFile } from '@/features/complexes/EvidenceFile'
+import { MatchingCandidates } from './MatchingCandidates'
 
 interface Hypothesis { id: string; code: 'R2' | 'R3'; quote: string; explanation: string; confidence: number | null;
   status: 'proposed' | 'accepted' | 'rejected'; evidenceId: string; model: string; reviewer: string | null; version: number }
@@ -23,6 +24,8 @@ export function AnalysisPanel({ adId }: { adId: string }) {
   const [error, setError] = useState<string | null>(null)
   const [imageId, setImageId] = useState('')
   const [reviewId, setReviewId] = useState<string | null>(null)
+  const [reviewNotes, setReviewNotes] = useState('')
+  const [reviewDecision, setReviewDecision] = useState('accepted')
   async function analyze() {
     if (!ad.data) return
     setBusy(true); setError(null)
@@ -49,12 +52,13 @@ export function AnalysisPanel({ adId }: { adId: string }) {
     setBusy(true); setError(null)
     try {
       await api(`/api/v1/hypotheses/${hypothesis.id}/decision`, { method: 'POST', body: JSON.stringify({ decision: form.get('decision'), notes: form.get('notes'), expectedVersion: hypothesis.version }) })
-      setReviewId(null); hypotheses.refresh()
+      setReviewId(null); setReviewNotes(''); hypotheses.refresh()
     } catch (error) { setError(errorMessage(error)) } finally { setBusy(false) }
   }
-  return <section className="mt-5 border-t border-border pt-5" aria-label="Анализ объявления">
+  return <section className="analysis-panel mt-5 border-t border-border pt-5" aria-label="Анализ объявления">
     <h3 className="font-semibold">AI-гипотезы · Gemini</h3>
     <p className="form-hint">AI предлагает цитаты для проверки. Он не устанавливает отсутствие разрешений и не подтверждает факторы риска.</p>
+    <ReviewGuide />
     {ad.loading ? <LoadingState /> : ad.error ? <ErrorState message={ad.error} retry={ad.refresh} /> : <>
       <form className="editor-form" onSubmit={upload}><FormField label="Добавить скриншот" hint="JPEG, PNG или WebP, до 6 МБ. Оригинал хранится приватно."><input name="image" type="file" accept="image/jpeg,image/png,image/webp" required disabled={busy} /></FormField><Button variant="outline" disabled={busy}>Загрузить</Button></form>
       <FormField label="Источник анализа"><select value={imageId} disabled={busy} onChange={(event) => setImageId(event.target.value)}><option value="">Текст объявления</option>{ad.data?.attachmentIds.map((id, index) => <option value={id} key={id}>Скриншот {index + 1}</option>)}</select></FormField>
@@ -65,14 +69,17 @@ export function AnalysisPanel({ adId }: { adId: string }) {
     {runs.error && <ErrorState message={runs.error} retry={runs.refresh} />}
     {runs.data?.items.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((run) => <details className="my-3 text-sm" key={run.id}><summary>{formatDate(run.createdAt)} · {run.model} · {{ running: 'Запрос начат — обновите результат', failed: 'Анализ не выполнен', succeeded: 'Анализ завершён' }[run.status]}</summary>
       {run.extraction && <div className="inline-notice"><p>{run.extraction.uncertainty}</p><p>Названия из источника: {run.extraction.mentionedComplexes.join(', ') || 'не найдены'}. Привязку к ЖК выбирает аналитик.</p><p>Условия оплаты: {run.extraction.paymentTerms.join('; ') || 'не выделены'}.</p>{!run.extraction.hypotheses.length && <p>Поддержанных гипотез нет. Это не подтверждение безопасности объекта.</p>}</div>}
+      {run.status === 'succeeded' && Boolean(run.extraction?.mentionedComplexes.length) && <MatchingCandidates adId={adId} runId={run.id} />}
       {run.status === 'failed' && <p>Результат не сохранён как гипотеза. Код: {run.errorCode}</p>}</details>)}
     {runs.data?.nextCursor && <p className="form-hint">Показаны первые 100 запусков по ID. Полная история доступна в журнале ЖК.</p>}
-    <Button size="sm" variant="outline" disabled={busy} onClick={() => { runs.refresh(); hypotheses.refresh(); ad.refresh() }}>Обновить результаты</Button>
+    <Button size="sm" variant="outline" disabled={busy} onClick={() => { setError(null); runs.refresh(); hypotheses.refresh(); ad.refresh() }}>Обновить результаты</Button>
     {hypotheses.loading ? <LoadingState /> : hypotheses.error ? <ErrorState message={hypotheses.error} retry={hypotheses.refresh} /> : hypotheses.data?.items.map((item) => <article className="evidence-card mt-4" key={item.id}>
       <strong>{item.code} · {factorLabels[item.code]}</strong><p className="text-sm">{{ proposed: 'AI-гипотеза — не подтверждено', accepted: 'Принято для проверки доказательства', rejected: 'Гипотеза отклонена' }[item.status]}</p>
       <blockquote>{item.quote}</blockquote><p>{item.explanation}</p><p className="form-hint">Модель: {item.model}. {item.confidence !== null && `Самооценка модели: ${Math.round(item.confidence * 100)}% (не вероятность нарушения).`}</p>
-      {item.status === 'proposed' && <Button size="sm" variant="outline" onClick={() => setReviewId(item.id)}>Рассмотреть гипотезу</Button>}
-      {reviewId === item.id && <form className="editor-form" onSubmit={(event) => review(event, item)}><FormField label="Решение по гипотезе"><select name="decision"><option value="accepted">Принять к проверке</option><option value="rejected">Отклонить</option></select></FormField><FormField label="Обоснование"><textarea name="notes" required maxLength={2000} /></FormField><Button disabled={busy}>Сохранить решение</Button></form>}
+      {item.status === 'proposed' && <Button size="sm" variant="outline" disabled={busy} onClick={() => { if (reviewId !== item.id) { setReviewNotes(''); setReviewDecision('accepted') }; setReviewId(item.id) }}>Рассмотреть гипотезу</Button>}
+      {reviewId === item.id && (item.status === 'proposed'
+        ? <form className="editor-form" onSubmit={(event) => review(event, item)}><EditorHeading>Рассмотрение гипотезы {item.code}</EditorHeading><FormField label="Решение по гипотезе"><select name="decision" disabled={busy} value={reviewDecision} onChange={event => setReviewDecision(event.target.value)}><option value="accepted">Принять к проверке</option><option value="rejected">Отклонить</option></select></FormField><FormField label="Обоснование"><textarea name="notes" required maxLength={2000} disabled={busy} value={reviewNotes} onChange={event => setReviewNotes(event.target.value)} /></FormField><div className="form-actions"><Button disabled={busy}>Сохранить решение</Button><Button type="button" variant="outline" disabled={busy} onClick={() => setReviewId(null)}>Отмена</Button></div></form>
+        : <p className="inline-notice">Гипотеза уже рассмотрена. Несохранённый текст вашего решения: {reviewNotes || 'не введён'}. Повторное решение не отправлено.</p>)}
       {item.status === 'accepted' && <p className="inline-notice">Далее откройте ЖК → Доказательства, проверьте источник и отдельно подтвердите фактор в панели R1–R6. Балл пока не изменён.</p>}
       <Link className="detail-link mt-3" to={`/complexes/${ad.data?.complexId}?tab=evidence&source=${item.evidenceId}`}>К доказательству →</Link>
     </article>)}

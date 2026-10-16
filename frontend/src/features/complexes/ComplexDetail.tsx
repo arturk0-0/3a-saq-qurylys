@@ -1,15 +1,17 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { DemoBadge, EmptyState, ErrorState, FormField, LoadingState, PageHeading } from '@/components/WorkspaceUI'
+import { DemoBadge, EmptyState, ErrorState, FormField, LoadingState, PageHeading, ReviewGuide } from '@/components/WorkspaceUI'
 import { AdvertisementCard, AdvertisementForm } from '@/features/advertisements/AdvertisementsPage'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { basisLabels, errorMessage, formatDate, stageLabels } from '@/lib/labels'
+import { basisLabels, formatDate, localDateTime, stageLabels } from '@/lib/labels'
 import { useApiQuery } from '@/lib/useApiQuery'
+import { useReviewRecord } from '@/lib/useReviewRecord'
 import type { Advertisement, AuditEvent, Complex, Page } from '@/lib/types'
 import { EvidencePanel } from './EvidencePanel'
 import { RiskPanel } from './RiskPanel'
+import { PublicSources } from './PublicSources'
 
 function ComplexAdvertisements({ id }: { id: string }) {
   const [creating, setCreating] = useState(false)
@@ -23,23 +25,25 @@ function ComplexAdvertisements({ id }: { id: string }) {
   </>
 }
 
-function DocumentsPanel({ complex_, onChanged }: { complex_: Complex; onChanged: () => void }) {
+function DocumentsPanel({ complex_: initialComplex, onChanged }: { complex_: Complex; onChanged: () => void }) {
   const { api } = useAuth()
+  const record = useReviewRecord(initialComplex, `/api/v1/complexes/${initialComplex.id}`)
+  const complex_ = record.current
   const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const error = record.error
   const basis = complex_.legalBasis
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
-    setBusy(true); setError(null)
+    setBusy(true); record.clearError()
     try {
       await api(`/api/v1/complexes/${complex_.id}/legal-basis`, { method: 'PATCH', body: JSON.stringify({
         basis: { type: form.get('type'), status: form.get('status'), reference: form.get('reference'), source: form.get('source'),
           validUntil: form.get('validUntil') ? new Date(String(form.get('validUntil'))).toISOString() : null }, expectedVersion: complex_.version,
       }) })
       setEditing(false); onChanged()
-    } catch (error) { setError(errorMessage(error)) } finally { setBusy(false) }
+    } catch (error) { record.failed(error) } finally { setBusy(false) }
   }
   return <div className="content-pad"><div className="flex items-center justify-between gap-3"><h2>Правовое основание</h2><Button variant="outline" onClick={() => setEditing(!editing)}>Пересмотреть</Button></div>
     <dl className="details-grid"><div><dt>Тип</dt><dd>{basisLabels[basis.type]}</dd></div><div><dt>Статус</dt><dd>{{ unknown: 'Не проверено', confirmed: 'Подтверждено', disproved: 'Опровергнуто' }[basis.status]}</dd></div>
@@ -49,8 +53,12 @@ function DocumentsPanel({ complex_, onChanged }: { complex_: Complex; onChanged:
       <FormField label="Тип основания"><select name="type" defaultValue={basis.type}>{Object.entries(basisLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></FormField>
       <FormField label="Статус проверки"><select name="status" defaultValue={basis.status}><option value="unknown">Не проверено</option><option value="confirmed">Подтверждено</option><option value="disproved">Опровергнуто</option></select></FormField>
     </div><FormField label="Реквизиты"><input name="reference" defaultValue={basis.reference} maxLength={500} /></FormField><FormField label="Источник проверки"><textarea name="source" defaultValue={basis.source} rows={3} maxLength={2000} /></FormField>
-      <FormField label="Действует до (если указано)"><input name="validUntil" type="datetime-local" defaultValue={basis.validUntil ? new Date(new Date(basis.validUntil).getTime() - new Date(basis.validUntil).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''} /></FormField>
-      {error && <ErrorState message={error} />}<div className="form-actions"><Button disabled={busy}>Сохранить проверку</Button><Button type="button" variant="outline" onClick={() => setEditing(false)}>Отмена</Button></div></form>}
+      <FormField label="Действует до (если указано)"><input name="validUntil" type="datetime-local" defaultValue={localDateTime(basis.validUntil)} /></FormField>
+      {complex_.version !== initialComplex.version && <p className="inline-notice">Актуальная версия ЖК: {complex_.version}. Текущие сведения показаны выше. Ваши поля сохранены; сверьте их перед повторным решением.</p>}
+      {error && <ErrorState message={error} />}
+      {record.conflict && <Button type="button" variant="outline" disabled={record.refreshing} onClick={() => { void record.refresh() }}>{record.refreshing ? 'Обновляем данные…' : 'Обновить данные ЖК'}</Button>}
+      <div className="form-actions"><Button disabled={busy || record.conflict || record.refreshing}>Сохранить проверку</Button><Button type="button" variant="outline" disabled={busy || record.refreshing} onClick={() => setEditing(false)}>Отмена</Button></div></form>}
+    <PublicSources complexId={complex_.id} demo={complex_.demo} />
   </div>
 }
 
@@ -77,9 +85,18 @@ export function ComplexDetail() {
   if (error) return <ErrorState message={error} retry={refresh} />
   if (!complex_) return <EmptyState title="ЖК не найден" />
   const tabs = [['overview', 'Обзор'], ['ads', 'Объявления'], ['documents', 'Документы'], ['evidence', 'Доказательства'], ['history', 'История']]
+  function navigateTabs(event: KeyboardEvent<HTMLDivElement>) {
+    const current = tabs.findIndex(([key]) => key === tab)
+    const next = { ArrowRight: (current + 1) % tabs.length, ArrowLeft: (current + tabs.length - 1) % tabs.length, Home: 0, End: tabs.length - 1 }[event.key]
+    if (next === undefined) return
+    event.preventDefault()
+    setTab(tabs[next][0])
+    event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus()
+  }
   return <><Link to="/complexes" className="back-link"><ArrowLeft size={16} /> К реестру</Link>
     <PageHeading eyebrow={`Карточка объекта · ${complex_.city}`} title={complex_.name.replace(/^DEMO — /, '')} description={complex_.address} action={<div className="flex items-center gap-4">{complex_.demo && <DemoBadge />}<Link className="detail-link" to={`/signals/new?complex=${complex_.id}`}>Создать сигнал →</Link></div>} />
-    <div className="detail-layout"><section className="panel min-w-0"><div className="tabs" role="tablist" aria-label="Разделы карточки">{tabs.map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={tab === key} aria-controls={`panel-${key}`} id={`tab-${key}`} onClick={() => setTab(key)}>{label}</button>)}</div>
+    <ReviewGuide />
+    <div className="detail-layout"><section className="panel min-w-0"><div className="tabs" role="tablist" aria-label="Разделы карточки" onKeyDown={navigateTabs}>{tabs.map(([key, label]) => <button key={key} type="button" role="tab" tabIndex={tab === key ? 0 : -1} aria-selected={tab === key} aria-controls={`panel-${key}`} id={`tab-${key}`} onClick={() => setTab(key)}>{label}</button>)}</div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {tab === 'overview' && <div className="content-pad"><div className="object-illustration"><MapPin size={26} /><span>{complex_.city} · Восточно-Казахстанская область</span></div>
           <h2 className="mt-6">Сведения об объекте</h2><dl className="details-grid"><div><dt>Застройщик</dt><dd>{complex_.developer?.name}</dd></div><div><dt>БИН (вымышленный)</dt><dd>{complex_.developer?.bin}</dd></div>

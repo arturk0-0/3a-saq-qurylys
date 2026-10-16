@@ -47,7 +47,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse(
             status_code=status,
             content=body.model_dump(),
-            headers={"X-Request-ID": request_id},
+            headers={"X-Request-ID": request_id, "Cache-Control": "no-store"},
         )
 
     @application.middleware("http")
@@ -55,8 +55,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         request.state.request_id = str(uuid4())
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            # ServerErrorMiddleware re-raises even handled exceptions to the ASGI server.
+            # Catch before that boundary so Uvicorn cannot log private exception text.
+            response = await unexpected_error(request, exc)
         response.headers["X-Request-ID"] = request.state.request_id
+        if request.url.path.startswith("/api/v1/"):
+            response.headers["Cache-Control"] = "no-store"
         return response
 
     @application.exception_handler(HTTPException)
@@ -69,6 +76,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @application.exception_handler(AppError)
     async def app_error(request: Request, exc: AppError) -> JSONResponse:
+        if exc.status_code >= 500 or exc.status_code == 429:
+            logger.warning(
+                "Request failed: request_id=%s code=%s",
+                getattr(request.state, "request_id", "unknown"),
+                exc.code,
+            )
         response = error_response(request, exc.status_code, exc.code, exc.message)
         if exc.status_code == 401:
             response.headers["WWW-Authenticate"] = "Bearer"

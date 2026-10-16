@@ -4,7 +4,9 @@
 Исключение — публичный `/health`. Firestore/Storage закрыты для прямых клиентов.
 
 Коллекции: `developers`, `complexes`, `advertisements`, `evidence`, `auditLogs`,
-`seedRuns`; следующие этапы добавляют `analysisRuns`, `aiHypotheses`, `signals`.
+`seedRuns`, `analysisRuns`, `aiHypotheses`, `signals`, `signalRevisions`,
+`usageLimits`; `users` зарезервирована адаптером, роль берётся из проверенного
+Firebase ID token, а не доверяется пользовательскому документу.
 JSON использует camelCase, даты ISO 8601 с часовым поясом, идентификаторы — ASCII.
 DEMO scope проверяется сервером. Исходный текст объявления не редактируется.
 
@@ -15,6 +17,12 @@ R1–R6 встроены в документ ЖК: так версия карт�
 Решение по источнику и решение по фактору — два отдельных действия.
 
 ## Контракты
+
+Дополнение AI-05: необязательное поле ЖК `aliases` — до 20 явно заданных командой
+альтернативных названий, каждое до 500 символов. При чтении старых документов
+значение по умолчанию `[]`; миграция и перезапись существующего seed не нужны.
+`POST /complexes` принимает это поле. AI не редактирует его. Расширение проверяется
+в общей frontend/backend ветке и остаётся предметом командного review перед merge.
 
 - `GET /complexes?q=&city=&zone=&sort=risk&limit=50&cursor=0` — список, total,
   nextCursor. Поиск и сортировка ограничены 500 записями DEMO-каталога после
@@ -37,11 +45,41 @@ R1–R6 встроены в документ ЖК: так версия карт�
   основание нельзя совместить с подтверждённым R1.
 - `GET /complexes/{id}/history` — история по убыванию createdAt, ID как tie-breaker.
   Перед запуском развернуть индексы из firestore.indexes.json.
+- `GET /advertisements/{id}/matching-candidates?run_id={id}` — read-only кандидаты
+  для названий из сохранённого завершённого AI-запуска этого объявления. Чужой
+  ad/run — 422, незавершённый run — 409, нет доступа/DEMO-scope — стандартный отказ.
+  Возвращает runId, advertisementId, currentComplexId, catalogLimited и groups:
+  mention, ambiguous, candidateCount, candidatesLimited, candidates (complexId,
+  name, city, matchedBy=name|alias|partial_name, matchedName, demo). Не имеет поля
+  выбранного/подтверждённого совпадения и ничего не пишет в Firestore.
+- `POST /advertisements/{id}/screenshots?expected_version={n}` — raw bytes
+  статического PNG/JPEG/WebP с соответствующим Content-Type, до 6 MiB и
+  20 мегапикселей. Ответ — Evidence; версия объявления увеличивается.
+- `GET /evidence/{id}/file` — контролируемая загрузка после auth/DEMO-проверки
+  и проверки размера/SHA-256; публичный Storage URL не создаётся.
+- `POST /advertisements/{id}/analyze` — requestId UUID, expectedVersion,
+  необязательный screenshotId этого объявления. Сохраняет запуск, извлечённые
+  данные, proposed-гипотезы и proposed-доказательства, не подтверждая факторы.
+  Повтор того же успешного requestId возвращает сохранённый результат;
+  незавершённая/неуспешная попытка или чужой requestId — 409, без нового AI-вызова.
+- `GET /advertisements/{id}/analysis`, `/advertisements/{id}/hypotheses` —
+  страничные запуски и гипотезы. `POST /hypotheses/{id}/decision` —
+  expectedVersion, accepted/rejected и notes; решение не подтверждает источник.
+- `GET/POST /signals`, `GET /signals/{id}`, `POST /signals/{id}/decision` —
+  список/создание/детали и submit/return/confirm с expectedVersion и notes.
+  Создание требует expectedComplexVersion; submit обновляет снимок, confirm
+  устаревшего снимка отклоняется. Изменение статуса атомарно с audit и ревизией.
+- `GET /signals/{id}/revisions/{version}`, `/signals/{id}/history` —
+  неизменяемые ревизии и страничная история, с проверкой доступа к сигналу.
+- `GET /signals/{id}/report?format=pdf|html` — закрытый отчёт из сохранённого
+  снимка, `no-store`; HTML экранируется, локальные/внешние ресурсы PDF запрещены.
 
 Конфликт версии возвращает 409, неверный ввод 422; обновите карточку и пересмотрите
 решение. UI никогда не присылает reviewer и не считает баллы самостоятельно.
 Источник, используемый подтверждённым фактором, нельзя изменить до явного
 пересмотра фактора. События аудита не имеют endpoint редактирования/удаления.
 
-Тестовый MemoryStore используется только в pytest. Реальное приложение работает
-через Firebase SDK; отсутствие конфигурации возвращает ошибку, а не тестовые данные.
+MemoryStore используется только явно обозначенными тестами и opt-in QA runner.
+Отдельный локальный набор проверяет настоящий SDK с изолированным эмулятором.
+Реальное приложение работает через Firebase SDK; отсутствие конфигурации
+возвращает ошибку, а не тестовые данные.
