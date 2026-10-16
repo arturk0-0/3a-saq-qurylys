@@ -259,3 +259,7 @@ AI и не меняет риск. Подробнее об исправлении
 API+Hosting. Main/живая инфраструктура этой работой не изменяются. Drone не начат:
 он опционален, критерии организаторов ещё не зафиксированы. Submission tag и
 публичность репозитория остаются отдельными release-действиями.
+
+PR модуля: https://github.com/arturk0-0/3a-saq-qurylys/pull/7, base —
+`feat/frontend-readable-workflow`. После merge PR #6 base переключается на main;
+только затем merge нового модуля после зелёного CI и командного review.
