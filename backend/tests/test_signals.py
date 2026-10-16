@@ -299,3 +299,41 @@ def test_pdf_untrusted_fields_do_not_load_resources(workspace, monkeypatch):
         == f'attachment; filename="signal-{signal["id"]}.pdf"'
     )
     assert response.headers["x-content-type-options"] == "nosniff"
+
+
+def test_pdf_distinguishes_historical_ai_provenance_from_snapshot_human_verification(workspace):
+    client, store = workspace
+    source_id = store.documents["complexes"]["demo-complex-02"]["factors"][1]["evidenceIds"][0]
+    source = store.documents["evidence"][source_id]
+    assert source["status"] == "confirmed" and source["reviewer"]
+    reference = "AI hypothesis; advertising-extraction-v1; unverified"
+    source["sourceReference"] = reference
+    signal = create(client)
+    before = deepcopy(store.documents)
+    response = client.get(f"/api/v1/signals/{signal['id']}/report?format=html")
+    assert response.status_code == 200
+    assert reference in response.text
+    assert "Историческая запись AI до проверки:" in response.text
+    assert "Пометка unverified относится к моменту создания AI-гипотезы" in response.text
+    assert "Источник проверен аналитиком · версия" in response.text
+    assert "Проверил источник:" in response.text and source["reviewer"] in response.text
+    assert "Решение по сигналу ещё не принято" in response.text
+    assert "70 / 100 · RED — Высокий приоритет" in response.text
+    assert store.documents == before
+    # A later source edit must not rewrite the original report's provenance.
+    store.documents["evidence"][source_id]["sourceReference"] = "NEW REFERENCE MUST NOT APPEAR"
+    assert client.get(f"/api/v1/evidence/{source_id}").json()["sourceReference"].startswith("NEW")
+    assert reference in client.get(f"/api/v1/signals/{signal['id']}/report?format=html").text
+
+
+def test_report_escapes_historical_reference_and_does_not_reclassify_manual_provenance(workspace):
+    client, store = workspace
+    for row in store.documents["evidence"].values():
+        row["sourceReference"] = 'manual unverified note <img src="https://private.invalid/secret">'
+    signal = create(client)
+    response = client.get(f"/api/v1/signals/{signal['id']}/report?format=html")
+    assert "Историческая запись AI до проверки:" not in response.text
+    assert 'src="https://private.invalid' not in response.text
+    assert "&lt;img" in response.text and "manual unverified note" in response.text
+    assert "Реквизиты источника:" in response.text
+    assert "Нет подтверждения" in response.text
