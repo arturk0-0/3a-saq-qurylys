@@ -5,7 +5,7 @@ import warnings
 from typing import Protocol
 from uuid import uuid4
 
-from google.api_core.exceptions import GoogleAPICallError
+from google.api_core.exceptions import GoogleAPICallError, RetryError
 from PIL import Image, UnidentifiedImageError
 
 from app.core.errors import AppError, Conflict, IntegrationUnavailable
@@ -63,7 +63,7 @@ class FirebaseFileStorage:
             self.runtime.bucket().blob(path).upload_from_string(
                 data, content_type=media_type, if_generation_match=0, timeout=30
             )
-        except GoogleAPICallError:
+        except (GoogleAPICallError, RetryError):
             raise IntegrationUnavailable("Storage upload") from None
 
     def get(self, path: str) -> bytes:
@@ -74,7 +74,7 @@ class FirebaseFileStorage:
                 .blob(path)
                 .download_as_bytes(start=0, end=MAX_UPLOAD, timeout=30)
             )
-        except GoogleAPICallError:
+        except (GoogleAPICallError, RetryError):
             raise IntegrationUnavailable("Storage download") from None
 
     def delete(self, path: str) -> None:
