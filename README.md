@@ -173,6 +173,10 @@ Gemini использует серверный `GEMINI_API_KEY` и выбран�
 Диагностика: `uv run --frozen python -m app.cli.check --online --require-ai` из `backend/`;
 она проверяет доступ без генерации и изменения данных. Набор входов и команда
 для платного RU/KZ/image-прогона описаны в [методологии AI](docs/ai-methodology.md).
+При `AI_INVALID_RESPONSE` сохраните код обращения: безопасный поиск причины
+в серверных логах описан в [инструкции deployment](docs/cloud-deployment.md).
+Изменения диагностики/PDF и границы локальных проверок —
+[отчёт B-03/B-04](docs/backend-followup-report.md).
 Настройки `VITE_FIREBASE_*` предназначены
 только для browser SDK. Никогда не помещайте Admin credentials или Gemini key в `VITE_*`.
 Credentials храните вне Git; для монтирования используйте `compose.firebase.yaml`.
