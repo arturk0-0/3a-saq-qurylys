@@ -3,6 +3,8 @@
 Дата задачи: 16 октября 2026 (Asia/Qyzylorda).
 База: `fix/security-demo-hardening`, `d579566`.
 Ветка: `fix/backend-concurrency-recovery`.
+PR: https://github.com/arturk0-0/3a-saq-qurylys/pull/4,
+база `fix/security-demo-hardening` (PR #3).
 
 ## Границы
 
@@ -73,10 +75,92 @@ transactional decorator с заменёнными RPC: доступа к обл�
 поведение настоящего SDK проверено отдельно с заменёнными RPC. Это не
 нагрузочное измерение и не тест производительности живого Firestore.
 
-## Продолжение
+## Итоговые проверки
 
-Сохранить результаты полного backend-набора; отдельно проверить совместимость
-с веткой друга во временной копии, без merge/main/deploy. Затем PR и CI.
+- Полный backend pytest: **238 passed**; исходная база содержала 218 тестов.
+- Ruff check и format check: **69 Python-файлов**, успешно.
+- `compileall -q app`: успешно после production-изменений; позднее менялись
+  только тесты и этот отчёт.
+- Ветка отправлялась по законченным этапам. CI последнего коммита проверяется
+  через Checks PR; результат не следует переносить с предыдущего SHA.
+
+### Совместимость с работой друга
+
+Создан отдельный worktree `/tmp/saq-concurrency-integration` из точного
+`8dce105` ветки друга. Только в эту временную копию применён backend diff
+`d579566..0961a0d`; source production backend после этого не менялся.
+Это проверка сочетания двух веток, а не merge, публикация или изменение
+ветки друга. Временная копия не содержит `.env`/credentials.
+
+После чистого `npm ci` по lockfile:
+
+- **61 frontend-тест**, TypeScript и Vite production build: успешно.
+- Runner друга `frontend/qa/release/run.py`: **15 контрольных групп passed**,
+  **496 browser requests**, 0 page errors, 0 external requests.
+- Пройдены вход/выход/истечение сессии, каталог/навигация, новое объявление,
+  AI success/errors, screenshots, AI→source→R2 (10→10→35), конфликты редакторов,
+  жизненный цикл сигнала, история/пагинация/retry, настоящий локальный PDF,
+  клавиатура и ширины 1366/375/320.
+- Артефакты: `/tmp/saq-concurrency-integration-artifacts/results.json`,
+  логи QA API/Vite и локальные PDF/снимки. Они синтетические, не облачные.
+- Runner использует настоящие API/services/WeasyPrint, тестовые
+  MemoryStore/FakeFiles/Gemini MockTransport/browser Auth adapter. Процессы
+  только loopback, credentials исключены, внешние browser requests блокируются.
+  По завершении runner остановил свои процессы.
+
+У воспроизводимой frontend-сборки ветки друга осталось предупреждение Vite:
+основной JS chunk 501.56 kB raw / 153.66 kB gzip. Это не ошибка сборки;
+frontend и его зависимости в этой задаче не менялись.
+
+## Проверка и публикация владельцем
+
+Команды локальных backend-проверок из корня репозитория:
+
+```bash
+cd backend
+uv sync --frozen
+uv run --frozen ruff check .
+uv run --frozen ruff format --check .
+uv run --frozen pytest -q
+```
+
+После независимого review и зелёного CI **последнего коммита**, из корня
+проверенного checkout с этими backend-изменениями, при желании публикации:
+
+```bash
+SAQ_IMAGE="europe-west1-docker.pkg.dev/saq-qurylys/saq-qurylys/api:concurrency-$(date -u +%Y%m%d-%H%M%S)"
+gcloud builds submit . --project=saq-qurylys \
+  --config=deploy/cloudbuild.yaml --substitutions="_IMAGE=$SAQ_IMAGE"
+```
+
+Только после `SUCCESS` сборки, в той же сессии:
+
+```bash
+gcloud run services update saq-qurylys-api --project=saq-qurylys \
+  --region=europe-west1 --image="$SAQ_IMAGE"
+```
+
+Обновляется только образ: действующие env, секреты, сервисный аккаунт и
+выбранная владельцем модель сохраняются. Hosting эта ветка не меняет.
+Для публикации frontend друга нужен отдельно проверенный checkout его работы;
+проверка временного сочетания веток не означает, что они уже объединены.
+
+## Оставшаяся ручная приёмка и пределы
 
 Все локальные adapters обозначены как тестовые; результаты не подтверждают
 живые Firestore contention, Storage/IAM, облачный PDF и реальный Gemini.
+Длительность SDK retries в живой сети не измерялась; общий дедлайн всех RPC
+внутри Firestore transaction не менялся. Это классификация исчерпанных retries,
+а не гарантия предельного wall-clock времени.
+
+Владелец проверяет прежнюю облачную матрицу из judge-runbook после публикации:
+вход, обычный новый анализ, проверка источника/фактора, сигнал, историю и PDF.
+Проверку гонок/квот проводить в отдельном DEMO-проекте, без платных провайдеров;
+не запускать потоковый тест против живого сайта.
+При неизвестном commit исходе сначала обновлять карточку/историю. Для AI
+использовать тот же requestId при проверке сохранённого результата: новый ID
+означает новый анализ и расход квоты. Не обещается автоматическое восстановление
+записи `running`, если процесс был прерван: сохранена консервативная защита от
+повторной оплаты, без фоновых workers и новых API.
+
+`main`, production, правила доступа и файлы параллельного Кодекса не изменены.

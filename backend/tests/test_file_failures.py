@@ -69,7 +69,10 @@ def test_simultaneous_uploads_leave_only_the_committed_private_file():
 
 
 @pytest.mark.parametrize("committed", [False, True])
-def test_unknown_transaction_outcome_never_deletes_uploaded_evidence(monkeypatch, committed):
+@pytest.mark.parametrize("status", [409, 503])
+def test_unknown_transaction_outcome_never_deletes_uploaded_evidence(
+    monkeypatch, committed, status
+):
     from app.services.files import FileService
     from app.services.seed_data import build_demo_seed
     from app.services.workspace import WorkspaceService
@@ -84,12 +87,13 @@ def test_unknown_transaction_outcome_never_deletes_uploaded_evidence(monkeypatch
     def interrupted(operation):
         if committed:
             atomic(operation)
-        raise AppError(503, "INTEGRATION_UNAVAILABLE", "Test-only unknown commit result")
+        # A generic 409 is not proof that our callback rejected before writing.
+        raise AppError(status, "TEST_FAILURE", "Test-only unknown commit result")
 
     monkeypatch.setattr(store, "atomic", interrupted)
     with pytest.raises(AppError) as error:
         files.upload("demo-ad-01", 1, png(), "image/png", USER)
-    assert error.value.status_code == 503
+    assert error.value.status_code == status
     assert len(storage.objects) == 1
     ad = store.get("advertisements", "demo-ad-01")
     assert ad["version"] == (2 if committed else 1)

@@ -6,6 +6,7 @@ import pytest
 from google.api_core.exceptions import Aborted, RetryError, ServiceUnavailable
 from google.auth.credentials import AnonymousCredentials
 from google.cloud import firestore
+from google.cloud.firestore_v1.document import DocumentReference
 from google.cloud.firestore_v1.transaction import Transaction
 
 from app.core.errors import AppError, Conflict
@@ -72,3 +73,14 @@ def test_sdk_retry_deadline_becomes_safe_unavailable(transaction_store, monkeypa
         store.atomic(lambda tx: None)
     assert (error.value.status_code, error.value.code) == (503, "INTEGRATION_UNAVAILABLE")
     assert "PRIVATE_RETRY" not in caplog.text + error.value.message
+
+
+def test_sdk_read_retry_deadline_is_safe_unavailable(transaction_store, monkeypatch, caplog):
+    store, _ = transaction_store
+    read = Mock(side_effect=RetryError("PRIVATE_READ", ServiceUnavailable("PRIVATE_CAUSE")))
+    monkeypatch.setattr(DocumentReference, "get", read)
+    with pytest.raises(AppError) as error:
+        store.get("complexes", "test-complex")
+    assert (error.value.status_code, error.value.code) == (503, "INTEGRATION_UNAVAILABLE")
+    read.assert_called_once_with(timeout=10)
+    assert "PRIVATE" not in caplog.text + error.value.message
