@@ -84,6 +84,10 @@ class FirebaseFileStorage:
             logger.error("Orphan upload cleanup failed; inspect private evidence objects")
 
 
+class _UploadVersionConflict(Conflict):
+    """The upload callback rejected a version before any transactional write."""
+
+
 class FileService:
     def __init__(self, workspace: WorkspaceService, storage: FileStorage):
         self.workspace = workspace
@@ -120,7 +124,7 @@ class FileService:
             )
             complex_ = self.workspace.complex(ad.complex_id, tx)
             if current.version != version:
-                raise Conflict()
+                raise _UploadVersionConflict()
             current.attachment_ids.append(item.id)
             current.version += 1
             event = audit_event(
@@ -133,6 +137,14 @@ class FileService:
 
         try:
             return self.workspace.store.atomic(operation)
+        except _UploadVersionConflict:
+            # This callback made no writes and did not commit. The unique upload
+            # belongs only to this rejected attempt, so it is safe to remove.
+            try:
+                self.storage.delete(path)
+            except Exception:
+                logger.error("Orphan upload cleanup failed; inspect private evidence objects")
+            raise
         except Exception:
             # Do not delete after an uncertain Firestore commit: an object could already be
             # referenced. Unreferenced private objects may be cleaned by an administrator.
