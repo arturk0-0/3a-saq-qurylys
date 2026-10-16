@@ -187,3 +187,14 @@ def test_api_requires_authentication_and_rejects_client_forged_decisions(service
         )
         reviewed = client.post(path, json=decision().model_dump(by_alias=True))
         assert reviewed.status_code == 200 and reviewed.json()["reviewer"] == USER.uid
+
+
+def test_unicode_alias_expansion_stays_valid_for_the_existing_500_character_contract(service):
+    complex_id = service.store.documents["advertisements"][A]["complexId"]
+    service.store.documents["complexes"][complex_id]["aliases"] = ["ß" * 300]
+    for ad_id in (A, B):
+        service.store.documents["advertisements"][ad_id]["text"] += " " + "ß" * 300
+    item = service.candidates(A)["items"][0]
+    alias = next(match for match in item["snapshot"]["matches"] if match["kind"] == "alias")
+    assert alias["normalized"] == "ss" * 300
+    assert service.save(A, payload(service), USER).status == "proposed"

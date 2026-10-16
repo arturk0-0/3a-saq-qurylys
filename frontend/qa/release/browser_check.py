@@ -178,6 +178,8 @@ with sync_playwright() as p:
         expect(page).to_have_url(re.compile(r"cursor=2"))
         page.get_by_role("button", name="В начало", exact=True).click()
         expect(page.get_by_role("region", name="Жилые комплексы")).to_be_visible()
+        # Let intercepted route.fetch requests finish before removing their handlers.
+        page.wait_for_load_state("networkidle")
         page.unroute_all(behavior="wait")
         checkpoint(
             "catalog",
@@ -653,6 +655,8 @@ with sync_playwright() as p:
         )
 
         # LINK-05: real local routes/services, synthetic accounts; no AI request.
+        # Let intercepted route.fetch requests finish before removing their handlers.
+        page.wait_for_load_state("networkidle")
         page.unroute_all(behavior="wait")
         page.set_viewport_size({"width": 1366, "height": 768})
         trace_ads = []

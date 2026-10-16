@@ -65,7 +65,7 @@ function DocumentsPanel({ complex_: initialComplex, onChanged }: { complex_: Com
 function HistoryPanel({ id }: { id: string }) {
   const [cursor, setCursor] = useState('')
   const { data, loading, error, refresh } = useApiQuery<Page<AuditEvent>>(`/api/v1/complexes/${id}/history?limit=100${cursor ? `&cursor=${cursor}` : ''}`)
-  const actionLabels: Record<string, string> = { 'advertisement.create': 'Добавлено объявление', 'evidence.create': 'Добавлен источник', 'evidence.review': 'Проверен источник', 'factor.review': 'Пересмотрен фактор', 'basis.review': 'Проверено правовое основание', 'complex.create': 'Создан ЖК' }
+  const actionLabels: Record<string, string> = { 'advertisement.create': 'Добавлено объявление', 'evidence.create': 'Добавлен источник', 'evidence.review': 'Проверен источник', 'factor.review': 'Пересмотрен фактор', 'basis.review': 'Проверено правовое основание', 'complex.create': 'Создан ЖК', 'adLink.propose': 'Сохранено рекламное совпадение', 'adLink.review': 'Проверено рекламное совпадение' }
   return <div className="content-pad"><h2>История действий</h2>{loading ? <LoadingState /> : error ? <ErrorState message={error} retry={refresh} /> : !data?.items.length ? <EmptyState title="Действий аналитиков пока нет" />
     : <ol className="timeline">{[...data.items].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((event) => <li key={event.id}><strong>{actionLabels[event.action] || event.action}</strong>
       <p>{formatDate(event.createdAt)} · {event.actorUid}</p>{typeof event.details.notes === 'string' && <blockquote>{event.details.notes}</blockquote>}

@@ -7,7 +7,7 @@ from app.models.common import DomainModel, Identifier
 
 class TraceOccurrence(DomainModel):
     kind: Literal["phone", "domain", "alias"]
-    normalized: str = Field(min_length=1, max_length=500)
+    normalized: str = Field(min_length=1, max_length=10000)
     quote: str = Field(min_length=1, max_length=20000)
     start: int = Field(ge=0, le=20000)
     end: int = Field(ge=1, le=20000)
@@ -16,7 +16,7 @@ class TraceOccurrence(DomainModel):
 
 class TraceMatch(DomainModel):
     kind: Literal["phone", "domain", "alias"]
-    normalized: str = Field(min_length=1, max_length=500)
+    normalized: str = Field(min_length=1, max_length=10000)
     left: list[TraceOccurrence] = Field(min_length=1, max_length=100)
     right: list[TraceOccurrence] = Field(min_length=1, max_length=100)
 
