@@ -111,8 +111,8 @@ section {{ margin-top: 18px; }}
 h1, h2, h3 {{ break-after: avoid; }} tr {{ break-inside: avoid; }}
 p, blockquote {{ orphans: 3; widows: 3; }}
 .provenance {{ padding: 8px; border: 1px solid #b4c9c8; background: #f1f6f3; }}
-col:nth-child(1) {{ width: 38%; }} col:nth-child(2) {{ width: 23%; }}
-col:nth-child(3) {{ width: 8%; }} col:nth-child(4) {{ width: 31%; }}
+col:nth-child(1) {{ width: 36%; }} col:nth-child(2) {{ width: 23%; }}
+col:nth-child(3) {{ width: 10%; }} col:nth-child(4) {{ width: 31%; }}
 </style><body><p class="demo">DEMO — вымышленные данные.
 Не является выводом о незаконности.</p>
 <h1>{esc(signal.title)}</h1><p>Сигнал {esc(signal.id)} · версия {signal.version}

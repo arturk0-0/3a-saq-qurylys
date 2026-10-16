@@ -263,3 +263,26 @@ API+Hosting. Main/живая инфраструктура этой работо�
 PR модуля: https://github.com/arturk0-0/3a-saq-qurylys/pull/7, base —
 `feat/frontend-readable-workflow`. После merge PR #6 base переключается на main;
 только затем merge нового модуля после зелёного CI и командного review.
+
+## B-03/B-04: безопасная диагностика AI и PDF · 16 октября 2026
+
+После разделения команды на A/B продолжены независимые серверные задачи
+[очереди B #8](https://github.com/arturk0-0/3a-saq-qurylys/issues/8).
+Ветка `fix/B-03-04-ai-diagnostics-pdf` от `feat/LINK-advertising-trace` / `9b5949f`.
+Frontend и документы A не менялись. `26db9b5` добавляет фиксированные причины
+отказа валидации Gemini и серверный request ID без логирования исходников/ключей;
+`cf60fe3` и `d4cb214` отделяют историческую AI-пометку от проверки аналитиком
+в PDF и исправляют ширину таблицы. `6de9147` стабилизирует SDK contention test,
+сохраняя строгую проверку единственной записи и атомарного аудита.
+
+Проверены 345 backend unit/API, 11 SDK integration в локальном эмуляторе,
+Ruff (84 файла), настоящий WeasyPrint PDF с кириллицей/казахскими буквами.
+Историческая причина AI_INVALID_RESPONSE не установлена; новые логи помогут
+только после публикации. Платных AI-вызовов, deployment, merge main не было.
+Публичные контракты, веса и auth/rules не менялись. Подробные факты, ограничения
+и команды публикации: [backend-followup-report.md](backend-followup-report.md).
+B-03/B-04 целиком не закрыты: реальные AI-измерения и проверки облачных прав
+остаются отдельными шагами, локальные адаптеры их не заменяют.
+
+Review: https://github.com/arturk0-0/3a-saq-qurylys/pull/11; временная base —
+`feat/LINK-advertising-trace`. Перед merge требуется review товарища и зелёный CI.
