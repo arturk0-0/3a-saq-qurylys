@@ -745,6 +745,51 @@ with sync_playwright() as p:
             "Exact phone/WhatsApp quotes; explicit confirm/reject and persisted reload; direct ad navigation; conflict keeps notes; 1366/375/320 without overflow; no AI or risk mutation",
         )
 
+        # MON uses only the explicit MockTransport adapter in local_api.py.
+        # No live social API, real ads, paid Gemini or Scheduler is touched.
+        page.set_viewport_size({"width": 1366, "height": 900})
+        page.goto(BASE + "/monitoring")
+        expect(page.get_by_role("heading", name="Мониторинг рекламы", exact=True)).to_be_visible()
+        expect(page.get_by_role("heading", name="Автосбор таргетированной рекламы KZ пока не подключён")).to_be_visible()
+        expect(page.get_by_text("Ещё не подтверждён. Ручной сбор доступен в источниках.")).to_be_visible()
+        page.get_by_role("button", name="Источники сбора", exact=True).click()
+        expect(page.get_by_role("checkbox")).not_to_be_checked()
+        page.get_by_role("button", name="Сохранить источник", exact=True).click()
+        expect(page.get_by_text("Источник сохранён. Он доступен для регулярного сбора.")).to_be_visible()
+        page.get_by_role("button", name="Получить публикации", exact=True).click()
+        expect(page.get_by_text("Сбор завершён: прочитано 1, подходит под фильтр 1, новых 1, повторов 0")).to_be_visible()
+        page.get_by_role("button", name="Очередь эксперта", exact=True).click()
+        page.get_by_role("button", name="Рассмотреть находку", exact=True).click()
+        detail = page.locator(".monitor-detail")
+        expect(detail.get_by_text("Поисковый фрагмент — требуется оригинал", exact=True)).to_be_visible()
+        expect(detail.get_by_text("Опубликовано: Не указано", exact=False)).to_be_visible()
+        note = "LOCAL QA: проверить оригинал и основание; не юридическое заключение"
+        detail.get_by_label("Обоснование решения").fill(note)
+        item_id = page.url.split("item=")[1].split("&")[0]
+        api(page, "POST", f"/api/v1/monitoring/items/{item_id}/review", {
+            "expectedVersion": 1, "decision": "investigating", "notes": "LOCAL QA: concurrent review",
+        })
+        detail.get_by_role("button", name="Сохранить решение эксперта", exact=True).click()
+        expect(detail.get_by_role("alert")).to_contain_text("Данные изменились")
+        detail.get_by_role("button", name="Обновить материал", exact=True).click()
+        expect(detail.get_by_label("Обоснование решения")).to_have_value(note)
+        detail.get_by_role("button", name="Сохранить решение эксперта", exact=True).click()
+        expect(detail.get_by_text("Решение по находке сохранено. Оценка R1–R6 не менялась.")).to_be_visible()
+        detail.get_by_role("button", name="Анализировать Gemini — платный запрос", exact=True).click()
+        expect(detail.get_by_text("Попытка анализа завершена. Проверьте результат и статус ниже.")).to_be_visible()
+        expect(detail.get_by_text("R2 · Предложение внести платёж", exact=True)).to_be_visible()
+        expect(detail.get_by_text("Реальную публикацию нельзя приписывать", exact=False)).to_be_visible()
+        for width in [1366, 375, 320]:
+            page.set_viewport_size({"width": width, "height": 900})
+            assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
+        page.screenshot(path=str(OUT / "monitoring-mobile-test-adapters.png"), full_page=True)
+        page.set_viewport_size({"width": 1366, "height": 900})
+        page.screenshot(path=str(OUT / "monitoring-desktop-test-adapters.png"), full_page=True)
+        page.reload()
+        expect(page.locator(".monitor-detail .inline-notice").filter(has_text=note)).to_be_visible()
+        assert api(page, "GET", "/api/v1/complexes/demo-complex-04/risk") == trace_risk
+        checkpoint("public monitoring", "Synthetic RSS → bounded collection → queue → real 409/refresh keeps notes → expert review → MockTransport Gemini → persisted reload; unknown dates/Instagram limitation/DEMO separation; 1366/375/320 without overflow; risk unchanged")
+
         assert not errors, errors
         assert not unexpected, unexpected
         checkpoint(

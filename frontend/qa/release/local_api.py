@@ -9,6 +9,7 @@ import json
 import httpx
 from app.api.analysis import analysis_service, file_service
 from app.api.dependencies import get_runtime
+from app.api.monitoring import monitoring_service
 from app.api.workspace import workspace_service
 from app.core.config import Settings
 from app.core.errors import AppError
@@ -17,6 +18,8 @@ from app.models.auth import Principal
 from app.services.analysis import AnalysisService
 from app.services.files import FileService
 from app.services.gemini import GeminiClient
+from app.services.monitoring import MonitoringService
+from app.services.public_sources import PublicCollector
 from app.services.seed_data import build_demo_seed
 from app.services.workspace import WorkspaceService
 from tests.fakes import MemoryStore
@@ -88,3 +91,17 @@ app.dependency_overrides[get_runtime] = lambda: TestIdentity()
 app.dependency_overrides[workspace_service] = lambda: workspace
 app.dependency_overrides[file_service] = lambda: files
 app.dependency_overrides[analysis_service] = lambda: analysis
+
+# Explicit synthetic public-source HTTP adapter, never a production fallback.
+def public_source_response(request):
+    return httpx.Response(200, text='''<rss><channel><item>
+    <title>LOCAL QA DEMO — реклама жилья</title><link>https://example.org/qa-housing</link>
+    <description>DEMO — вымышленная публикация. Өскемен, квартиры в строящемся доме.
+    Внесите депозит 150 000 тенге. Это локальная тестовая страница.</description>
+    </item></channel></rss>''')
+
+
+monitoring = MonitoringService(workspace, settings,
+    PublicCollector(httpx.MockTransport(public_source_response)),
+    GeminiClient(settings, httpx.MockTransport(model_response)))
+app.dependency_overrides[monitoring_service] = lambda: monitoring

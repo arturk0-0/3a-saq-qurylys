@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Route, Routes, Link, useLocation } from 'react-router-dom'
-import { Building2, LayoutDashboard, LogOut, Megaphone, ShieldCheck, FileCheck2, MapPin } from 'lucide-react'
+import { Building2, LayoutDashboard, LogOut, Megaphone, ShieldCheck, FileCheck2, MapPin, ScanSearch } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfigurationNotice, useAuth } from '@/features/auth/AuthProvider'
 import { LoginPage } from '@/features/auth/LoginPage'
@@ -8,10 +8,12 @@ import { ComplexList } from '@/features/complexes/ComplexList'
 import { ComplexDetail } from '@/features/complexes/ComplexDetail'
 import { AdvertisementDetail, AdvertisementsPage } from '@/features/advertisements/AdvertisementsPage'
 import { EmptyState } from '@/components/WorkspaceUI'
+import { MonitoringPage } from '@/features/monitoring/MonitoringPage'
 import { CreateSignal, SignalDetail, SignalsPage } from '@/features/signals/SignalsPage'
 
 const modules = [
   { path: '/', title: 'Обзор', icon: LayoutDashboard },
+  { path: '/monitoring', title: 'Мониторинг рекламы', icon: ScanSearch },
   { path: '/complexes', title: 'Реестр ЖК', icon: Building2 },
   { path: '/advertisements', title: 'Объявления', icon: Megaphone },
   { path: '/signals', title: 'Сигналы', icon: FileCheck2 },
@@ -61,7 +63,7 @@ export function App() {
       <div className="sidebar-region"><MapPin size={15} /> Восточно-Казахстанская область</div>
     </aside>
     <div className="workspace-main">
-      <header className="topbar"><div><span className="demo-badge">DEMO</span><span className="topbar-context">Внутренний аналитический контур</span></div>
+      <header className={'topbar' + (pathname === '/monitoring' ? ' monitor-topbar' : '')}><div><span className="demo-badge">{pathname === '/monitoring' ? 'Публичные источники' : 'DEMO'}</span><span className="topbar-context">Внутренний аналитический контур</span></div>
         <div className="user-menu"><span className="avatar">{(profile?.displayName || profile?.email || 'А').slice(0, 1).toUpperCase()}</span><span><strong>{profile?.displayName || profile?.email || 'Аналитик'}</strong><small>{profile?.role === 'admin' ? 'Администратор' : 'Аналитик'}</small></span>
           <button type="button" className="icon-button" aria-label="Выйти" onClick={() => { logout().catch(() => setLogoutError('Не удалось выйти. Повторите.')) }}><LogOut size={18} /></button></div>
       </header>
@@ -69,6 +71,7 @@ export function App() {
         {logoutError && <p role="alert" className="inline-notice">{logoutError}</p>}
         <Routes>
           <Route path="/" element={<ComplexList overview />} />
+          <Route path="/monitoring" element={<MonitoringPage />} />
           <Route path="/complexes" element={<ComplexList />} />
           <Route path="/complexes/:id" element={<ComplexDetail />} />
           <Route path="/advertisements" element={<AdvertisementsPage />} />
