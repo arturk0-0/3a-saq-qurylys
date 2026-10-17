@@ -295,7 +295,38 @@ with sync_playwright() as p:
         )
         panel.get_by_role("button", name="Загрузить", exact=True).click()
         expect(panel.get_by_label("Источник анализа")).not_to_have_value("")
+        error_once(
+            page,
+            "**/api/v1/evidence/*/file",
+            200,
+            body="<html>TEST gateway response</html>",
+            content_type="text/html",
+        )
         panel.get_by_role("button", name="Открыть скриншот").click()
+        expect(panel.get_by_role("alert")).to_contain_text(
+            "Сервер не вернул изображение"
+        )
+        error_once(
+            page,
+            "**/api/v1/evidence/*/file",
+            200,
+            body="TEST invalid PNG bytes",
+            content_type="image/png",
+        )
+        panel.get_by_role("button", name="Открыть скриншот").click()
+        expect(panel.get_by_role("alert")).to_contain_text(
+            "Не удалось отобразить скриншот"
+        )
+        panel.get_by_role("button", name="Открыть скриншот").click()
+        expect(panel.get_by_role("img")).to_be_visible()
+        page.wait_for_function(
+            "document.querySelector('.analysis-panel img')?.naturalWidth > 0"
+        )
+        selected_image = panel.get_by_label("Источник анализа").input_value()
+        card.get_by_role("button", name="Скрыть анализ").click()
+        expect(panel).to_be_hidden()
+        card.get_by_role("button", name="Скриншоты и AI-анализ").click()
+        expect(panel.get_by_label("Источник анализа")).to_have_value(selected_image)
         expect(panel.get_by_role("img")).to_be_visible()
         expect(panel.locator(".selected-source")).to_contain_text("Скриншот 1")
         expect(panel.get_by_text("Загружен файл", exact=False)).to_contain_text(
@@ -340,6 +371,11 @@ with sync_playwright() as p:
 
         panel.get_by_role("button", name="Рассмотреть гипотезу").click()
         panel.get_by_label("Обоснование", exact=True).fill(
+            "LOCAL TEST: принять только к проверке источника"
+        )
+        card.get_by_role("button", name="Скрыть анализ").click()
+        card.get_by_role("button", name="Скриншоты и AI-анализ").click()
+        expect(panel.get_by_label("Обоснование", exact=True)).to_have_value(
             "LOCAL TEST: принять только к проверке источника"
         )
         hypothesis = api(page, "GET", f"/api/v1/advertisements/{ad['id']}/hypotheses")[
@@ -706,6 +742,19 @@ with sync_playwright() as p:
         other.get_by_label("Обоснование совпадения").fill(
             "LOCAL DEMO: сверены телефон и WhatsApp"
         )
+        page.get_by_role("button", name="Скрыть рекламный след", exact=True).click()
+        page.get_by_role("button", name="Рекламный след", exact=True).click()
+        expect(other.get_by_label("Обоснование совпадения")).to_have_value(
+            "LOCAL DEMO: сверены телефон и WhatsApp"
+        )
+        other.get_by_role("button", name="Отмена", exact=True).click()
+        trigger = other.get_by_role("button", name="Рассмотреть совпадение")
+        expect(trigger).to_be_focused()
+        expect(trigger).to_have_attribute("aria-expanded", "false")
+        page.keyboard.press("Enter")
+        other.get_by_label("Обоснование совпадения").fill(
+            "LOCAL DEMO: сверены телефон и WhatsApp"
+        )
         other.get_by_role("button", name="Сохранить решение о совпадении").click()
         expect(other.get_by_text("Совпадение подтверждено", exact=True)).to_be_visible()
         page.reload()
@@ -743,6 +792,45 @@ with sync_playwright() as p:
         checkpoint(
             "advertising trace",
             "Exact phone/WhatsApp quotes; explicit confirm/reject and persisted reload; direct ad navigation; conflict keeps notes; 1366/375/320 without overflow; no AI or risk mutation",
+        )
+
+        page.goto(BASE + f"/advertisements/{empty_ad['id']}")
+        page.get_by_role("button", name="Скриншоты и AI-анализ").click()
+        image_panel = page.get_by_role("region", name="Анализ объявления")
+        image_panel.get_by_label("Добавить скриншот").set_input_files(
+            {
+                "name": "synthetic-image-path.png",
+                "mimeType": "image/png",
+                "buffer": image.getvalue(),
+            }
+        )
+        image_panel.get_by_role("button", name="Загрузить", exact=True).click()
+        expect(image_panel.get_by_label("Источник анализа")).not_to_have_value("")
+        selected = image_panel.get_by_label("Источник анализа").input_value()
+        with page.expect_request(
+            lambda request: (
+                request.url.endswith("/analyze") and request.method == "POST"
+            )
+        ) as image_request:
+            image_panel.get_by_role(
+                "button", name="Анализировать выбранный источник"
+            ).click()
+        payload = image_request.value.post_data_json
+        assert payload["screenshotId"] == selected
+        assert payload["expectedVersion"] == 2
+        expect(
+            image_panel.get_by_role("button", name="Анализировать выбранный источник")
+        ).to_be_enabled()
+        run = api(page, "GET", f"/api/v1/advertisements/{empty_ad['id']}/analysis")[
+            "items"
+        ]
+        assert any(
+            item["screenshotId"] == selected and item["status"] == "succeeded"
+            for item in run
+        )
+        checkpoint(
+            "A-01 recovery",
+            "Image upload → auto-selection → image analysis via MockTransport; HTML/decode recovery; disclosures retain selection/drafts; trace cancel restores keyboard focus",
         )
 
         assert not errors, errors

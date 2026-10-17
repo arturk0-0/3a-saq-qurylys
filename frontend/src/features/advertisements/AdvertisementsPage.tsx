@@ -45,18 +45,20 @@ export function AdvertisementForm({ complexId, onSaved, onCancel }: { complexId?
 
 export function AdvertisementCard({ ad }: { ad: Advertisement }) {
   const [analysis, setAnalysis] = useState(false)
+  const [analysisMounted, setAnalysisMounted] = useState(false)
   const analysisId = useId()
   const [trace, setTrace] = useState(false)
+  const [traceMounted, setTraceMounted] = useState(false)
   const traceId = useId()
   return <article className="advertisement-card"><div className="flex flex-wrap items-center justify-between gap-2">
     <div><strong>{ad.platform}</strong><span className="ml-2 text-sm text-muted-foreground">@{ad.account}</span></div>{ad.demo && <DemoBadge />}</div>
     <p className="mt-2 text-xs text-muted-foreground">Опубликовано {formatDate(ad.publishedAt)} · Сохранено {formatDate(ad.capturedAt)}</p>
     <p className="ad-text">{ad.text}</p><div className="flex flex-wrap items-center gap-5"><SourceLink url={ad.sourceUrl} />
       <Link to={`/complexes/${ad.complexId}`} className="detail-link">Открыть ЖК →</Link>
-      <Button variant="outline" size="sm" aria-expanded={analysis} aria-controls={analysisId} onClick={() => setAnalysis(!analysis)}>{analysis ? 'Скрыть анализ' : 'Скриншоты и AI-анализ'}</Button>
-      <Button variant="outline" size="sm" aria-expanded={trace} aria-controls={traceId} onClick={() => setTrace(!trace)}>{trace ? 'Скрыть рекламный след' : 'Рекламный след'}</Button></div>
-    <div id={analysisId}>{analysis && <AnalysisPanel adId={ad.id} />}</div>
-    <div id={traceId}>{trace && <TracePanel adId={ad.id} />}</div>
+      <Button variant="outline" size="sm" aria-expanded={analysis} aria-controls={analysisId} onClick={() => { setAnalysisMounted(true); setAnalysis(!analysis) }}>{analysis ? 'Скрыть анализ' : 'Скриншоты и AI-анализ'}</Button>
+      <Button variant="outline" size="sm" aria-expanded={trace} aria-controls={traceId} onClick={() => { setTraceMounted(true); setTrace(!trace) }}>{trace ? 'Скрыть рекламный след' : 'Рекламный след'}</Button></div>
+    <div id={analysisId} hidden={!analysis}>{analysisMounted && <AnalysisPanel adId={ad.id} />}</div>
+    <div id={traceId} hidden={!trace}>{traceMounted && <TracePanel adId={ad.id} />}</div>
   </article>
 }
 
