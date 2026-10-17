@@ -1,14 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { NavLink, Route, Routes, Link, useLocation } from 'react-router-dom'
 import { Building2, LayoutDashboard, LogOut, Megaphone, ShieldCheck, FileCheck2, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfigurationNotice, useAuth } from '@/features/auth/AuthProvider'
 import { LoginPage } from '@/features/auth/LoginPage'
-import { ComplexList } from '@/features/complexes/ComplexList'
-import { ComplexDetail } from '@/features/complexes/ComplexDetail'
-import { AdvertisementDetail, AdvertisementsPage } from '@/features/advertisements/AdvertisementsPage'
-import { EmptyState } from '@/components/WorkspaceUI'
-import { CreateSignal, SignalDetail, SignalsPage } from '@/features/signals/SignalsPage'
+import { EmptyState, LoadingState } from '@/components/WorkspaceUI'
+import { RouteBoundary } from './RouteBoundary'
+
+const ComplexList = lazy(() => import('@/features/complexes/ComplexList').then(module => ({ default: module.ComplexList })))
+const ComplexDetail = lazy(() => import('@/features/complexes/ComplexDetail').then(module => ({ default: module.ComplexDetail })))
+const AdvertisementsPage = lazy(() => import('@/features/advertisements/AdvertisementsPage').then(module => ({ default: module.AdvertisementsPage })))
+const AdvertisementDetail = lazy(() => import('@/features/advertisements/AdvertisementsPage').then(module => ({ default: module.AdvertisementDetail })))
+const SignalsPage = lazy(() => import('@/features/signals/SignalsPage').then(module => ({ default: module.SignalsPage })))
+const CreateSignal = lazy(() => import('@/features/signals/SignalsPage').then(module => ({ default: module.CreateSignal })))
+const SignalDetail = lazy(() => import('@/features/signals/SignalsPage').then(module => ({ default: module.SignalDetail })))
 
 const modules = [
   { path: '/', title: 'Обзор', icon: LayoutDashboard },
@@ -67,7 +72,7 @@ export function App() {
       </header>
       <main id="main-content" className="workspace-content" tabIndex={-1}>
         {logoutError && <p role="alert" className="inline-notice">{logoutError}</p>}
-        <Routes>
+        <RouteBoundary key={pathname}><Suspense fallback={<LoadingState />}><Routes>
           <Route path="/" element={<ComplexList overview />} />
           <Route path="/complexes" element={<ComplexList />} />
           <Route path="/complexes/:id" element={<ComplexDetail />} />
@@ -77,7 +82,7 @@ export function App() {
           <Route path="/signals/new" element={<CreateSignal />} />
           <Route path="/signals/:id" element={<SignalDetail />} />
           <Route path="*" element={<EmptyState title="Страница не найдена"><Link to="/">Вернуться к обзору</Link></EmptyState>} />
-        </Routes>
+        </Routes></Suspense></RouteBoundary>
       </main>
     </div>
   </div>
