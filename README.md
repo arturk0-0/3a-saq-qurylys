@@ -1,8 +1,11 @@
 # SAQ QURYLYS
 
-Текущий приоритет — автоматический мониторинг публичной рекламы и очередь
-эксперта; работа ведётся в feature-ветке MON. Готовый baseline пока обрабатывает
-добавленные материалы. [План и закрытые задачи](docs/DEVELOPMENT_PLAN.md),
+В этой версии добавлен мониторинг: публичные текстовые источники → отдельная
+очередь → AI-гипотезы → эксперт. Источники — интернет-поиск (фрагменты выдачи)
+и выбранные Telegram-каналы. **Instagram-таргет KZ пока не подключён**.
+Код в feature-ветке MON; облачное расписание ещё не развёрнуто.
+[Использование, worker, лимиты](docs/monitoring.md),
+[результаты проверок](docs/monitoring-report.md), [план и закрытые задачи](docs/DEVELOPMENT_PLAN.md),
 [проверка доступности Instagram-таргета](docs/instagram-feasibility.md).
 
 Внутреннее приложение для аналитиков ВКО: проверка потенциальных рисков в рекламе
@@ -70,16 +73,17 @@ https://saq-qurylys-api-722228028571.europe-west1.run.app.
 подключении к Firebase использует выбранный облачный проект и его данные.
 Порядок публикации владельцем: [Hosting + Cloud Run](docs/cloud-deployment.md).
 При подготовке проверенной версии фиксируйте полный SHA: текущий `main` может
-не включать исправления из открытых PR. Ночная проверка ведётся в
-`test/night-release-readiness` от `fix/security-demo-hardening` (`d579566`).
+не включать исправления из открытых PR. MON реализуется в
+`feat/MON-01-public-monitoring` от baseline main `ed38f00`;
+старые ночные backend/frontend-ветки уже интегрированы, не используйте их для обновления.
 
 ## Запуск через Docker
 
 Требуются Git, Docker Engine и Docker Compose v2. Для воспроизведения этой проверки
-из новой папки (ветка содержит открытые PR, merge/publication ещё нужны):
+из новой папки (feature-ветка требует review/merge и отдельного deployment):
 
 ```bash
-git clone --branch test/night-release-readiness --single-branch https://github.com/arturk0-0/3a-saq-qurylys.git
+git clone --branch feat/MON-01-public-monitoring --single-branch https://github.com/arturk0-0/3a-saq-qurylys.git
 cd 3a-saq-qurylys
 git rev-parse HEAD
 ```

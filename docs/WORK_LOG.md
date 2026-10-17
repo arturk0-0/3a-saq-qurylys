@@ -353,3 +353,28 @@ Business/Creator/App Review, а не полный таргет. Обычный I
 Gemini не вызывался. 33 unit-теста проходят на явно синтетических HTTP-страницах.
 Это проверка чтения/парсинга, не охвата рекламы/точности модели. Остальной
 MON-поток в разработке; публикация и расписание пока не настроены.
+
+
+## MON: проверенная вертикаль · 17 октября 2026
+
+[PR #14](https://github.com/arturk0-0/3a-saq-qurylys/pull/14),
+[задача #13](https://github.com/arturk0-0/3a-saq-qurylys/issues/13).
+Сохранены/pushed c0fbc57 (adapters), 8ab4a8a (backend), a5fecc3 (frontend).
+Реальная очередь не смешивается с DEMO registry; source→bounded fetch→immutable
+lead/revision→опциональный AI→human review→явная real→real передача реализованы.
+Worker с lease, oldest-due fairness, abandoned-run recovery и общими квотами;
+source/AI/body ошибки безопасны. Нет автоматического изменения R1–R6.
+
+Финально: 403 backend passed + Ruff check/format; 13 native SDK/emulator passed;
+68 frontend passed, typecheck/build; 17 Chromium-групп/848 запросов без внешних
+сервисов/page errors, 1366/375/320. Тестовые Firebase/Gemini adapters обозначены,
+WeasyPrint настоящий. Main JS 539.60 kB/gzip163.18, прежний large-chunk warning
+остаётся A-02. Независимый read-only Codex review без найденных blockers,
+не человеческое approval. Артефакты/команды — docs/monitoring-report.md.
+
+MON-01–08 закрыты как реализация в ветке; MON-IG-02 (доступный источник именно
+Instagram Ads KZ) и MON-09 (индексы/Job/Scheduler/deployment/облачная приёмка)
+открыты. Расписание здесь не включалось, paid AI не вызывался, main не сливался.
+Crash после AI reservation требует ручного расследования/аудита, не слепого
+платного retry; ограничения/порядок восстановления — docs/monitoring.md.
+Инструкция cloud deployment дополнена Job/Scheduler, без выполнения команд.

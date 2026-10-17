@@ -23,7 +23,9 @@ GET вернул 200. Это наблюдение в данном проекте
 или цены модели для другого аккаунта. Модель на сервере выбирается явно, без fallback.
 
 17 октября PR #6 (дизайн), #7 (рекламный след), #11 (диагностика/PDF)
-включены в main; код приложения — `2ac51b7`. Новые изменения **ещё не опубликованы**.
+включены в main; код приложения — `2ac51b7`. Позднее владелец сообщил об
+обновлении baseline и открытии собранного сайта. Это не проверка MON:
+мониторинг из feature-ветки **ещё не опубликован**, Job/Scheduler не настроены.
 У процесса Codex отсутствуют Google Cloud ADC/CLI credentials и указанный файл
 Firebase credentials. Авторизация в отдельной вкладке Cloud Shell сюда не переносится.
 Настройки среды Codex не переносятся в Cloud Run/Hosting автоматически. Команды
@@ -386,3 +388,110 @@ OAuth-коды/токены в чат. Затем открыть https://saq-qur
 проверить новый дизайн, «Рекламный след», прежний путь скриншот → AI → ручной R2 → PDF.
 Это ещё не выполненная облачная проверка. Новые Gemini-вызовы платные;
 не выполнять их автоматически ради smoke-проверки.
+
+## 7. Мониторинг: Job и расписание
+
+Это последующий MON-09, **не выполненный Codex deployment**. Сначала проверить/
+включить MON PR, выбрать его полный reviewed SHA и собрать новый образ по
+разделу 6, **заменив его закреплённый baseline SAQ_RELEASE_SHA на выбранный
+полный MON SHA**. Не выполнять старый checkout/tag из примера как новый MON-релиз.
+Старый baseline-образ не содержит CLI. Опубликовать API/frontend из
+того же SHA. Instagram-таргет эти команды не подключают.
+
+1. Развернуть `firestore.indexes.json` этой версии и дождаться ready в Console.
+   Добавлены monitorItems (с/без status), monitorRuns и monitorEvents/entityId:
+   createdAt DESC, __name__ ASC. Успех эмулятора не проверяет production indexes.
+2. Скопировать `deploy/monitor-job.env.example.yaml` в
+   `deploy/monitor-job.env.yaml` (ignored). Сверить project, DEMO-only и **одинаковые**
+   AI/fetch-квоты с API. Не менять работающий GEMINI_MODEL/secret автоматически.
+   Для сбора без AI можно оставить GEMINI_MODEL пустым, autoAnalyze=false.
+3. Ниже команды первоначального создания в авторизованном Cloud Shell.
+   `SAQ_MON_IMAGE` должен указывать **реально собранный и проверенный** MON-образ,
+   не буквальный placeholder. Runtime account уже существует и читает Firestore;
+   ADC передаётся через service identity, JSON-ключи не нужны.
+
+```bash
+gcloud config set project saq-qurylys
+gcloud services enable run.googleapis.com cloudscheduler.googleapis.com
+SAQ_MON_IMAGE='europe-west1-docker.pkg.dev/saq-qurylys/saq-qurylys/api:REPLACE_WITH_REVIEWED_MON_IMAGE'
+gcloud run jobs create saq-qurylys-monitor \
+  --project=saq-qurylys --region=europe-west1 \
+  --image="$SAQ_MON_IMAGE" \
+  --command=.venv/bin/python --args=-m,app.cli.monitor \
+  --service-account=saq-api@saq-qurylys.iam.gserviceaccount.com \
+  --env-vars-file=deploy/monitor-job.env.yaml \
+  --tasks=1 --parallelism=1 --max-retries=0 \
+  --task-timeout=900s --cpu=1 --memory=1Gi
+```
+
+Для уже существующего Job использовать `gcloud run jobs update`, а не create.
+Для **осознанного включения AI** выбрать ту же доступную модель в приватном YAML
+и добавить существующий Secret Manager reference (ключ не выводить):
+
+```bash
+gcloud run jobs update saq-qurylys-monitor \
+  --project=saq-qurylys --region=europe-west1 \
+  --env-vars-file=deploy/monitor-job.env.yaml \
+  --set-secrets=GEMINI_API_KEY=saq-gemini-api-key:latest
+```
+
+AutoAnalyze у каждого источника всё равно остаётся выключенным до явного opt-in.
+Secret accessor требуется только на этот секрет (runtime account уже применялся
+для API). Не копировать Admin JSON/API key в image/YAML или browser variables.
+
+4. В UI создать один публичный источник, оставить auto-AI выключенным. Выполнить
+   одну проверочную batch и убедиться, что execution завершился успешно,
+   появились monitorRuns, heartbeat и ожидаемый текст/либо корректная ошибка:
+
+```bash
+gcloud run jobs execute saq-qurylys-monitor --project=saq-qurylys --region=europe-west1 --wait
+```
+
+5. Только после приёмки включить периодический запуск. Отдельный Scheduler
+   caller получает **job-scoped** run.invoker; runtime и caller — разные роли.
+
+```bash
+gcloud iam service-accounts create saq-monitor-scheduler --project=saq-qurylys --display-name="SAQ monitoring schedule caller"
+gcloud run jobs add-iam-policy-binding saq-qurylys-monitor \
+  --project=saq-qurylys --region=europe-west1 \
+  --member=serviceAccount:saq-monitor-scheduler@saq-qurylys.iam.gserviceaccount.com \
+  --role=roles/run.invoker
+gcloud scheduler jobs create http saq-monitor-every-15-min \
+  --project=saq-qurylys --location=europe-west1 \
+  --schedule='*/15 * * * *' --time-zone=Asia/Qyzylorda \
+  --uri='https://run.googleapis.com/v2/projects/saq-qurylys/locations/europe-west1/jobs/saq-qurylys-monitor:run' \
+  --http-method=POST --headers=Content-Type=application/json --message-body='{}' \
+  --oauth-service-account-email=saq-monitor-scheduler@saq-qurylys.iam.gserviceaccount.com \
+  --oauth-token-scope=https://www.googleapis.com/auth/cloud-platform \
+  --max-retry-attempts=0 --attempt-deadline=30s
+```
+
+Для Google API endpoint используется OAuth, не OIDC. Создающий schedule principal
+должен иметь actAs на caller account; стандартный Scheduler service agent должен
+сохранить роль Cloud Scheduler Service Agent. Не выдавать Owner/Editor runtime.
+Для существующих caller/schedule не повторять create; inspect/update после
+сверки параметров. Job execution success проверяется отдельно от HTTP-успеха
+Scheduler: API возвращает операцию запуска раньше окончания сбора.
+
+Расписание раз в 15 минут проверяет до трёх due-источников за batch. Интервал
+источника — минимальная задержка, не SLA: очередь/пауза/квота могут её увеличить.
+100 fetch/UTC-day — общий предел, не 100 на источник; при 20 источниках он
+может закончиться до конца дня. Ошибки также расходуют fetch quota.
+Повышать предел только после оценки расходов и покрытия. Cloud Run Job,
+Scheduler, Firestore/Storage и Gemini имеют собственное тарифицирование;
+операционные квоты и budget alerts не являются денежным hard cap.
+
+Проверка MON-09: два штатных tick при закрытом браузере → дедуп без потери notes →
+ручной expert review → доступ без token отклоняется → авто-AI остаётся opt-in →
+после deployment нет незавершённых indexes. Реальную привязку/факторы/PDF
+проверять только с документированным real registry в согласованной среде;
+не смешивать с seed DEMO. Instagram остаётся отдельным MON-IG-02.
+
+Чтобы остановить автоматические запуски (сохранённые данные не удаляются):
+
+```bash
+gcloud scheduler jobs pause saq-monitor-every-15-min --project=saq-qurylys --location=europe-west1
+```
+
+Уже выполняющееся execution это не отменяет. Восстановление lease/AI и другие
+ограничения: [monitoring.md](monitoring.md#восстановление-после-прерывания).

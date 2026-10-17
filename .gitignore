@@ -230,3 +230,4 @@ credentials/
 # Local diagnostics and live AI evaluation outputs (not release evidence until reviewed).
 artifacts/
 deploy/cloud-run.env.yaml
+deploy/monitor-job.env.yaml
