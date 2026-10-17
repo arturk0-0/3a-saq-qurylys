@@ -47,8 +47,8 @@ Registry/Storage и Cloud Run не следует считать общим фи
 
 ## 2. Исходники и права
 
-Взять актуальную feature-ветку по `docs/WORK_LOG.md`, включающую предыдущие этапы,
-а не старый ZIP G0/main. Для приватного GitHub использовать штатный GitHub login
+Взять проверенный commit актуального `main` по `docs/WORK_LOG.md`,
+а не старый ZIP G0 или отдельную архивную backend-ветку. Для приватного GitHub использовать штатный GitHub login
 в Cloud Shell либо скачать ZIP ветки в GitHub и загрузить **исходники без секретов**
 через меню Cloud Shell Upload. Распаковать и перейти в папку с `firebase.json`.
 Ключи/`.env` в этот архив не добавлять.
@@ -179,19 +179,41 @@ Admin credential. Gemini/Admin secrets в Vite не попадают.
 Фактические URL/image и частичные результаты владельца указаны в начале документа.
 Незавершённые пункты нельзя считать прошедшими по локальным tests/build.
 
-## 6. Продолжение существующего deployment после review ночной ветки
+## 6. Обновление существующего сайта из проверенного main
 
-Эти команды **не выполнялись Codex в живом проекте**. Владелец запускает их после
-review изменений, проверки CI и исходников. Backend-ветка основана на dbeecb3;
-frontend другого участника проверяется/публикуется отдельно. Не брать старый main.
-Скачать актуальный ZIP `fix/backend-demo-reliability` и распаковать в новую папку
-Cloud Shell либо получить ветку через уже настроенный GitHub login. Перейти
-в корень с `deploy/cloudbuild.yaml` и проверить SHA/выбранную ветку, если есть Git.
-При ZIP-сборке проверить имена папки/файлов и выбранный commit на GitHub.
+Команды публикации в живом проекте Codex здесь **не выполнял**: для них нужен
+авторизованный Google Cloud Shell владельца. Исходники этой версии —
+`1373d0daec5939df8211d10d6ba52721b4988221`: дизайн #6, рекламный след #7,
+исправления API/PDF #11 и распределение команды #10. Секреты в исходники
+не добавлять; Cloud Run сохраняет настроенную service identity и Secret Manager.
 
-### 6.1 Сначала проверить историю без смены образа
+В Cloud Shell получить свежие исходники приватного GitHub можно через штатную
+авторизацию `gh` (если login уже есть, повторять его не нужно):
 
-Из корня актуальной копии выполнить index deploy, как в разделе 2, и дождаться
+```bash
+gh auth status || gh auth login --hostname github.com --git-protocol https --web
+SAQ_RELEASE_SHA=1373d0daec5939df8211d10d6ba52721b4988221
+SAQ_RELEASE_DIR="$HOME/saq-release-$SAQ_RELEASE_SHA"
+gh repo clone arturk0-0/3a-saq-qurylys "$SAQ_RELEASE_DIR"
+cd "$SAQ_RELEASE_DIR"
+git checkout --detach "$SAQ_RELEASE_SHA"
+git rev-parse HEAD
+```
+
+Последний вывод должен совпасть с `SAQ_RELEASE_SHA`. При повторном запуске
+используйте уже созданный каталог только после проверки чистого `git status`
+и нужного SHA; не перезаписывайте изменённые файлы. Если `gh` недоступен,
+скачать [ZIP этого commit](https://github.com/arturk0-0/3a-saq-qurylys/archive/1373d0daec5939df8211d10d6ba52721b4988221.zip)
+в GitHub, загрузить через Cloud Shell Upload и распаковать в новую папку.
+Войти в корень с `firebase.json` и задать тот же `SAQ_RELEASE_SHA`.
+Старый каталог `saq-release-effb87f` новой версии не содержит.
+
+### 6.1 Индексы и диагностика истории
+
+Индексы ранее опубликованы владельцем, история на `effb87f` уже проверена.
+Новая версия не меняет `firestore.indexes.json`: не нужно повторять index deploy
+только ради обновления API/Hosting. Если индексы меняются в следующей версии
+или API сообщает об отсутствующем индексе, выполнить раздел 2 и дождаться
 готовности в Console. На сайте открыть историю и «Повторить». Если ошибка ушла,
 это подтверждает исправление deployment, но не завершает проверки PDF/Storage.
 Если не ушла — получить безопасные диагностические записи (не все логи подряд):
@@ -213,20 +235,21 @@ body или текста исключений; requestId совпадает с J
 
 ```bash
 gcloud config set project saq-qurylys
-SAQ_IMAGE="europe-west1-docker.pkg.dev/saq-qurylys/saq-qurylys/api:backend-reliability-$(date -u +%Y%m%d-%H%M%S)"
-gcloud builds submit . --config=deploy/cloudbuild.yaml --substitutions="_IMAGE=$SAQ_IMAGE"
+SAQ_IMAGE="europe-west1-docker.pkg.dev/saq-qurylys/saq-qurylys/api:release-${SAQ_RELEASE_SHA:?Сначала выполните раздел 6}"
+gcloud builds submit . --project=saq-qurylys --config=deploy/cloudbuild.yaml --substitutions="_IMAGE=$SAQ_IMAGE"
 ```
 
 **Только после STATUS: SUCCESS**:
 
 ```bash
-gcloud run services update saq-qurylys-api --region=europe-west1 --image="$SAQ_IMAGE"
+gcloud run services update saq-qurylys-api --project=saq-qurylys --region=europe-west1 --image="$SAQ_IMAGE"
 ```
 
 Этот update сохраняет настроенные environment, Secret Manager references,
 runtime identity и ресурсные лимиты. Не копировать пустой env example поверх
 рабочих настроек; не использовать `--set-env-vars`, который заменяет набор.
-Не делать Hosting deploy из backend-ветки поверх параллельного frontend.
+API и Hosting публикуются из одного проверенного SHA; после проверки API
+выполнить раздел 6.4 для Hosting. Не брать отдельную старую backend-ветку.
 Сохранить image/digest, commit и выведенное имя новой revision для проверки/отката.
 
 Если нужно явно сменить модель после проверки доступности/цены владельцем:
@@ -308,3 +331,58 @@ Firestore и Gemini тарифицируются отдельно; budget alerts
 
 Источники: [Hosting/Cloud Run timeout](https://firebase.google.com/docs/hosting/cloud-run),
 [Cloud Run service identity](https://cloud.google.com/run/docs/configuring/services/service-identity).
+
+### 6.4 Обновить Hosting из того же checkout
+
+После успешного Cloud Run update и health-проверки раздела 6.3, из корня
+checkout раздела 6. Эта команда получает **только публичную browser config**
+у существующего Hosting-сайта, проверяет project ID и передаёт её процессу
+сборки; ключи Admin/Gemini не нужны. Значения не печатаются и файл `.env`
+не создаётся/не перезаписывается. Для другого проекта сначала согласовать URL.
+
+```bash
+cd frontend
+npm ci
+python3 - <<'PY'
+import json
+import os
+import subprocess
+import urllib.request
+
+with urllib.request.urlopen('https://saq-qurylys.web.app/__/firebase/init.json', timeout=30) as response:
+    config = json.load(response)
+assert config.get('projectId') == 'saq-qurylys', 'Unexpected Firebase project'
+fields = {
+    'VITE_FIREBASE_API_KEY': 'apiKey',
+    'VITE_FIREBASE_AUTH_DOMAIN': 'authDomain',
+    'VITE_FIREBASE_PROJECT_ID': 'projectId',
+    'VITE_FIREBASE_APP_ID': 'appId',
+}
+build_env = os.environ.copy()
+for variable, field in fields.items():
+    value = config.get(field)
+    assert isinstance(value, str) and value, 'Missing public Firebase config'
+    build_env[variable] = value
+build_env['VITE_API_BASE_URL'] = 'https://saq-qurylys-api-722228028571.europe-west1.run.app'
+subprocess.run(['npm', 'run', 'build:hosting'], env=build_env, check=True)
+PY
+```
+
+**Только после успешной сборки**, из `frontend/` вернуться в корень и опубликовать:
+
+```bash
+cd ..
+npx firebase-tools@15.34.0 deploy --only hosting --project saq-qurylys
+```
+
+Если CLI сообщает об отсутствии авторизации, выполнить в Cloud Shell:
+
+```bash
+npx firebase-tools@15.34.0 login --no-localhost
+```
+
+Затем повторить только Hosting deploy. Не вставлять
+OAuth-коды/токены в чат. Затем открыть https://saq-qurylys.web.app и обновить страницу;
+проверить новый дизайн, «Рекламный след», прежний путь скриншот → AI → ручной R2 → PDF.
+Это ещё не выполненная облачная проверка. Новые Gemini-вызовы платные;
+не выполнять их автоматически ради smoke-проверки.
