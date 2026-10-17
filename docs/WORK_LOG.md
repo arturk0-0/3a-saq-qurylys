@@ -400,3 +400,32 @@ input/count/лимиты/текущий pricing прочитаны; запуск
 Точный результат по ID/охват KZ не подтверждён. Полная матрица, ссылки и следующие
 два запроса — docs/instagram-access-probes.md. MON-IG-02 остаётся открытым,
 новые источники в production не подключались.
+
+
+## MON-IG: настоящий trial и внедрение · 17 октября 2026
+
+После публикации среды появился SEARCHAPI_API_KEY, Account API авторизован.
+С разрешения владельца выполнены РОВНО ДВА search вызова, без retry/pagination:
+«продажа квартир»/KZ/Instagram/active/all → HTTP 200,16 карточек, все active и
+содержат INSTAGRAM, включая ID 1573735788124300;14 с текстом. «квартиры Өскемен»
+→ HTTP 200,4 карточки,3 текстовых,3 подходят под фильтр жилья/ВКО. Account API
+подтвердил 100 → 99 → 98 remaining credits. Дальше real search не вызывался.
+Сохранённый ответ проверен через cached adapter/MemoryStore:3 находки, без
+облачных записей/AI/изменения risk. Подробности — docs/instagram-searchapi.md.
+
+Код backend сохранён/pushed2a66b3b: fixed Meta engine, Authorization-only key,
+Account balance guard/reserve>=20, global provider lease и повторный CAS до
+search, pendingSearches до внешнего вызова, conservative unknown outcomes,
+дневной cap2; schedule отдельно opt-in выключен. Вторая проверенная правка:
+исчерпавшая лимит Meta очередь не блокирует RSS/Telegram worker. UI: выбор
+Instagram, ID/платформы/начало показа отдельно от публикации, media только ссылки,
+баланс «перед поиском», безопасное ожидание/не советовать повтор вслепую.
+
+Финальные локальные проверки:431 backend + Ruff, 14 SDK/emulator,72 frontend +
+typecheck/build,18 Chromium-групп/863 запроса без внешних запросов/page errors;
+1366/375/320. Все автоматические интеграции явно synthetic, keys/ad copy не
+коммитились. Review отдельным агентом Codex без blockers, не human approval.
+Основной JS 545.96 kB/gzip 164.80, warning>500 kB остаётся A-02.
+MON-IG-02 закрыт по реальному sample; MON-09 открыт: cloud secret/image/Hosting/
+Job/indexes и приёмка. Публикация/merge main/Cloud IAM здесь не выполнялись.
+Минимум 20 credits сохраняется кодом, оставшийся реальный баланс 98 на конец trial.

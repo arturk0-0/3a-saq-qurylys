@@ -495,3 +495,68 @@ gcloud scheduler jobs pause saq-monitor-every-15-min --project=saq-qurylys --loc
 
 Уже выполняющееся execution это не отменяет. Восстановление lease/AI и другие
 ограничения: [monitoring.md](monitoring.md#восстановление-после-прерывания).
+
+## 8. Instagram SearchAPI: ручное включение
+
+[Trial evidence и контракт](instagram-searchapi.md): два поисковых вызова,
+подтверждён остаток 98 из 100. Дальнейшие разработческие тесты — локальные,
+не расходовать поиски повторно ради проверки сборки. Эти команды **не выполнялись
+Codex в живом проекте**. MON PR14 должен быть reviewed/merged, новый image/API/
+Hosting опубликованы из одного полного SHA по разделам 6–7.
+
+Ключ, добавленный в среду Codex, **не переносится в Cloud Run автоматически**.
+Владелец в Google Cloud Console → Secret Manager создаёт `saq-searchapi-api-key`
+и вводит значение из своего SearchAPI dashboard в секрет. Не записывать его
+в repo/YAML/командную строку/чат и не пытаться извлечь proxy binding из Codex.
+
+После создания секрета дать существующей runtime identity доступ **к этому
+секрету**, затем обновить только новые параметры (Gemini/IAM/прочие env сохраняются):
+
+```bash
+gcloud secrets add-iam-policy-binding saq-searchapi-api-key \
+  --project=saq-qurylys \
+  --member=serviceAccount:saq-api@saq-qurylys.iam.gserviceaccount.com \
+  --role=roles/secretmanager.secretAccessor
+gcloud run services update saq-qurylys-api \
+  --project=saq-qurylys --region=europe-west1 --timeout=300 \
+  --update-secrets=SEARCHAPI_API_KEY=saq-searchapi-api-key:latest \
+  --update-env-vars=SEARCHAPI_ENABLED=true,SEARCHAPI_SCHEDULE_ENABLED=false,SEARCHAPI_DAILY_LIMIT=2,SEARCHAPI_CREDIT_RESERVE=20
+```
+
+Cloud Run timeout 300 s согласован с клиентским ожиданием source-run 280 s:
+Account/search и opt-in AI выполняются последовательно. Старый HTTP timeout
+120 s может оборвать длинный сбор; неизвестный исход нельзя повторять вслепую.
+Ключ только backend. `--update-secrets` сохраняет существующий GEMINI_API_KEY
+reference; не заменять его на set-secrets только с SearchAPI.
+Публикация frontend не содержит и не требует этого приватного ключа.
+Открыть «Мониторинг рекламы» → «Источники сбора» → Instagram через SearchAPI.
+Query по умолчанию «квартиры Өскемен». Открытие страницы не вызывает поставщика.
+После проверки настройки/баланса владелец может явно сделать **один** ручной сбор;
+он расходует search quota и должен сохранить резерв минимум 20. Если баланс неизвестен
+или осталось 20 — не запускать. Данные остаются отдельной реальной очередью,
+не связывать с вымышленными seed ЖК.
+
+Автоматический Instagram worker по умолчанию выключен даже при уже настроенном
+общем Scheduler. Включение после cloud приёмки — отдельное решение владельца;
+у API и Job должны совпадать account/key, reserve/daily limits и schedule flag:
+
+```bash
+gcloud run jobs update saq-qurylys-monitor \
+  --project=saq-qurylys --region=europe-west1 \
+  --update-secrets=SEARCHAPI_API_KEY=saq-searchapi-api-key:latest \
+  --update-env-vars=SEARCHAPI_ENABLED=true,SEARCHAPI_SCHEDULE_ENABLED=true,SEARCHAPI_DAILY_LIMIT=2,SEARCHAPI_CREDIT_RESERVE=20
+gcloud run services update saq-qurylys-api \
+  --project=saq-qurylys --region=europe-west1 \
+  --update-env-vars=SEARCHAPI_SCHEDULE_ENABLED=true
+```
+
+У Job должен быть тот же новый image с SearchAPI adapter. Поля monitorLimits
+обеспечивают общий суточный cap, provider lease и pending ledger для API/Job;
+дополнительных indexes для этих документов не требуется. Первоначальные MON
+indexes из раздела 7 всё равно обязательны. Приложение не управляет сторонними
+потребителями того же SearchAPI account.
+
+Для возврата к manual-only установить SEARCHAPI_SCHEDULE_ENABLED=false **и у
+Job, и у API**; для полного запрета provider вызовов — SEARCHAPI_ENABLED=false
+на обеих runtime. Уже выполняющиеся вызовы это не отменяет. Pending/usage counter
+не удалять автоматически: неизвестный исход запроса требует проверки, а не retry.

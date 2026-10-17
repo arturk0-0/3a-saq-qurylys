@@ -4,8 +4,11 @@
 [PR #14](https://github.com/arturk0-0/3a-saq-qurylys/pull/14),
 [рабочая задача #13](https://github.com/arturk0-0/3a-saq-qurylys/issues/13).
 Это feature-код и локальная проверка, **не обновлённое облачное приложение**.
+**Дополнение:** Instagram trial успешно пройден: два поиска, остаток 98;
+[актуальная интеграция/лимиты/результаты](instagram-searchapi.md).
+Указанные ниже отсутствие provider и MON-IG-02 open относятся к первой фазе.
 
-## Результат
+## Результат первой версии до SearchAPI trial
 
 Выполнены MON-01–08: bounded RSS/Telegram adapters, отдельная реальная очередь,
 provenance/дедуп/ревизии, fetch lease и quota до HTTP, опциональный Gemini с общей
