@@ -146,6 +146,22 @@ def test_expanded_response_bytes_limit():
     assert error.value.code == "MONITOR_SOURCE_SIZE"
 
 
+def test_total_collection_deadline_and_deep_markup_are_bounded(monkeypatch):
+    from types import SimpleNamespace
+
+    from app.services import public_sources
+
+    ticks = iter([0, 21])
+    monkeypatch.setattr(public_sources, "time", SimpleNamespace(monotonic=lambda: next(ticks)))
+    with pytest.raises(AppError) as error:
+        collector(rss()).fetch(source())
+    assert error.value.code == "MONITOR_SOURCE_TIMEOUT"
+    monkeypatch.undo()
+    with pytest.raises(AppError) as error:
+        collector("<div>" * 257).fetch(source("telegram", "saq_demo"))
+    assert error.value.code == "MONITOR_SOURCE_FORMAT"
+
+
 @pytest.mark.parametrize(
     "body",
     [

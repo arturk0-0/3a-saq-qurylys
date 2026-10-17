@@ -32,6 +32,12 @@ COLLECTIONS = frozenset(
         "users",
         "analysisRuns",
         "usageLimits",
+        "monitorSources",
+        "monitorItems",
+        "monitorRuns",
+        "monitorEvents",
+        "monitorLimits",
+        "monitorAiRuns",
     }
 )
 

@@ -2,6 +2,7 @@
 
 import hashlib
 import re
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from email.utils import parsedate_to_datetime
@@ -177,6 +178,7 @@ class PublicCollector:
             else f"https://t.me/s/{target}"
         )
         try:
+            deadline = time.monotonic() + 20
             with (
                 httpx.Client(
                     timeout=httpx.Timeout(12, connect=4),
@@ -198,7 +200,11 @@ class PublicCollector:
                 if not response.is_success:
                     raise AppError(503, "MONITOR_SOURCE_HTTP", "Source unavailable or redirected")
                 body = bytearray()
-                for chunk in response.iter_bytes():
+                for chunk in response.iter_bytes(chunk_size=65536):
+                    if time.monotonic() > deadline:
+                        raise AppError(
+                            503, "MONITOR_SOURCE_TIMEOUT", "Collection time limit exceeded"
+                        )
                     if len(body) + len(chunk) > MAX_BYTES:
                         raise AppError(
                             502,
