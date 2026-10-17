@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     ai_daily_global_limit: int = Field(default=100, ge=1, le=10000)
     monitor_daily_fetch_limit: int = Field(default=100, ge=1, le=1000)
     monitor_sources_per_tick: int = Field(default=3, ge=1, le=10)
+    searchapi_api_key: SecretStr = SecretStr("")
+    searchapi_enabled: bool = False
+    searchapi_schedule_enabled: bool = False
+    searchapi_daily_limit: int = Field(default=2, ge=1, le=20)
+    searchapi_credit_reserve: int = Field(default=20, ge=20, le=10000)
 
     @field_validator("firebase_credentials_path", mode="before")
     @classmethod

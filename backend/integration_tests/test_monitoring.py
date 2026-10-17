@@ -95,3 +95,41 @@ def test_sdk_stale_lease_and_shared_ai_quota(workspace, db):
             item["id"], ItemAnalyze(expected_version=first.version, request_id=uuid4()), USER
         )
     assert error.value.code == "AI_DAILY_LIMIT" and len(calls) == 1
+
+
+def test_sdk_meta_provider_lease_reserve_and_private_queue(workspace):
+    from app.services.searchapi import SearchApiCollector
+    from tests.test_searchapi import ad
+
+    config = Settings(
+        _env_file=None,
+        searchapi_enabled=True,
+        searchapi_api_key="sdk-synthetic-key",
+    )
+    calls = []
+
+    def provider(request):
+        calls.append(request.url.path)
+        if request.url.path.endswith("/me"):
+            return httpx.Response(200, json={"account": {"remaining_credits": 21}})
+        return httpx.Response(200, json={"ads": [ad()]})
+
+    monitor = MonitoringService(
+        workspace, config, SearchApiCollector(config, httpx.MockTransport(provider))
+    )
+    first = monitor.create_source(
+        SourceInput(name="DEMO SDK Meta", kind="instagram_ads", target="квартиры Өскемен"), USER
+    )
+    second = monitor.create_source(
+        SourceInput(name="DEMO SDK Meta 2", kind="instagram_ads", target="квартиры Риддер"), USER
+    )
+    original, run = monitor._reserve(first["id"], USER)
+    with pytest.raises(AppError) as error:
+        monitor.run(second["id"], USER)
+    assert error.value.code == "SEARCHAPI_BUSY" and not calls
+    run.status = "failed"
+    monitor._finish(original, run)
+    result = monitor.run(second["id"], USER)
+    assert result["created"] == 1 and calls == ["/api/v1/me", "/api/v1/search"]
+    assert monitor.status()["searchApi"]["unsettledAttempts"] == 0
+    assert monitor.items()["items"][0]["adArchiveId"] == "100000000000001"

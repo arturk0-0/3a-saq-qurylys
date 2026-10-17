@@ -22,7 +22,9 @@ MAX_ITEMS = 30
 
 def normalize_target(kind: str, target: str) -> str:
     target = target.strip()
-    if kind == "web_search":
+    if kind not in {"web_search", "telegram", "instagram_ads"}:
+        raise AppError(422, "MONITOR_SOURCE_INVALID", "Unsupported source kind")
+    if kind in {"web_search", "instagram_ads"}:
         if not target or len(target) > 250 or any(ord(c) < 32 for c in target):
             raise AppError(422, "MONITOR_SOURCE_INVALID", "Enter a public search query")
         return target
@@ -164,6 +166,9 @@ class FetchResult:
     discovery_url: str
     response_sha256: str
     limited: bool
+    fetched_count: int | None = None
+    unreadable: int = 0
+    provider_credits_before: int | None = None
 
 
 class PublicCollector:
@@ -171,6 +176,8 @@ class PublicCollector:
         self.transport = transport
 
     def fetch(self, source: MonitorSource) -> FetchResult:
+        if source.kind not in {"web_search", "telegram"}:
+            raise AppError(422, "MONITOR_SOURCE_INVALID", "Use the configured Meta ad collector")
         target = normalize_target(source.kind, source.target)
         url = (
             "https://www.bing.com/search?" + urlencode({"format": "rss", "q": target})

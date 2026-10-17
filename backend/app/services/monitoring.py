@@ -1,7 +1,9 @@
 """Collect public observations; reserve work/quotas before external effects."""
 
 import hashlib
+import json
 from datetime import timedelta
+from urllib.parse import urlsplit
 from uuid import NAMESPACE_URL, uuid4, uuid5
 
 from app.core.config import Settings
@@ -23,10 +25,12 @@ from app.models.monitoring import (
 from app.services.gemini import PROMPT_VERSION, GeminiClient
 from app.services.public_sources import (
     PublicCollector,
+    date_or_none,
     normalize_target,
     relevance,
     safe_original_url,
 )
+from app.services.searchapi import MonitoringCollector
 from app.services.workspace import WorkspaceService, audit_event, serialize
 
 
@@ -54,7 +58,7 @@ class MonitoringService:
         client: GeminiClient | None = None,
     ):
         self.workspace, self.store, self.settings = workspace, workspace.store, settings
-        self.collector = collector or PublicCollector()
+        self.collector = collector or MonitoringCollector(settings)
         self.client = client or GeminiClient(settings)
 
     def require(self, collection, record_id, tx=None):
@@ -69,13 +73,27 @@ class MonitoringService:
     def status(self):
         counter = self.store.get("monitorLimits", f"fetch-{utc_now():%Y%m%d}") or {}
         worker = self.store.get("monitorLimits", "worker") or {}
+        provider = self.store.get("monitorLimits", "searchapi") or {}
+        provider_day = self.store.get("monitorLimits", f"searchapi-{utc_now():%Y%m%d}") or {}
         return {
             "workerLastTickAt": worker.get("lastTickAt"),
             "dailyFetchUsed": counter.get("count", 0),
             "dailyFetchLimit": self.settings.monitor_daily_fetch_limit,
             "maxAutoAiPerRun": 1,
             "liveRegistryEnabled": not self.workspace.demo_only,
-            "instagramTargetedAds": "not_connected",
+            "instagramTargetedAds": "configured"
+            if self.settings.searchapi_enabled
+            and self.settings.searchapi_api_key.get_secret_value()
+            else "not_connected",
+            "searchApi": {
+                "scheduled": self.settings.searchapi_schedule_enabled,
+                "dailyLimit": self.settings.searchapi_daily_limit,
+                "dailyUsed": provider_day.get("count", 0),
+                "creditReserve": self.settings.searchapi_credit_reserve,
+                "creditsObservedBefore": provider.get("creditsObservedBefore"),
+                "checkedAt": provider.get("checkedAt"),
+                "unsettledAttempts": len(provider.get("pendingSearches", {})),
+            },
         }
 
     def history(self, item_id, cursor=None, limit=20):
@@ -181,6 +199,25 @@ class MonitoringService:
             abandoned = (
                 tx.get("monitorRuns", source.active_run_id) if source.active_run_id else None
             )
+            provider = provider_day = None
+            provider_day_key = f"searchapi-{now:%Y%m%d}"
+            if source.kind == "instagram_ads":
+                if not self.settings.searchapi_enabled:
+                    raise AppError(503, "SEARCHAPI_DISABLED", "Meta provider is disabled")
+                if not self.settings.searchapi_api_key.get_secret_value():
+                    raise AppError(
+                        503, "SEARCHAPI_NOT_CONFIGURED", "Meta provider is not configured"
+                    )
+                provider = tx.get("monitorLimits", "searchapi") or {"id": "searchapi"}
+                provider_day = tx.get("monitorLimits", provider_day_key) or {
+                    "id": provider_day_key,
+                    "count": 0,
+                }
+                lease = date_or_none(provider.get("leaseUntil"))
+                if lease and lease > now:
+                    raise AppError(409, "SEARCHAPI_BUSY", "Another Meta search is running")
+                if provider_day["count"] >= self.settings.searchapi_daily_limit:
+                    raise AppError(429, "SEARCHAPI_DAILY_LIMIT", "Daily Meta search limit reached")
             updated = source.model_copy(
                 update={
                     "active_run_id": run.id,
@@ -201,11 +238,65 @@ class MonitoringService:
                     },
                 )
             tx.set("monitorSources", source_id, serialize(updated))
+            if provider is not None:
+                tx.set(
+                    "monitorLimits",
+                    "searchapi",
+                    {
+                        **provider,
+                        "activeRunId": run.id,
+                        "leaseUntil": (now + timedelta(minutes=10)).isoformat(),
+                    },
+                )
+                tx.set(
+                    "monitorLimits",
+                    provider_day_key,
+                    {
+                        **provider_day,
+                        "count": provider_day["count"] + 1,
+                    },
+                )
             tx.set("monitorLimits", quota_key, {**counter, "count": counter["count"] + 1})
             tx.create("monitorRuns", run.id, serialize(run))
             return updated
 
         return self.store.atomic(reserve), run
+
+    def _authorize_provider_search(self, source, run, credits):
+        """Recheck lease after account HTTP; retain a debit for unknown external outcomes."""
+        now = utc_now()
+
+        def authorize(tx):
+            current = MonitorSource.model_validate(self.require("monitorSources", source.id, tx))
+            provider = self.require("monitorLimits", "searchapi", tx)
+            lease = date_or_none(provider.get("leaseUntil"))
+            if (
+                provider.get("activeRunId") != run.id
+                or current.active_run_id != run.id
+                or lease is None
+                or lease <= now
+                or current.lease_until is None
+                or current.lease_until <= now
+            ):
+                raise AppError(409, "SEARCHAPI_BUSY", "Meta collection lease was lost")
+            pending = dict(provider.get("pendingSearches", {}))
+            if run.id in pending:
+                raise Conflict("Meta search already reserved; do not retry")
+            if credits - len(pending) <= self.settings.searchapi_credit_reserve:
+                raise AppError(429, "SEARCHAPI_RESERVE", "Keep the reserved Meta search credits")
+            pending[run.id] = now.isoformat()
+            tx.set(
+                "monitorLimits",
+                "searchapi",
+                {
+                    **provider,
+                    "pendingSearches": pending,
+                    "creditsObservedBefore": credits,
+                    "checkedAt": now.isoformat(),
+                },
+            )
+
+        self.store.atomic(authorize)
 
     def _ingest(self, source, run, observation, result):
         original = safe_original_url(observation.original_url)
@@ -216,7 +307,12 @@ class MonitoringService:
             return None, False
         now = utc_now()
         digest = sha(observation.text)
-        key = sha(f"{original}:{digest}")
+        revision = f"{original}:{digest}"
+        if observation.content_kind == "instagram_ad":
+            # Signed CDN query strings/hosts can rotate without a changed creative.
+            media_paths = sorted({(m.kind, urlsplit(m.url).path) for m in observation.media})
+            revision += ":" + sha(json.dumps(media_paths))
+        key = sha(revision)
         item = MonitorItem(
             **observation.model_dump(exclude={"original_url"}),
             original_url=original,
@@ -263,6 +359,19 @@ class MonitoringService:
     def _finish(self, source, run):
         def finish(tx):
             current = MonitorSource.model_validate(self.require("monitorSources", source.id, tx))
+            provider = (
+                tx.get("monitorLimits", "searchapi") if source.kind == "instagram_ads" else None
+            )
+            if provider:
+                updates = {}
+                if provider.get("activeRunId") == run.id:
+                    updates.update(leaseUntil=None, activeRunId=None)
+                if run.provider_credits_before is not None:
+                    pending = dict(provider.get("pendingSearches", {}))
+                    pending.pop(run.id, None)
+                    updates["pendingSearches"] = pending
+                if updates:
+                    tx.set("monitorLimits", "searchapi", {**provider, **updates})
             if current.active_run_id != run.id:
                 lost = run.model_copy(
                     update={
@@ -287,8 +396,20 @@ class MonitoringService:
         source, run = self._reserve(source_id, user)
         auto_item = None
         try:
-            result = self.collector.fetch(source)
-            run.fetched, run.limited = len(result.items), result.limited
+            if source.kind == "instagram_ads":
+                result = self.collector.fetch(
+                    source,
+                    before_search=lambda credits: self._authorize_provider_search(
+                        source, run, credits
+                    ),
+                )
+            else:
+                result = self.collector.fetch(source)
+            run.fetched = (
+                result.fetched_count if result.fetched_count is not None else len(result.items)
+            )
+            run.limited, run.unreadable = result.limited, result.unreadable
+            run.provider_credits_before = result.provider_credits_before
             for observation in result.items:
                 item, created = self._ingest(source, run, observation, result)
                 if item:
@@ -333,6 +454,8 @@ class MonitoringService:
         # Oldest due first: a bounded batch must not starve later source IDs.
         sources.sort(key=lambda source: (source.next_run_at or source.created_at, source.id))
         for source in sources:
+            if source.kind == "instagram_ads" and not self.settings.searchapi_schedule_enabled:
+                continue
             if not source.enabled or (source.next_run_at and source.next_run_at > utc_now()):
                 continue
             if len(results) >= self.settings.monitor_sources_per_tick:
@@ -494,9 +617,10 @@ class MonitoringService:
             ad = Advertisement(
                 id=uuid4().hex,
                 complex_id=complex_.id,
-                platform="Telegram"
-                if item.content_kind == "telegram_post"
-                else "Web search (snippet)",
+                platform={
+                    "telegram_post": "Telegram",
+                    "instagram_ad": "Instagram (Meta Ad Library)",
+                }.get(item.content_kind, "Web search (snippet)"),
                 account=item.account or "Unknown",
                 source_url=item.original_url,
                 text=item.text,

@@ -11,7 +11,7 @@ from app.models.common import DomainModel, Identifier, ShortText
 
 class SourceInput(DomainModel):
     name: ShortText
-    kind: Literal["web_search", "telegram"]
+    kind: Literal["web_search", "telegram", "instagram_ads"]
     target: str = Field(min_length=1, max_length=250, pattern=r"\S")
     interval_minutes: int = Field(default=60, ge=15, le=1440)
     auto_analyze: bool = False
@@ -36,13 +36,23 @@ class SourceUpdate(DomainModel):
     auto_analyze: bool
 
 
+class MediaReference(DomainModel):
+    kind: Literal["image", "video", "thumbnail"]
+    url: str = Field(max_length=2000)
+
+
 class Observation(DomainModel):
     original_url: str = Field(max_length=2000)
     title: str = Field(default="", max_length=500)
     text: str = Field(min_length=1, max_length=20000)
     published_at: AwareDatetime | None = None
-    content_kind: Literal["search_snippet", "telegram_post"]
+    content_kind: Literal["search_snippet", "telegram_post", "instagram_ad"]
     account: str = Field(default="", max_length=500)
+    ad_archive_id: str | None = Field(default=None, pattern=r"^[0-9]{1,40}$")
+    ad_started_at: AwareDatetime | None = None
+    ad_active: bool | None = None
+    platforms: list[str] = Field(default_factory=list, max_length=10)
+    media: list[MediaReference] = Field(default_factory=list, max_length=12)
 
 
 class MonitorItem(Observation):
@@ -105,3 +115,5 @@ class MonitorRun(DomainModel):
     limited: bool = False
     error_code: str | None = None
     auto_ai_status: str | None = None
+    unreadable: int = 0
+    provider_credits_before: int | None = None
