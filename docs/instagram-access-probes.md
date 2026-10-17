@@ -18,6 +18,7 @@ HTTP 200 документации за готовую выдачу объявл�
 | Способ | Фактический результат | Что это означает |
 | --- | --- | --- |
 | HTTP: точная карточка www.facebook.com/ads/library/?id=… | 403, 481 bytes, title Ad Library | Текст/creative не получены |
+| HTTP: та же карточка, стандартные Chrome User-Agent/Accept/ru-RU headers, без cookies | 403, 481 bytes | Смена обычных заголовков не дала данные; это не полноценный JS-браузер |
 | HTTP: Ad Library, country=KZ, q=продажа квартир, active | 403, 481 bytes | Поиск не прочитан, не «объявлений нет» |
 | HTTP: m.facebook.com/ads/library/?id=… | Redirect на www, затем 403 | Мобильный публичный маршрут не помог |
 | Официальный Graph v24.0 ads_archive без access token | HTTP 500, OAuthException code1, generic unknown error | Авторизованная работа API не проверена; это не доказательство отсутствия данных |
