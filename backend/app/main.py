@@ -18,6 +18,7 @@ from app.api.workspace import router as workspace_router
 from app.core.config import Settings
 from app.core.errors import AppError
 from app.core.firebase import FirebaseRuntime
+from app.core.request_context import request_id_context
 from app.schemas.errors import ErrorResponse
 
 logger = logging.getLogger(__name__)
@@ -55,16 +56,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         request.state.request_id = str(uuid4())
+        token = request_id_context.set(request.state.request_id)
         try:
-            response = await call_next(request)
-        except Exception as exc:
-            # ServerErrorMiddleware re-raises even handled exceptions to the ASGI server.
-            # Catch before that boundary so Uvicorn cannot log private exception text.
-            response = await unexpected_error(request, exc)
-        response.headers["X-Request-ID"] = request.state.request_id
-        if request.url.path.startswith("/api/v1/"):
-            response.headers["Cache-Control"] = "no-store"
-        return response
+            try:
+                response = await call_next(request)
+            except Exception as exc:
+                # Keep private exception text out of the ASGI server traceback.
+                response = await unexpected_error(request, exc)
+            response.headers["X-Request-ID"] = request.state.request_id
+            if request.url.path.startswith("/api/v1/"):
+                response.headers["Cache-Control"] = "no-store"
+            return response
+        finally:
+            request_id_context.reset(token)
 
     @application.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException) -> JSONResponse:

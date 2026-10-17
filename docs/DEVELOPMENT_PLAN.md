@@ -55,7 +55,7 @@ missing code. Do not reimplement these modules from scratch.
 | Backend error handling, SDK/contention and private uploads | PR #1, #3, #4 included via merged PR #5 (`effb87f`) | Published; do not merge historical stacked PRs separately |
 | Review UX and release browser/organiser package | PR #2 + `8dce105`, included via merged PR #5 | Published; owner reports manual checks completed |
 | Unified candidate + real SDK local integration | [PR #5](https://github.com/arturk0-0/3a-saq-qurylys/pull/5), merged `effb87f`; see `docs/release-candidate-report.md` | Main CI passed; owner published. Local emulator remains QA only |
-| LINK-01–05 | [PR #7](https://github.com/arturk0-0/3a-saq-qurylys/pull/7), после дизайна PR #6 | Реализация и локальные тесты готовы; review и публикация/облачная приёмка впереди |
+| LINK-01–05 | [PR #7](https://github.com/arturk0-0/3a-saq-qurylys/pull/7), merged `15ba913` после дизайна #6 / `cc8be36` | Review и локальный browser/SDK CI пройдены; публикация новой версии и её облачная приёмка впереди |
 | DRONE tasks, release/publication | Не начаты | Опциональные drone-критерии уточнить; release/publicity — отдельные действия владельца |
 
 The implementation table is not a claim that release gates or all task acceptance
@@ -82,6 +82,17 @@ history/index readiness, PDF, screenshot analysis and second-device checks remai
 | **21 Oct** | Live demo/pitch using fixed reviewed version, backup recording | A+B |
 
 **Release gates:** G0 skeleton runs; G1 data & scoring; G2 AI new-input flow; G3 analyst signal/PDF; G4 secure reproducible reviewer build. Do not start P2 before G3.
+
+### Интеграция 17 октября 2026
+
+PR #6, #7 и #11 включены в main; код приложения — `2ac51b7`.
+Второе техническое review выполнил отдельный агент Codex, не человек с GitHub approval.
+CI перед слияниями зелёный; итоговый локальный Chromium-прогон: 16 групп,
+658 запросов, без внешних обращений и ошибок страницы. Firebase/Gemini в нём
+явно тестовые, WeasyPrint PDF настоящий. Production Hosting build прошёл.
+Публикация API/Hosting блокируется отсутствием Google Cloud-авторизации в этой
+среде; прежняя облачная приёмка владельца относится к `effb87f`. Новые облачные
+проверки не отмечаются выполненными. A продолжает от свежего main.
 
 ## 2. P0 task checklist — all mandatory modules
 
@@ -154,11 +165,11 @@ history/index readiness, PDF, screenshot analysis and second-device checks remai
 
 ## 3. P1 differentiator — «Рекламный след» (after P0)
 
-- [ ] **LINK-01 · B · 18–19 Oct:** Normalize shared phone numbers (+7/8), WhatsApp URLs, website domains and alias names.
-- [ ] **LINK-02 · B · 18–19 Oct:** Propose ad-to-ad links with explicit evidence; optionally add image perceptual hashes / embedding similarity.
-- [ ] **LINK-03 · B · 19 Oct:** Persist proposed/confirmed/rejected links with provenance and reviewer/audit metadata.
-- [ ] **LINK-04 · A · 19 Oct:** Show related ads/accounts in a graph or clear list; navigate directly to shared evidence.
-- [ ] **LINK-05 · B · 19 Oct:** Demonstrate two fictional accounts sharing a number; do not infer common ownership or change base R1–R6 scoring.
+- [x] **LINK-01 · B · 18–19 Oct:** Normalize shared phone numbers (+7/8), WhatsApp URLs, website domains and alias names. Review/merge: [#7](https://github.com/arturk0-0/3a-saq-qurylys/pull/7); локальный сценарий с тестовыми адаптерами, облачный rollout отдельно.
+- [x] **LINK-02 · B · 18–19 Oct:** Propose ad-to-ad links with explicit evidence; optionally add image perceptual hashes / embedding similarity. Review/merge: [#7](https://github.com/arturk0-0/3a-saq-qurylys/pull/7); локальный сценарий с тестовыми адаптерами, облачный rollout отдельно.
+- [x] **LINK-03 · B · 19 Oct:** Persist proposed/confirmed/rejected links with provenance and reviewer/audit metadata. Review/merge: [#7](https://github.com/arturk0-0/3a-saq-qurylys/pull/7); локальный сценарий с тестовыми адаптерами, облачный rollout отдельно.
+- [x] **LINK-04 · A · 19 Oct:** Show related ads/accounts in a graph or clear list; navigate directly to shared evidence. Review/merge: [#7](https://github.com/arturk0-0/3a-saq-qurylys/pull/7); локальный сценарий с тестовыми адаптерами, облачный rollout отдельно.
+- [x] **LINK-05 · B · 19 Oct:** Demonstrate two fictional accounts sharing a number; do not infer common ownership or change base R1–R6 scoring. Review/merge: [#7](https://github.com/arturk0-0/3a-saq-qurylys/pull/7); локальный сценарий с тестовыми адаптерами, облачный rollout отдельно.
 
 ## 4. P2 optional drone inspection (only with spare time)
 

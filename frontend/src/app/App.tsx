@@ -6,7 +6,7 @@ import { ConfigurationNotice, useAuth } from '@/features/auth/AuthProvider'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { ComplexList } from '@/features/complexes/ComplexList'
 import { ComplexDetail } from '@/features/complexes/ComplexDetail'
-import { AdvertisementsPage } from '@/features/advertisements/AdvertisementsPage'
+import { AdvertisementDetail, AdvertisementsPage } from '@/features/advertisements/AdvertisementsPage'
 import { EmptyState } from '@/components/WorkspaceUI'
 import { CreateSignal, SignalDetail, SignalsPage } from '@/features/signals/SignalsPage'
 
@@ -72,6 +72,7 @@ export function App() {
           <Route path="/complexes" element={<ComplexList />} />
           <Route path="/complexes/:id" element={<ComplexDetail />} />
           <Route path="/advertisements" element={<AdvertisementsPage />} />
+          <Route path="/advertisements/:id" element={<AdvertisementDetail />} />
           <Route path="/signals" element={<SignalsPage />} />
           <Route path="/signals/new" element={<CreateSignal />} />
           <Route path="/signals/:id" element={<SignalDetail />} />

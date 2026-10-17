@@ -22,6 +22,7 @@ COLLECTIONS = frozenset(
         "developers",
         "complexes",
         "advertisements",
+        "adLinks",
         "evidence",
         "signals",
         "signalRevisions",

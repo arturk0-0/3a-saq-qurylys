@@ -178,6 +178,8 @@ with sync_playwright() as p:
         expect(page).to_have_url(re.compile(r"cursor=2"))
         page.get_by_role("button", name="В начало", exact=True).click()
         expect(page.get_by_role("region", name="Жилые комплексы")).to_be_visible()
+        # Let intercepted route.fetch requests finish before removing their handlers.
+        page.wait_for_load_state("networkidle")
         page.unroute_all(behavior="wait")
         checkpoint(
             "catalog",
@@ -295,7 +297,42 @@ with sync_playwright() as p:
         expect(panel.get_by_label("Источник анализа")).not_to_have_value("")
         panel.get_by_role("button", name="Открыть скриншот").click()
         expect(panel.get_by_role("img")).to_be_visible()
+        expect(panel.locator(".selected-source")).to_contain_text("Скриншот 1")
+        expect(panel.get_by_text("Загружен файл", exact=False)).to_contain_text(
+            "synthetic.png"
+        )
+        for width, height in [(1366, 768), (375, 812), (320, 700)]:
+            page.set_viewport_size({"width": width, "height": height})
+            assert page.evaluate(
+                "document.documentElement.scrollWidth <= innerWidth"
+            ), width
+        page.set_viewport_size({"width": 1366, "height": 768})
+        panel.scroll_into_view_if_needed()
+        page.screenshot(path=str(OUT / "desktop-analysis.png"), full_page=True)
+        page.set_viewport_size({"width": 375, "height": 812})
+        page.screenshot(path=str(OUT / "mobile-analysis.png"), full_page=True)
+        page.set_viewport_size({"width": 1366, "height": 768})
+        assert (
+            panel.locator("blockquote").first.evaluate(
+                "el => parseFloat(getComputedStyle(el).fontSize)"
+            )
+            >= 16
+        )
+        source_select = panel.get_by_label("Источник анализа")
+        source_select.focus()
+        page.keyboard.press("Space")
+        if page.evaluate("CSS.supports('appearance', 'base-select')"):
+            page.wait_for_function(
+                "document.querySelector('.analysis-panel select').matches(':open')"
+            )
+            page.wait_for_timeout(200)  # Capture the finished 160 ms picker transition.
+        page.screenshot(path=str(OUT / "source-dropdown.png"))
+        page.keyboard.press("Escape")
+        page.emulate_media(reduced_motion="reduce")
+        assert panel.evaluate("el => getComputedStyle(el).animationName") == "none"
+        page.emulate_media(reduced_motion="no-preference")
         panel.get_by_label("Источник анализа").select_option("")
+        expect(panel.locator(".selected-source")).to_contain_text("Текст объявления")
         checkpoint(
             "screenshots",
             "Wrong MIME, >6 MiB rejected; corrupt PNG rejected; valid PNG stored/read with private local API",
@@ -589,7 +626,10 @@ with sync_playwright() as p:
         empty_panel.get_by_role(
             "button", name="Анализировать выбранный источник"
         ).click()
-        empty_panel.get_by_text(re.compile("Анализ завершён")).click()
+        empty_panel.locator(".analysis-history > summary").click()
+        empty_panel.locator(".analysis-history").get_by_text(
+            re.compile("Анализ завершён")
+        ).click()
         expect(
             empty_panel.get_by_text(
                 "Поддержанных гипотез нет. Это не подтверждение безопасности объекта."
@@ -612,6 +652,97 @@ with sync_playwright() as p:
         checkpoint(
             "empty results",
             "Harmless text has no hypotheses; no safety finding; explicit empty complex-history fixture",
+        )
+
+        # LINK-05: real local routes/services, synthetic accounts; no AI request.
+        # Let intercepted route.fetch requests finish before removing their handlers.
+        page.wait_for_load_state("networkidle")
+        page.unroute_all(behavior="wait")
+        page.set_viewport_size({"width": 1366, "height": 768})
+        trace_ads = []
+        texts = [
+            "DEMO TRACE: контакт +7 (000) 000-00-01.",
+            "DEMO TRACE: WhatsApp https://wa.me/70000000001",
+            "DEMO TRACE: 8 (000) 000-00-01.",
+        ]
+        for index, text in enumerate(texts):
+            trace_ads.append(
+                api(
+                    page,
+                    "POST",
+                    "/api/v1/advertisements",
+                    {
+                        "complexId": "demo-complex-04",
+                        "platform": "DEMO TRACE",
+                        "account": f"fictional-trace-{index}",
+                        "sourceUrl": f"https://demo.invalid/trace/{index}",
+                        "text": text,
+                        "publishedAt": "2026-10-16T10:00:00Z",
+                    },
+                )
+            )
+        trace_risk = api(page, "GET", "/api/v1/complexes/demo-complex-04/risk")
+        ai_before = len(
+            [r for r in requests if r[0] == "POST" and r[1].endswith("/analyze")]
+        )
+        page.goto(BASE + f"/advertisements/{trace_ads[0]['id']}")
+        expect(page.locator(".ad-text")).to_have_text(texts[0])
+        page.get_by_role("button", name="Рекламный след", exact=True).click()
+        trace = page.get_by_role("region", name="Рекламный след", exact=True)
+        other = trace.locator(".trace-card").filter(has_text="fictional-trace-1")
+        expect(other.get_by_text("+7 (000) 000-00-01", exact=True)).to_be_visible()
+        expect(
+            other.get_by_text("https://wa.me/70000000001", exact=True)
+        ).to_be_visible()
+        for width, height in [(1366, 768), (375, 812), (320, 700)]:
+            page.set_viewport_size({"width": width, "height": height})
+            assert page.evaluate(
+                "document.documentElement.scrollWidth <= innerWidth"
+            ), width
+        page.set_viewport_size({"width": 1366, "height": 768})
+        other.scroll_into_view_if_needed()
+        page.screenshot(path=str(OUT / "advertising-trace-desktop.png"))
+        other.get_by_role("button", name="Рассмотреть совпадение").click()
+        other.get_by_label("Обоснование совпадения").fill(
+            "LOCAL DEMO: сверены телефон и WhatsApp"
+        )
+        other.get_by_role("button", name="Сохранить решение о совпадении").click()
+        expect(other.get_by_text("Совпадение подтверждено", exact=True)).to_be_visible()
+        page.reload()
+        page.get_by_role("button", name="Рекламный след", exact=True).click()
+        other = page.locator(".trace-card").filter(has_text="fictional-trace-1")
+        expect(other.get_by_text("Совпадение подтверждено", exact=True)).to_be_visible()
+        other.get_by_role("link", name="К связанному объявлению").click()
+        expect(page).to_have_url(BASE + f"/advertisements/{trace_ads[1]['id']}")
+        expect(page.locator(".ad-text")).to_have_text(texts[1])
+        page.goto(BASE + f"/advertisements/{trace_ads[0]['id']}")
+        page.get_by_role("button", name="Рекламный след", exact=True).click()
+        rejected = page.locator(".trace-card").filter(has_text="fictional-trace-2")
+        rejected.get_by_role("button", name="Рассмотреть совпадение").click()
+        rejected.get_by_label("Решение по совпадению").select_option("rejected")
+        rejected.get_by_label("Обоснование совпадения").fill(
+            "LOCAL DEMO: учебное отклонение"
+        )
+        error_once(page, "**/api/v1/ad-links/*/decision", 409, "CONFLICT")
+        rejected.get_by_role("button", name="Сохранить решение о совпадении").click()
+        expect(page.get_by_role("alert")).to_contain_text("Данные изменились")
+        page.get_by_role("button", name="Обновить совпадения").click()
+        expect(rejected.get_by_label("Обоснование совпадения")).to_have_value(
+            "LOCAL DEMO: учебное отклонение"
+        )
+        expect(rejected.get_by_label("Решение по совпадению")).to_have_value("rejected")
+        rejected.get_by_role("button", name="Сохранить решение о совпадении").click()
+        expect(rejected.get_by_text("Совпадение отклонено", exact=True)).to_be_visible()
+        assert api(page, "GET", "/api/v1/complexes/demo-complex-04/risk") == trace_risk
+        assert (
+            len([r for r in requests if r[0] == "POST" and r[1].endswith("/analyze")])
+            == ai_before
+        )
+        page.set_viewport_size({"width": 375, "height": 812})
+        page.screenshot(path=str(OUT / "advertising-trace-mobile.png"), full_page=True)
+        checkpoint(
+            "advertising trace",
+            "Exact phone/WhatsApp quotes; explicit confirm/reject and persisted reload; direct ad navigation; conflict keeps notes; 1366/375/320 without overflow; no AI or risk mutation",
         )
 
         assert not errors, errors
