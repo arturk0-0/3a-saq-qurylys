@@ -429,3 +429,39 @@ typecheck/build,18 Chromium-групп/863 запроса без внешних 
 MON-IG-02 закрыт по реальному sample; MON-09 открыт: cloud secret/image/Hosting/
 Job/indexes и приёмка. Публикация/merge main/Cloud IAM здесь не выполнялись.
 Минимум 20 credits сохраняется кодом, оставшийся реальный баланс 98 на конец trial.
+
+
+## Интеграция MON + завершённая очередь A · 17 октября 2026
+
+По поручению владельца выполнена оставшаяся автономная подготовка, без cloud
+deployment/платных запросов. Создана `release/integrated-monitoring-readiness`
+от MON6b077d8. Сохранены merge-коммиты A01b36c403, A0251409b7, A036d25238,
+A04dcaf27f; в конфликтах App/browser runner сохранены оба набора возможностей.
+Monitoring также lazy после auth. Начальный JS436,75kB/gzip137,68 вместо
+545,96/164,80, warning>500kB отсутствует. Код интеграции сохранён/pushed67ab123.
+
+Фактически passed431backend+Ruff94файла,14SDK/emulator,78frontend/19файлов+
+typecheck/build,20Chromium-групп/794основныхзапроса, без page errors/внешних
+browser-запросов;1366/375/320. Явные MemoryStore/FakeFiles/Auth/Gemini/SearchAPI
+адаптеры, WeasyPrint настоящий. Независимое read-only Codex review без blockers,
+не человеческий GitHub approval. Ruff QA и diff-check пройдены.
+
+Compose запущен отдельным projectsaq-integrated-qa без облачных env/ключей:
+оба healthy, health API/proxy200, MONбезtoken401, Chromium показывает экран
+подключения среды. Первый buildTLSfailPyPI исправлен поддержанным custom_ca
+BuildKit secret с системным trustbundle; TLSне отключался. Контейнеры остановлены.
+Gitleaks8.30.1 проверен официальнымchecksum, --all --full-history --redact
+не нашёл секретов; credentialsисторическиеимена отсутствуют кроме .env.example.
+Ничего не отозвано/переписано без оснований; IAM/Storageпроверяются отдельно.
+
+Документы A интегрированы, добавлен честный MON-вариант питча, обновлены README/
+план/команда,73относительныхссылки проверены. AIevaluationCLI только перечислил
+7входов, без --run. SEC01локальная/DOC01/PITCH01материалы закрыты с ограничениями;
+PITCH02репетиция выделена отдельно. Подробный итог/команды/следующий шаг:
+docs/integration-readiness-report.md и docs/security-release-check.md.
+
+Реальных SearchAPI/Geminiзапросов0, последнийизвестныйбаланс98/100.
+Main/живойсайт/IAM/индексы/расписание/реальныеданные/публичность не менялись.
+Остаются review+CIобщегоSHA, cloudsecret+единыйAPI/Hostingdeployment, индексы/Job/
+Scheduler, выборпубличныхTelegramканалов, realЖКworkflowвнеDEMO, liveRU/KZ/image/
+Storageприёмка, второйПК, репетиция, дедлайн/tag/публичнаясдача.

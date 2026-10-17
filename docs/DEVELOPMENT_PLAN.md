@@ -74,16 +74,23 @@ Instagram не обещается, media автоматически не ска�
 
 Это реальные незакрытые пункты прежнего плана, а не отсутствующие CRUD-экраны.
 
+**Интеграция 17 октября:** очередь друга A-01–04 завершена и совмещена с MON
+в `release/integrated-monitoring-readiness`; main и живой сайт пока не обновлены.
+Сохранены его исправления черновиков/скриншотов, lazy-loading и материалы показа.
+[Отчёт интеграции и следующий шаг](integration-readiness-report.md),
+[исходный handoff A](frontend-handoff.md). Реализацию этих задач не повторять.
+
 - [ ] **PM-01 · B** — Confirm organisers' exact submission time, judge test procedure, expected drone criteria and any permitted public data sources.
 - [ ] **BE-13 · B** — Verify Firestore/Storage access control, no public document uploads, secret scanning, quotas and error handling.
 - [ ] **AI-06 · B** — Test Kazakh text, low-quality screenshot and harmless ad to identify false positives; record results.
 - [ ] **AI-08 · B** — Describe model/prompt/version, limits and measured behavior on unseen inputs in docs.
 - [ ] **QA-04 · B** — Fresh Git clone on a second device/account with Internet; prove `.env`/Firebase/Gemini configuration and local startup.
-- [ ] **SEC-01 · B** — Ensure `.gitignore` and entire Git history do not expose private service-account JSON, Gemini keys or user information; rotate any exposed keys.
-- [ ] **DOC-01 · B** — Integrate A's user-facing material and complete `README.md` (why, capabilities, tech stack, architecture, setup, env, seed, demo, known limitations).
+- [x] **SEC-01 · B, локальная проверка** — Gitleaks 8.30.1 по всем доступным refs/full history не нашёл секретов; исторические пути credentials проверены, `.gitignore` закрывает локальные файлы. [Область проверки](security-release-check.md). Это не проверка cloud IAM или гарантия отсутствия персональных данных; BE-13 остаётся открыт.
+- [x] **DOC-01 · B, интеграционная ветка** — Материалы A включены, README указывает проверяемый кандидат, границы источников и актуальные инструкции; показ дополнен отдельным маршрутом MON. Облачная публикация отдельно.
 - [ ] **RELEASE-01 · B** — Approve green CI, correct README URLs; record immutable commit SHA; create submission tag.
 - [ ] **RELEASE-02 · B** — Switch repo from private to public **before** deadline; verify access without login; submit URL/commit as required.
-- [ ] **PITCH-01 · A** — Prepare a timed pitch script, UI illustrations and a backup-demo checklist in repository files; B rehearses the live deployment and records the backup with private access. Clearly distinguish recordings/test adapters from live AI.
+- [x] **PITCH-01 · A, материалы** — Подготовлены `pitch.md`, `demo-checklist.md`, обновлён runbook; происхождение существующих иллюстраций обозначено. Совмещены в интеграционной ветке.
+- [ ] **PITCH-02 · B, живой показ** — Пройти репетицию опубликованного SHA и записать резерв с приватно выданным доступом. Подготовленные тексты и локальный Chromium не закрывают этот пункт.
 
 До завершения MON и приёмки не добавлять новые P1/P2. Точное время сдачи/часовой
 пояс подтвердить у организаторов; ранее указанное 20 октября 23:59 — предположение,
