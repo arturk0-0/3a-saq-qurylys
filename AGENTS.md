@@ -11,6 +11,13 @@ This file is the repository-level operating guide. Read it **before** editing co
 
 ## Two-person ownership
 
+Owner update, 17 October: automatic public-ad monitoring is now the immediate P0.
+For the MON vertical slice the owner explicitly authorizes B to implement both
+backend and necessary frontend without waiting for A. This overrides the file
+ownership split for MON only. Instagram targeted ads have first priority for
+access/coverage investigation; never substitute ordinary post search for ad data.
+See `docs/instagram-feasibility.md` and the current development plan.
+
 The team has **two** contributors; current queues and copy/paste prompts are in
 [`docs/two-person-team.md`](docs/two-person-team.md), assignments in
 [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md). GitHub queues:
