@@ -6,7 +6,7 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { useApiQuery } from '@/lib/useApiQuery'
 import { errorMessage, factorLabels, formatDate } from '@/lib/labels'
 import type { Complex } from '@/lib/types'
-import { findingLabels, safeMonitorError, type Finding, type Page } from './types'
+import { findingLabels, safeMonitorError, contentLabel, type Finding, type Page } from './types'
 
 interface History { id: string; action: string; actorUid: string; createdAt: string; details: { notes?: string; decision?: string } }
 export function FindingDetail({ id, liveRegistry, changed }: { id: string; liveRegistry: boolean; changed: () => void }) {
@@ -41,11 +41,13 @@ export function FindingDetail({ id, liveRegistry, changed }: { id: string; liveR
     {error && <ErrorState message={error} />}
     {notice && <p role="status" className="inline-notice">{notice}</p>}
     {query.loading ? <LoadingState /> : query.error ? <ErrorState message={query.error} retry={query.refresh} /> : item && <>
-      <div className="monitor-heading"><span className="monitor-tag">{findingLabels[item.status]}</span><strong>{item.contentKind === 'search_snippet' ? 'Поисковый фрагмент — требуется оригинал' : 'Текст публичного Telegram-поста'}</strong></div>
+      <div className="monitor-heading"><span className="monitor-tag">{findingLabels[item.status]}</span><strong>{item.contentKind === 'search_snippet' ? 'Поисковый фрагмент — требуется оригинал' : contentLabel(item.contentKind)}</strong></div>
       <h3>{item.title || item.account}</h3>
       <SourceLink url={item.originalUrl} />
       <p>Опубликовано: {formatDate(item.publishedAt)} · Получено: {formatDate(item.createdAt)}</p>
+      {item.contentKind === 'instagram_ad' && <div className="monitor-meta-info"><p>Библиотека Meta · ID {item.adArchiveId} · {item.adActive ? 'Активно при получении' : 'Статус требует проверки'}</p><p>Начало рекламного показа: {formatDate(item.adStartedAt)}. Это не дата публикации исходного поста.</p><p>Платформы по данным поставщика: {item.platforms?.join(', ')}</p></div>}
       <blockquote className="monitor-original">{item.text}</blockquote>
+      {Boolean(item.media?.length) && <details className="monitor-section"><summary>Рекламные материалы · {item.media!.length}</summary><p>Ссылки получены от SearchAPI. Файлы не загружены в наше хранилище и не анализировались автоматически; внешние ссылки могут истекать.</p><ul className="monitor-media">{item.media!.map((m, i) => <li key={m.kind + i}><a className="detail-link" href={m.url} target="_blank" rel="noopener noreferrer">{m.kind === 'video' ? 'Видео' : m.kind === 'thumbnail' ? 'Превью' : 'Изображение'} {i + 1} ↗</a></li>)}</ul></details>}
       <p className="inline-notice">Это находка для проверки, не установленное нарушение. Сверьте регион, рекламу, актуальность и правовое основание.</p>
       <div className="monitor-reasons"><div><strong>Слова о регионе</strong><p>{item.regionMatches.join(', ')}</p></div><div><strong>Слова о жилье</strong><p>{item.housingMatches.join(', ')}</p></div><div><strong>Слова об оплате</strong><p>{item.paymentMatches.join(', ') || 'Не обнаружены; это не заключение об отсутствии оплаты.'}</p></div></div>
       <details><summary>Происхождение и контрольные суммы</summary><p>Ссылка обнаружения: {item.discoveryUrl}</p><p>Текст: {item.textSha256}</p><p>Ответ источника: {item.responseSha256}</p><p>Группа ревизий: {item.revisionKey}</p><p>Последнее обнаружение: {formatDate(item.lastSeenAt)} · источников: {item.sourceIds.length}</p></details>

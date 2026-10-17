@@ -454,8 +454,17 @@ class MonitoringService:
         # Oldest due first: a bounded batch must not starve later source IDs.
         sources.sort(key=lambda source: (source.next_run_at or source.created_at, source.id))
         for source in sources:
-            if source.kind == "instagram_ads" and not self.settings.searchapi_schedule_enabled:
-                continue
+            if source.kind == "instagram_ads":
+                if not (
+                    self.settings.searchapi_schedule_enabled
+                    and self.settings.searchapi_enabled
+                    and self.settings.searchapi_api_key.get_secret_value()
+                ):
+                    continue
+                quota = self.store.get("monitorLimits", f"searchapi-{utc_now():%Y%m%d}") or {}
+                if quota.get("count", 0) >= self.settings.searchapi_daily_limit:
+                    # Exhausted Meta quota must not starve unrelated public-source work.
+                    continue
             if not source.enabled or (source.next_run_at and source.next_run_at > utc_now()):
                 continue
             if len(results) >= self.settings.monitor_sources_per_tick:

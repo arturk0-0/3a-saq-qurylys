@@ -1,4 +1,5 @@
 import { apiUrl } from './apiUrl'
+import { monitorErrors } from '@/features/monitoring/types'
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string, public requestId?: string) {
@@ -15,20 +16,23 @@ export function createApiClient(getToken: () => Promise<string>): ApiClient {
     headers.set('Authorization', `Bearer ${await getToken()}`)
     if (init.body && !(init.body instanceof FormData) && !(init.body instanceof Blob)) headers.set('Content-Type', 'application/json')
     const sourceRun = path.startsWith('/api/v1/monitoring/sources/') && path.endsWith('/run')
-    const timeout = AbortSignal.timeout(sourceRun ? 110000 : path.endsWith('/analyze') ? 90000 : 40000)
+    const timeout = AbortSignal.timeout(sourceRun ? 280000 : path.endsWith('/analyze') ? 90000 : 40000)
     const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout
     let response: Response
     try {
       response = await fetch(url, { ...init, headers, signal })
     } catch (error) {
       if (init.signal?.aborted) throw error
-      throw new ApiError(0, 'NETWORK_ERROR', 'Нет связи с сервером. Проверьте подключение и повторите.')
+      throw new ApiError(0, 'NETWORK_ERROR', sourceRun
+        ? 'Ответ о сборе не получен. Проверьте историю запусков перед повтором: поиск мог расходовать квоту и ещё выполняться на сервере.'
+        : 'Нет связи с сервером. Проверьте подключение и повторите.')
     }
     if (!response.ok) {
       const payload: unknown = await response.json().catch(() => null)
       const error = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {}
       const code = typeof error.code === 'string' && /^[A-Z][A-Z0-9_]{0,63}$/.test(error.code) ? error.code : 'REQUEST_FAILED'
       const knownMessages: Record<string, string> = {
+        ...monitorErrors,
         MONITOR_NOT_DUE: 'Интервал источника ещё не истёк. Следующее время сбора указано в карточке.',
         MONITOR_BUSY: 'Источник уже обрабатывается. Обновите историю запусков.',
         MONITOR_PAUSED: 'Источник на паузе. Возобновите его перед сбором.',

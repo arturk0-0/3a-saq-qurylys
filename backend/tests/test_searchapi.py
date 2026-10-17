@@ -391,3 +391,25 @@ def test_stale_finished_worker_cannot_release_new_provider_lease():
     old.status = "failed"
     monitor._finish(source_one, old)
     assert monitor.store.get("monitorLimits", "searchapi")["activeRunId"] == new.id
+
+
+def test_exhausted_meta_day_quota_does_not_starve_public_sources():
+    from app.services.searchapi import MonitoringCollector
+    from tests.test_public_sources import rss
+
+    monitor, calls = service(searchapi_daily_limit=1, searchapi_schedule_enabled=True)
+    meta = create(monitor)
+    monitor.run(meta["id"], USER)
+    monitor.store.documents["monitorSources"][meta["id"]]["nextRunAt"] = None
+    public = monitor.create_source(
+        SourceInput(name="DEMO public", kind="web_search", target="квартиры Өскемен"), USER
+    )
+    dispatcher = MonitoringCollector(monitor.settings)
+    dispatcher.instagram = monitor.collector
+    dispatcher.public = PublicCollector(
+        httpx.MockTransport(lambda r: httpx.Response(200, text=rss()))
+    )
+    monitor.collector = dispatcher
+    results = monitor.run_due(USER)
+    assert len(results) == 1 and results[0]["sourceId"] == public["id"]
+    assert len(calls) == 2

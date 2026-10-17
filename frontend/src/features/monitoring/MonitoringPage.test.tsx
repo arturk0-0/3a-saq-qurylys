@@ -98,3 +98,44 @@ it('does not offer attaching real findings to the DEMO registry or invent a publ
   expect(screen.getByRole('button', { name: 'Анализировать Gemini — платный запрос' })).toBeInTheDocument()
 })
 
+it('creates an Instagram Ad Library source with a single-city query and no automatic AI', async () => {
+  const api = vi.fn(async () => ({ id: 'meta-source' }))
+  setup(<SourceManager sources={[]} changed={vi.fn()} />, api as ApiClient)
+  fireEvent.change(screen.getByLabelText('Тип источника'), { target: { value: 'instagram_ads' } })
+  expect(screen.getByLabelText('Поисковый запрос')).toHaveValue('квартиры Өскемен')
+  expect(screen.getByText(/Каждый запуск расходует запрос SearchAPI/)).toBeInTheDocument()
+  expect(api).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: 'Сохранить источник' }))
+  await screen.findByText(/Источник сохранён/)
+  const writes = api.mock.calls as unknown as [string, RequestInit][]
+  expect(JSON.parse(String(writes[0][1].body))).toMatchObject({
+    kind: 'instagram_ads', target: 'квартиры Өскемен', autoAnalyze: false,
+  })
+})
+it('shows Meta campaign date separately and never auto-loads external creative files', async () => {
+  const meta: Finding = { ...item, contentKind: 'instagram_ad', adArchiveId: '100000000000001',
+    adStartedAt: '2026-10-15T07:00:00Z', adActive: true, platforms: ['INSTAGRAM'],
+    media: [{ kind: 'video', url: 'https://cdn.example.org/demo.mp4' }] }
+  const api = vi.fn(async (path: string) => path.includes('/history') ? { items: [], nextCursor: null } : meta)
+  const result = setup(<FindingDetail id="lead1" liveRegistry={false} changed={vi.fn()} />, api as ApiClient)
+  expect(await screen.findByText(/ID 100000000000001/)).toBeInTheDocument()
+  expect(screen.getByText(/Это не дата публикации исходного поста/)).toBeInTheDocument()
+  expect(screen.getByText(/Опубликовано: Не указано/)).toBeInTheDocument()
+  expect(result.container.querySelectorAll('img,video,iframe')).toHaveLength(0)
+  expect(result.container.querySelector('a[href="https://cdn.example.org/demo.mp4"]')).toHaveAttribute('rel', 'noopener noreferrer')
+  expect(api.mock.calls.every(([path]) => String(path).startsWith('/api/v1/'))).toBe(true)
+})
+it('reports configured Instagram and reserved quota without launching a provider search', async () => {
+  const api = vi.fn(async (path: string, _init?: RequestInit) => {
+    if (path.endsWith('/status')) return { instagramTargetedAds: 'configured', workerLastTickAt: null,
+      dailyFetchUsed: 0, dailyFetchLimit: 100, searchApi: { scheduled: false, dailyLimit: 2,
+        dailyUsed: 0, creditReserve: 20, creditsObservedBefore: 99, checkedAt: item.createdAt, unsettledAttempts: 0 } }
+    return { items: [], nextCursor: null }
+  })
+  setup(<MonitoringPage />, api as ApiClient)
+  expect(await screen.findByRole('heading', { name: 'Источник Instagram настроен через SearchAPI' })).toBeInTheDocument()
+  expect(screen.getByText(/Берегём квоту: резерв 20 запросов/)).toBeInTheDocument()
+  expect(screen.getByText(/Это не текущий баланс/)).toBeInTheDocument()
+  expect(api.mock.calls.every(([, init]) => !init?.method)).toBe(true)
+})
+

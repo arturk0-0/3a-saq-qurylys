@@ -3,11 +3,11 @@ import { Button } from '@/components/ui/button'
 import { ErrorState, FormField } from '@/components/WorkspaceUI'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { errorMessage, formatDate } from '@/lib/labels'
-import { safeMonitorError, type Source, type Run } from './types'
+import { safeMonitorError, type Source, type Run, type MonitorStatus } from './types'
 
-export function SourceManager({ sources, changed }: { sources: Source[]; changed: () => void }) {
+export function SourceManager({ sources, changed, provider }: { sources: Source[]; changed: () => void; provider?: MonitorStatus | null }) {
   const { api } = useAuth()
-  const [kind, setKind] = useState<'web_search' | 'telegram'>('web_search')
+  const [kind, setKind] = useState<Source['kind']>('web_search')
   const [target, setTarget] = useState('новостройки квартиры Усть-Каменогорск Риддер')
   const [name, setName] = useState('Поиск жилья ВКО')
   const [interval, setIntervalMinutes] = useState(60)
@@ -49,9 +49,10 @@ export function SourceManager({ sources, changed }: { sources: Source[]; changed
         <FormField label="Название источника"><input value={name} maxLength={500} required disabled={busy} onChange={e => setName(e.target.value)} /></FormField>
         <FormField label="Тип источника"><select value={kind} disabled={busy} onChange={e => {
           const value = e.target.value as typeof kind; setKind(value)
-          setTarget(value === 'telegram' ? '' : 'новостройки квартиры Усть-Каменогорск Риддер')
-        }}><option value="web_search">Поиск по интернету — фрагменты выдачи</option><option value="telegram">Публичный Telegram-канал — тексты постов</option></select></FormField>
-        <FormField label={kind === 'telegram' ? 'Канал Telegram' : 'Поисковый запрос'} hint={kind === 'telegram' ? '@channel или https://t.me/channel. Закрытые каналы не поддерживаются.' : 'Добавьте город и слова о жилье. Выдача поисковика не является полным текстом рекламы.'}>
+          setTarget(value === 'telegram' ? '' : value === 'instagram_ads' ? 'квартиры Өскемен' : 'новостройки квартиры Усть-Каменогорск Риддер')
+        }}><option value="web_search">Поиск по интернету — фрагменты выдачи</option><option value="telegram">Публичный Telegram-канал — тексты постов</option><option value="instagram_ads">Instagram — Meta Ad Library через SearchAPI</option></select></FormField>
+        {kind === 'instagram_ads' && <p className="inline-notice">Поиск именно рекламы Instagram: Казахстан, активные объявления, тип all. Каждый запуск расходует запрос SearchAPI. Одна страница без автоматических повторов; минимум {provider?.searchApi?.creditReserve ?? 20} запросов сохраняются. Расписание по умолчанию выключено.</p>}
+        <FormField label={kind === 'telegram' ? 'Канал Telegram' : 'Поисковый запрос'} hint={kind === 'telegram' ? '@channel или https://t.me/channel. Закрытые каналы не поддерживаются.' : kind === 'instagram_ads' ? 'Например: квартиры Өскемен. Несколько городов лучше искать отдельными источниками. В очередь проходят тексты с признаками ВКО и жилья.' : 'Добавьте город и слова о жилье. Выдача поисковика не является полным текстом рекламы.'}>
           <input value={target} required maxLength={250} disabled={busy} onChange={e => setTarget(e.target.value)} placeholder={kind === 'telegram' ? '@channel' : 'Жильё в ВКО'} />
         </FormField>
         <FormField label="Интервал сбора, минуты" hint="15–1440 минут. Для выполнения интервала нужен включённый серверный worker."><input type="number" min={15} max={1440} value={interval} required disabled={busy} onChange={e => setIntervalMinutes(Number(e.target.value))} /></FormField>
@@ -67,7 +68,8 @@ export function SourceManager({ sources, changed }: { sources: Source[]; changed
       const waiting = Boolean(source.nextRunAt && new Date(source.nextRunAt).getTime() > Date.now())
       return <section className="panel" key={source.id}>
         <div className="monitor-heading"><h2>{source.name}</h2><span className="monitor-tag">{source.enabled ? 'Источник включён' : 'На паузе'}</span></div>
-        <p>{source.kind === 'telegram' ? 'Telegram · @' : 'Интернет-поиск · '}{source.target}</p>
+        <p>{source.kind === 'telegram' ? 'Telegram · @' : source.kind === 'instagram_ads' ? 'Instagram / SearchAPI · ' : 'Интернет-поиск · '}{source.target}</p>
+        {source.kind === 'instagram_ads' && <p className="form-hint">{provider?.searchApi?.scheduled ? 'Расписание Instagram разрешено сервером; фактические запуски смотрите в истории.' : 'Только ручной сбор. Расписание Instagram на сервере выключено.'} Дневной лимит: {provider?.searchApi?.dailyLimit ?? 2} попытки.</p>}
         <p className="form-hint">Последний сбор: {formatDate(source.lastRunAt)} · Следующий: {formatDate(source.nextRunAt)} · Интервал {source.intervalMinutes} мин.</p>
         <p>Авто-AI: <strong>{source.autoAnalyze ? 'включён, платные запросы' : 'выключен'}</strong></p>
         {source.lastError && <p className="inline-notice">{safeMonitorError(source.lastError)}</p>}

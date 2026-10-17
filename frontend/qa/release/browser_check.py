@@ -163,6 +163,8 @@ with sync_playwright() as p:
         expect(page.get_by_role("heading", name="ЖК не найдены")).to_be_visible()
         page.get_by_label("Поиск ЖК").fill("")
         page.get_by_role("button", name="Найти", exact=True).click()
+        expect(page).not_to_have_url(re.compile(r"(?:\?|&)q="))
+        expect(page.get_by_role("region", name="Жилые комплексы")).to_be_visible()
         page.get_by_label("Город", exact=True).select_option("Риддер")
         page.get_by_label("Приоритет", exact=True).select_option("GREEN")
         expect(page.get_by_role("region", name="Жилые комплексы")).to_contain_text(
@@ -750,7 +752,7 @@ with sync_playwright() as p:
         page.set_viewport_size({"width": 1366, "height": 900})
         page.goto(BASE + "/monitoring")
         expect(page.get_by_role("heading", name="Мониторинг рекламы", exact=True)).to_be_visible()
-        expect(page.get_by_role("heading", name="Автосбор таргетированной рекламы KZ пока не подключён")).to_be_visible()
+        expect(page.get_by_role("heading", name="Источник Instagram настроен через SearchAPI")).to_be_visible()
         expect(page.get_by_text("Ещё не подтверждён. Ручной сбор доступен в источниках.")).to_be_visible()
         page.get_by_role("button", name="Источники сбора", exact=True).click()
         expect(page.get_by_role("checkbox")).not_to_be_checked()
@@ -789,6 +791,48 @@ with sync_playwright() as p:
         expect(page.locator(".monitor-detail .inline-notice").filter(has_text=note)).to_be_visible()
         assert api(page, "GET", "/api/v1/complexes/demo-complex-04/risk") == trace_risk
         checkpoint("public monitoring", "Synthetic RSS → bounded collection → queue → real 409/refresh keeps notes → expert review → MockTransport Gemini → persisted reload; unknown dates/Instagram limitation/DEMO separation; 1366/375/320 without overflow; risk unchanged")
+
+
+        # The QA process strips live SEARCHAPI_* and uses the explicit synthetic transport.
+        page.get_by_role("button", name="Источники сбора", exact=True).click()
+        page.get_by_label("Название источника", exact=True).fill("LOCAL QA Instagram source")
+        page.get_by_label("Тип источника", exact=True).select_option("instagram_ads")
+        expect(page.get_by_label("Поисковый запрос")).to_have_value("квартиры Өскемен")
+        expect(page.get_by_text("Каждый запуск расходует запрос SearchAPI.", exact=False)).to_be_visible()
+        page.get_by_role("button", name="Сохранить источник", exact=True).click()
+        panel = page.locator(".monitor-sources > .panel").filter(has=page.get_by_role("heading", name="LOCAL QA Instagram source", exact=True))
+        expect(panel.get_by_text("Только ручной сбор.", exact=False)).to_be_visible()
+        panel.get_by_role("button", name="Получить публикации", exact=True).click()
+        expect(page.get_by_text("Сбор завершён: прочитано 1, подходит под фильтр 1, новых 1, повторов 0")).to_be_visible()
+        page.get_by_role("button", name="Очередь эксперта", exact=True).click()
+        finding = page.locator(".monitor-finding").filter(has=page.get_by_role("heading", name="LOCAL QA DEMO Instagram", exact=True))
+        finding.get_by_role("button", name="Рассмотреть находку").click()
+        detail = page.locator(".monitor-detail")
+        expect(detail.get_by_text("Instagram · Meta Ad Library", exact=True)).to_be_visible()
+        expect(detail.get_by_text("ID 100000000000099", exact=False)).to_be_visible()
+        expect(detail.get_by_text("Опубликовано: Не указано", exact=False)).to_be_visible()
+        expect(detail.get_by_text("Это не дата публикации исходного поста.", exact=False)).to_be_visible()
+        detail.locator("summary").filter(has_text="Рекламные материалы").click()
+        expect(detail.get_by_role("link", name="Видео 1")).to_have_attribute("href", "https://media.example.org/qa-demo.mp4")
+        assert detail.locator("img,video,iframe").count() == 0
+        for width in [1366, 375, 320]:
+            page.set_viewport_size({"width": width, "height": 900})
+            assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
+        page.screenshot(path=str(OUT / "instagram-mobile-test-adapters.png"), full_page=True)
+        page.set_viewport_size({"width": 1366, "height": 900})
+        page.screenshot(path=str(OUT / "instagram-desktop-test-adapters.png"), full_page=True)
+        page.get_by_role("button", name="Источники сбора", exact=True).click()
+        page.get_by_label("Название источника", exact=True).fill("LOCAL QA reserve safeguard")
+        page.get_by_label("Тип источника", exact=True).select_option("instagram_ads")
+        page.get_by_label("Поисковый запрос").fill("квартиры Риддер")
+        page.get_by_role("button", name="Сохранить источник", exact=True).click()
+        reserve_panel = page.locator(".monitor-sources > .panel").filter(has=page.get_by_role("heading", name="LOCAL QA reserve safeguard", exact=True))
+        reserve_panel.get_by_role("button", name="Получить публикации", exact=True).click()
+        expect(page.get_by_role("alert").filter(has_text="сохраняем минимум 20 запросов")).to_be_visible()
+        state = api(page, "GET", "/api/v1/monitoring/status")
+        assert state["searchApi"]["dailyUsed"] == 2 and state["searchApi"]["unsettledAttempts"] == 0
+        assert api(page, "GET", "/api/v1/complexes/demo-complex-04/risk") == trace_risk
+        checkpoint("Instagram Ad Library", "Synthetic Meta engine → Instagram source → provenance/campaign date/media links → no auto media requests → reserve stops before second search; 1366/375/320; risk unchanged")
 
         assert not errors, errors
         assert not unexpected, unexpected

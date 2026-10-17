@@ -20,6 +20,7 @@ from app.services.files import FileService
 from app.services.gemini import GeminiClient
 from app.services.monitoring import MonitoringService
 from app.services.public_sources import PublicCollector
+from app.services.searchapi import MonitoringCollector, SearchApiCollector
 from app.services.seed_data import build_demo_seed
 from app.services.workspace import WorkspaceService
 from tests.fakes import MemoryStore
@@ -77,6 +78,8 @@ settings = Settings(
     gemini_model="test-model",
     ai_daily_user_limit=1000,
     ai_daily_global_limit=10000,
+    searchapi_enabled=True,
+    searchapi_api_key="qa-synthetic-not-real",
 )
 workspace = WorkspaceService(MemoryStore(build_demo_seed()))
 files = FileService(workspace, FakeFiles())
@@ -101,7 +104,28 @@ def public_source_response(request):
     </item></channel></rss>''')
 
 
-monitoring = MonitoringService(workspace, settings,
-    PublicCollector(httpx.MockTransport(public_source_response)),
+meta_balance = {"remaining": 21}
+
+
+def meta_source_response(request):
+    if request.url.path.endswith("/me"):
+        return httpx.Response(200, json={"account": {"remaining_credits": meta_balance["remaining"]}})
+    assert request.url.host == "www.searchapi.io"
+    assert request.url.params["engine"] == "meta_ad_library"
+    meta_balance["remaining"] -= 1
+    return httpx.Response(200, json={"ads": [{
+        "ad_archive_id": "100000000000099", "is_active": True,
+        "publisher_platform": ["INSTAGRAM"], "start_date": "2026-10-15T07:00:00Z",
+        "snapshot": {"page_name": "LOCAL QA DEMO Instagram",
+            "body": {"text": "DEMO — вымышленная реклама. Өскемен, квартиры в строящемся доме. Депозит 150 000 тенге."},
+            "videos": [{"video_hd_url": "https://media.example.org/qa-demo.mp4"}],
+        },
+    }]})
+
+
+qa_collector = MonitoringCollector(settings)
+qa_collector.public = PublicCollector(httpx.MockTransport(public_source_response))
+qa_collector.instagram = SearchApiCollector(settings, httpx.MockTransport(meta_source_response))
+monitoring = MonitoringService(workspace, settings, qa_collector,
     GeminiClient(settings, httpx.MockTransport(model_response)))
 app.dependency_overrides[monitoring_service] = lambda: monitoring

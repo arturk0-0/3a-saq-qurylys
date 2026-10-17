@@ -1,5 +1,5 @@
 export interface Source {
-  id: string; name: string; kind: 'web_search' | 'telegram'; target: string;
+  id: string; name: string; kind: 'web_search' | 'telegram' | 'instagram_ads'; target: string;
   intervalMinutes: number; autoAnalyze: boolean; enabled: boolean; version: number;
   lastRunAt: string | null; nextRunAt: string | null; leaseUntil: string | null;
   lastError: string | null;
@@ -7,11 +7,15 @@ export interface Source {
 export interface MonitorStatus {
   workerLastTickAt: string | null; dailyFetchUsed: number; dailyFetchLimit: number;
   maxAutoAiPerRun: number; liveRegistryEnabled: boolean;
-  instagramTargetedAds: 'not_connected';
+  instagramTargetedAds: 'not_connected' | 'configured';
+  searchApi?: { scheduled: boolean; dailyLimit: number; dailyUsed: number; creditReserve: number;
+    creditsObservedBefore: number | null; checkedAt: string | null; unsettledAttempts: number };
 }
 export interface Finding {
   id: string; title: string; text: string; originalUrl: string; discoveryUrl: string;
-  contentKind: 'search_snippet' | 'telegram_post'; account: string;
+  contentKind: 'search_snippet' | 'telegram_post' | 'instagram_ad'; account: string;
+  adArchiveId?: string | null; adStartedAt?: string | null; adActive?: boolean | null;
+  platforms?: string[]; media?: { kind: 'image' | 'video' | 'thumbnail'; url: string }[];
   createdAt: string; lastSeenAt: string; publishedAt: string | null;
   regionMatches: string[]; housingMatches: string[]; paymentMatches: string[];
   textSha256: string; responseSha256: string; revisionKey: string; sourceIds: string[];
@@ -27,10 +31,23 @@ export interface Run {
   id: string; sourceId: string; status: string; createdAt: string; completedAt: string | null;
   fetched: number; relevant: number; created: number; duplicates: number;
   limited: boolean; errorCode: string | null; autoAiStatus: string | null;
+  unreadable?: number; providerCreditsBefore?: number | null;
 }
 export interface Page<T> { items: T[]; nextCursor: string | null }
 export const findingLabels = { new: 'Новая находка', investigating: 'В работе эксперта', dismissed: 'Отложено экспертом' };
 export const monitorErrors: Record<string, string> = {
+  SEARCHAPI_DISABLED: 'Instagram-сбор выключен на сервере. Сохранённые находки доступны.',
+  SEARCHAPI_NOT_CONFIGURED: 'Ключ SearchAPI ещё не настроен на сервере.',
+  SEARCHAPI_RESERVE: 'Сбор остановлен: сохраняем минимум 20 запросов для хакатона. Неопределённые попытки тоже учитываются.',
+  SEARCHAPI_DAILY_LIMIT: 'Достигнут дневной лимит поисков Instagram. Новые попытки — в следующие сутки UTC.',
+  SEARCHAPI_BUSY: 'Другой поиск Instagram уже выполняется. Проверьте историю перед новой попыткой.',
+  SEARCHAPI_CREDENTIALS: 'SearchAPI не принял серверный ключ или доступ. Повтор пока не запускайте.',
+  SEARCHAPI_QUOTA: 'SearchAPI ограничил запросы. Проверьте остаток и тариф.',
+  SEARCHAPI_TEMPORARY: 'SearchAPI временно недоступен. Автоматического повтора нет.',
+  SEARCHAPI_FORMAT: 'Не удалось проверить ответ или остаток SearchAPI. Сбор остановлен.',
+  SEARCHAPI_NETWORK: 'Нет связи с SearchAPI. Проверьте историю перед повтором.',
+  SEARCHAPI_TIMEOUT: 'Истекло время ожидания SearchAPI. Повтор может расходовать запрос.',
+  SEARCHAPI_SIZE: 'Ответ SearchAPI превышает лимит обработки.',
   MONITOR_SOURCE_BLOCKED: 'Источник ограничил доступ или частоту запросов.',
   MONITOR_SOURCE_HTTP: 'Источник недоступен или перенаправляет запрос.',
   MONITOR_SOURCE_NETWORK: 'Нет связи с источником.',
@@ -43,4 +60,7 @@ export const monitorErrors: Record<string, string> = {
   AI_DAILY_LIMIT: 'Достигнут суточный лимит Gemini.', AI_INVALID_RESPONSE: 'Ответ Gemini не прошёл проверку.',
 };
 export function safeMonitorError(code: string | null) { return code ? monitorErrors[code] || 'Операция не завершена. Код: ' + code : '' }
+export function contentLabel(kind: Finding['contentKind']) {
+  return kind === 'instagram_ad' ? 'Instagram · Meta Ad Library' : kind === 'telegram_post' ? 'Telegram' : 'Фрагмент поиска'
+}
 
