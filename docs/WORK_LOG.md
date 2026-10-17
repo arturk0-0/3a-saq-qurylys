@@ -378,3 +378,25 @@ Instagram Ads KZ) и MON-09 (индексы/Job/Scheduler/deployment/облач�
 Crash после AI reservation требует ручного расследования/аудита, не слепого
 платного retry; ограничения/порядок восстановления — docs/monitoring.md.
 Инструкция cloud deployment дополнена Job/Scheduler, без выполнения команд.
+
+
+## MON-IG: расширенные проверки по запросу владельца · 17 октября 2026
+
+Проверены карточка ID 1573735788124300 и поиск «продажа квартир», country=KZ:
+HTTP www — 403, mobile redirect → 403; Graph без token — 500/OAuthException
+(не успешная API-проверка), Bing RSS — 200 с нерелевантной выдачей,
+Google — JS notice, DDG — challenge. Анонимный Chromium остановился на TLS
+trust store; проверка TLS не отключалась, legacy NSS не менялась, разрешение
+записи туда не предоставлено. Это ограничение браузерной пробы, не доказательство
+Meta 403 в браузере.
+
+SearchAPI search/country/details/pricing docs — 200: KZ поддерживает all,
+но отдельный housing_ads не отмечен; platform=instagram есть. Реальный unauth
+query — 401, данных рекламы нет. Сайт заявляет 100 free без карты; применимость
+к данному engine ещё проверить. Подготовлено secret requirement
+SEARCHAPI_API_KEY → www.searchapi.io в draft среды, успех saved/requires_publish;
+ключ не создан и не введён, runtime не изменён. Apify metadata/build schema — 200,
+input/count/лимиты/текущий pricing прочитаны; запусков акторов/paid calls не было.
+Точный результат по ID/охват KZ не подтверждён. Полная матрица, ссылки и следующие
+два запроса — docs/instagram-access-probes.md. MON-IG-02 остаётся открытым,
+новые источники в production не подключались.
