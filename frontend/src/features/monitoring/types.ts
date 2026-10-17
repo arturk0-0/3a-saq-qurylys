@@ -63,4 +63,3 @@ export function safeMonitorError(code: string | null) { return code ? monitorErr
 export function contentLabel(kind: Finding['contentKind']) {
   return kind === 'instagram_ad' ? 'Instagram · Meta Ad Library' : kind === 'telegram_post' ? 'Telegram' : 'Фрагмент поиска'
 }
-

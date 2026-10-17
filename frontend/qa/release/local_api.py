@@ -95,13 +95,17 @@ app.dependency_overrides[workspace_service] = lambda: workspace
 app.dependency_overrides[file_service] = lambda: files
 app.dependency_overrides[analysis_service] = lambda: analysis
 
+
 # Explicit synthetic public-source HTTP adapter, never a production fallback.
 def public_source_response(request):
-    return httpx.Response(200, text='''<rss><channel><item>
+    return httpx.Response(
+        200,
+        text="""<rss><channel><item>
     <title>LOCAL QA DEMO — реклама жилья</title><link>https://example.org/qa-housing</link>
     <description>DEMO — вымышленная публикация. Өскемен, квартиры в строящемся доме.
     Внесите депозит 150 000 тенге. Это локальная тестовая страница.</description>
-    </item></channel></rss>''')
+    </item></channel></rss>""",
+    )
 
 
 meta_balance = {"remaining": 21}
@@ -109,23 +113,45 @@ meta_balance = {"remaining": 21}
 
 def meta_source_response(request):
     if request.url.path.endswith("/me"):
-        return httpx.Response(200, json={"account": {"remaining_credits": meta_balance["remaining"]}})
+        return httpx.Response(
+            200, json={"account": {"remaining_credits": meta_balance["remaining"]}}
+        )
     assert request.url.host == "www.searchapi.io"
     assert request.url.params["engine"] == "meta_ad_library"
     meta_balance["remaining"] -= 1
-    return httpx.Response(200, json={"ads": [{
-        "ad_archive_id": "100000000000099", "is_active": True,
-        "publisher_platform": ["INSTAGRAM"], "start_date": "2026-10-15T07:00:00Z",
-        "snapshot": {"page_name": "LOCAL QA DEMO Instagram",
-            "body": {"text": "DEMO — вымышленная реклама. Өскемен, квартиры в строящемся доме. Депозит 150 000 тенге."},
-            "videos": [{"video_hd_url": "https://media.example.org/qa-demo.mp4"}],
+    return httpx.Response(
+        200,
+        json={
+            "ads": [
+                {
+                    "ad_archive_id": "100000000000099",
+                    "is_active": True,
+                    "publisher_platform": ["INSTAGRAM"],
+                    "start_date": "2026-10-15T07:00:00Z",
+                    "snapshot": {
+                        "page_name": "LOCAL QA DEMO Instagram",
+                        "body": {
+                            "text": "DEMO — вымышленная реклама. Өскемен, квартиры в строящемся доме. Депозит 150 000 тенге."
+                        },
+                        "videos": [
+                            {"video_hd_url": "https://media.example.org/qa-demo.mp4"}
+                        ],
+                    },
+                }
+            ]
         },
-    }]})
+    )
 
 
 qa_collector = MonitoringCollector(settings)
 qa_collector.public = PublicCollector(httpx.MockTransport(public_source_response))
-qa_collector.instagram = SearchApiCollector(settings, httpx.MockTransport(meta_source_response))
-monitoring = MonitoringService(workspace, settings, qa_collector,
-    GeminiClient(settings, httpx.MockTransport(model_response)))
+qa_collector.instagram = SearchApiCollector(
+    settings, httpx.MockTransport(meta_source_response)
+)
+monitoring = MonitoringService(
+    workspace,
+    settings,
+    qa_collector,
+    GeminiClient(settings, httpx.MockTransport(model_response)),
+)
 app.dependency_overrides[monitoring_service] = lambda: monitoring

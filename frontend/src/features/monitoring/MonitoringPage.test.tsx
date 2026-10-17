@@ -138,4 +138,3 @@ it('reports configured Instagram and reserved quota without launching a provider
   expect(screen.getByText(/Это не текущий баланс/)).toBeInTheDocument()
   expect(api.mock.calls.every(([, init]) => !init?.method)).toBe(true)
 })
-

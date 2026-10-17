@@ -82,4 +82,3 @@ export function SourceManager({ sources, changed, provider }: { sources: Source[
     })}
   </div>
 }
-

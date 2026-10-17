@@ -85,4 +85,3 @@ export function FindingDetail({ id, liveRegistry, changed }: { id: string; liveR
     </>}
   </section>
 }
-

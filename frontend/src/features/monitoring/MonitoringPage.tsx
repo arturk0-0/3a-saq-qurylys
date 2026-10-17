@@ -77,4 +77,3 @@ export function MonitoringPage() {
     {view !== 'sources' && (cursor || page?.nextCursor) && <div className="form-actions"><Button variant="outline" onClick={() => set({ cursor: null })}>В начало списка</Button>{page?.nextCursor && <Button variant="outline" onClick={() => set({ cursor: page.nextCursor })}>Далее по списку</Button>}</div>}
   </div>
 }
-
