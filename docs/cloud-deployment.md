@@ -271,6 +271,23 @@ AI_INVALID_RESPONSE (502, неверный/незавершённый JSON/ци�
 Frontend-ветка может пока отображать общий текст: код виден в JSON ответа Network;
 UI-сопоставление кодов — отдельный интеграционный шаг с владельцем frontend.
 
+После публикации ветки `fix/B-03-04-ai-diagnostics-pdf` отказ валидации Gemini
+содержит безопасную внутреннюю причину и серверный `request_id`; перечень причин
+есть в [методологии AI](ai-methodology.md#диагностика-отклонённого-ответа).
+В Cloud Shell найти конкретное обращение можно командой ниже: заменить
+`REPLACE_WITH_REQUEST_UUID` на UUID из сообщения приложения, без других данных.
+
+```bash
+gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="saq-qurylys-api" AND textPayload:"Gemini request failed:" AND textPayload:"request_id=REPLACE_WITH_REQUEST_UUID"' --project=saq-qurylys --freshness=1h --limit=10 --format='table(timestamp,textPayload)'
+```
+
+Лог содержит только фиксированные коды/метаданные, без исходного объявления и
+ответа провайдера. Для HTTP/сетевых отказов тот же UUID связывает безопасную
+строку Gemini с ответом приложения. Старые revision не содержат новые причины:
+публикация не устанавливает причину исторического сбоя задним числом.
+Не запускайте платную генерацию только ради появления лога; используйте UUID
+следующего обычного анализа, если он завершился ошибкой.
+
 Откат backend при необходимости: выбрать **предыдущую проверенную** revision,
 не угадывать latest. Не откатывать Firebase данные или секреты:
 
