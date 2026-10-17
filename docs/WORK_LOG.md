@@ -433,35 +433,40 @@ Job/indexes и приёмка. Публикация/merge main/Cloud IAM зде�
 
 ## Интеграция MON + завершённая очередь A · 17 октября 2026
 
-По поручению владельца выполнена оставшаяся автономная подготовка, без cloud
-deployment/платных запросов. Создана `release/integrated-monitoring-readiness`
-от MON6b077d8. Сохранены merge-коммиты A01b36c403, A0251409b7, A036d25238,
-A04dcaf27f; в конфликтах App/browser runner сохранены оба набора возможностей.
-Monitoring также lazy после auth. Начальный JS436,75kB/gzip137,68 вместо
-545,96/164,80, warning>500kB отсутствует. Код интеграции сохранён/pushed67ab123.
+По поручению владельца выполнена оставшаяся автономная подготовка без cloud
+deployment и платных запросов. Создана `release/integrated-monitoring-readiness`
+от MON `6b077d8`. Сохранены исходные коммиты A-01 `b36c403`, A-02 `51409b7`,
+A-03 `6d25238`, A-04 `dcaf27f`; в конфликтах App/browser runner сохранены оба
+набора возможностей. Monitoring также загружается lazy после auth. Начальный
+JS — 436,75 kB / gzip 137,68 вместо 545,96 / 164,80; warning >500 kB исчез.
+Код интеграции сохранён и отправлен в `67ab123`.
 
-Фактически passed431backend+Ruff94файла,14SDK/emulator,78frontend/19файлов+
-typecheck/build,20Chromium-групп/794основныхзапроса, без page errors/внешних
-browser-запросов;1366/375/320. Явные MemoryStore/FakeFiles/Auth/Gemini/SearchAPI
-адаптеры, WeasyPrint настоящий. Независимое read-only Codex review без blockers,
-не человеческий GitHub approval. Ruff QA и diff-check пройдены.
+Фактически пройдены 431 backend-тест и Ruff (94 файла), 14 SDK/emulator,
+78 frontend-тестов (19 файлов), typecheck/build, 20 Chromium-групп / 794 основных
+запроса, без page errors и внешних browser-запросов; ширины 1366/375/320.
+Явные MemoryStore/FakeFiles/Auth/Gemini/SearchAPI adapters, настоящий WeasyPrint.
+Независимое read-only Codex review без blockers — не человеческий GitHub approval.
+Ruff QA и diff-check пройдены.
 
-Compose запущен отдельным projectsaq-integrated-qa без облачных env/ключей:
-оба healthy, health API/proxy200, MONбезtoken401, Chromium показывает экран
-подключения среды. Первый buildTLSfailPyPI исправлен поддержанным custom_ca
-BuildKit secret с системным trustbundle; TLSне отключался. Контейнеры остановлены.
-Gitleaks8.30.1 проверен официальнымchecksum, --all --full-history --redact
-не нашёл секретов; credentialsисторическиеимена отсутствуют кроме .env.example.
-Ничего не отозвано/переписано без оснований; IAM/Storageпроверяются отдельно.
+Compose запущен отдельным project `saq-integrated-qa` без облачных env/ключей:
+оба контейнера healthy, health API/proxy — 200, MON без token — 401; Chromium
+показывает экран подключения среды. Первый build не прошёл TLS к PyPI; исправлено
+поддержанным `custom_ca` BuildKit secret с системным trust bundle, без отключения
+TLS. Контейнеры остановлены. Gitleaks 8.30.1 проверен официальным checksum;
+`--all --full-history --redact` не нашёл секретов. Исторических credential-путей
+не обнаружено, кроме шаблона `.env.example`. История не переписывалась; IAM и
+облачный Storage проверяются отдельно.
 
-Документы A интегрированы, добавлен честный MON-вариант питча, обновлены README/
-план/команда,73относительныхссылки проверены. AIevaluationCLI только перечислил
-7входов, без --run. SEC01локальная/DOC01/PITCH01материалы закрыты с ограничениями;
-PITCH02репетиция выделена отдельно. Подробный итог/команды/следующий шаг:
-docs/integration-readiness-report.md и docs/security-release-check.md.
+Документы A интегрированы, добавлен честный MON-вариант питча, обновлены README,
+план и командная очередь; 73 относительные ссылки проверены. AI evaluation CLI
+только перечислил семь входов, без `--run`. SEC-01 локальная, DOC-01 и материалы
+PITCH-01 закрыты с ограничениями; PITCH-02 (репетиция) выделен отдельно.
+Подробный итог/команды/следующий шаг: `docs/integration-readiness-report.md`
+и `docs/security-release-check.md`.
 
-Реальных SearchAPI/Geminiзапросов0, последнийизвестныйбаланс98/100.
-Main/живойсайт/IAM/индексы/расписание/реальныеданные/публичность не менялись.
-Остаются review+CIобщегоSHA, cloudsecret+единыйAPI/Hostingdeployment, индексы/Job/
-Scheduler, выборпубличныхTelegramканалов, realЖКworkflowвнеDEMO, liveRU/KZ/image/
-Storageприёмка, второйПК, репетиция, дедлайн/tag/публичнаясдача.
+Реальных SearchAPI/Gemini-запросов — 0, последний известный баланс — 98/100.
+Main, живой сайт, IAM, индексы, расписание, реальные данные и публичность не менялись.
+Остаются review/CI общего SHA, cloud secret и единый API/Hosting deployment,
+индексы/Job/Scheduler, выбор публичных Telegram-каналов, работа с реальными ЖК
+отдельно от DEMO, live RU/KZ/image/Storage приёмка, второй ПК, репетиция,
+дедлайн/tag и публичная сдача.
