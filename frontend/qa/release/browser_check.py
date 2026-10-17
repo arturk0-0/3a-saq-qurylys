@@ -122,6 +122,56 @@ with sync_playwright() as p:
     page.on("pageerror", lambda e: errors.append(str(e)))
     page.on("request", lambda r: requests.append((r.method, r.url)))
     try:
+        # A fresh module cache is necessary: the full workflow below visits all
+        # routes and cannot reproduce a first lazy-import failure afterwards.
+        chunk_context = browser.new_context()
+        chunk_context.route("**/*", local_only)
+        chunk_page = chunk_context.new_page()
+        chunk_page.on("pageerror", lambda e: errors.append(str(e)))
+        chunk_requests = []
+        chunk_page.on("request", lambda r: chunk_requests.append((r.method, r.url)))
+        chunk_pattern = "**/src/features/signals/SignalsPage.tsx*"
+        chunk_page.route(chunk_pattern, lambda route: route.abort())
+        try:
+            chunk_page.goto(BASE + "/signals")
+            expect(
+                chunk_page.get_by_role("button", name="Войти", exact=True)
+            ).to_be_visible()
+            assert not any("/features/signals/" in url for _, url in chunk_requests)
+            login(chunk_page)
+            expect(chunk_page.get_by_role("alert")).to_contain_text(
+                "Не удалось загрузить раздел"
+            )
+            held_chunks = []
+            list_pattern = "**/src/features/complexes/ComplexList.tsx*"
+            chunk_page.route(list_pattern, lambda route: held_chunks.append(route))
+            with chunk_page.expect_request(list_pattern):
+                chunk_page.get_by_role("link", name="Реестр ЖК", exact=True).click()
+            expect(chunk_page.get_by_role("status")).to_contain_text("Загружаем данные")
+            expect(chunk_page.get_by_role("navigation")).to_be_visible()
+            assert held_chunks, "Complex list import was not held"
+            chunk_page.unroute(list_pattern)
+            for held_chunk in held_chunks:
+                held_chunk.continue_()
+            expect(chunk_page.get_by_label("Поиск ЖК")).to_be_visible()
+            expect(chunk_page.locator("#main-content")).to_be_focused()
+            chunk_page.get_by_role("link", name="Сигналы", exact=True).click()
+            expect(chunk_page.get_by_role("alert")).to_contain_text(
+                "Не удалось загрузить раздел"
+            )
+            chunk_page.unroute(chunk_pattern)
+            chunk_page.get_by_role("button", name="Перезагрузить страницу").click()
+            expect(
+                chunk_page.get_by_role("heading", name="Сигналы", exact=True)
+            ).to_be_visible()
+            assert not any(method == "POST" for method, _ in chunk_requests)
+            checkpoint(
+                "lazy route recovery",
+                "Protected route is not fetched before login; failed import keeps navigation; pending import shows loading; another route and focus work; same-URL reload recovers without replaying writes",
+            )
+        finally:
+            chunk_context.close()
+
         page.goto(BASE + "/complexes/demo-complex-04?tab=ads")
         expect(page.get_by_role("heading", name="Вход в SAQ QURYLYS")).to_be_visible()
         assert page.get_by_role("navigation").count() == 0
