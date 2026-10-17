@@ -23,6 +23,9 @@ Windows: [пошаговый запуск](docs/windows-start.md).
 Публичные реестры: [источники и порядок ручной сверки](docs/public-sources.md),
 ссылки доступны в карточке ЖК → Документы; автоматической загрузки реестров нет.
 Ход реализации и ограничения: [WORK_LOG](docs/WORK_LOG.md).
+Команда из двух участников: [роли, очереди и промпты для Codex](docs/two-person-team.md);
+[друг — frontend #9](https://github.com/arturk0-0/3a-saq-qurylys/issues/9),
+[владелец — backend/AI/выпуск #8](https://github.com/arturk0-0/3a-saq-qurylys/issues/8).
 
 ## Возможности и стек
 
