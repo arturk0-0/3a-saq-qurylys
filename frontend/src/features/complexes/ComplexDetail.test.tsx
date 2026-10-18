@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { expect, it, vi } from 'vitest'
 import { AuthContext } from '@/features/auth/AuthProvider'
@@ -22,7 +22,7 @@ it('opens a specific evidence link even when it is absent from the first page', 
   expect(await screen.findByText('Точная цитата из выбранного источника')).toBeInTheDocument()
   expect(screen.getByRole('tab', { name: 'Доказательства' })).toHaveAttribute('aria-selected', 'true')
   expect(screen.getByText('Источник, выбранный по ссылке')).toBeInTheDocument()
-  expect(screen.getByText('Источник, выбранный по ссылке')).toHaveFocus()
+  await waitFor(() => expect(screen.getByText('Источник, выбранный по ссылке')).toHaveFocus())
 })
 
 it('navigates tabs by keyboard with one tab stop and a labelled panel', async () => {
