@@ -1,5 +1,14 @@
 # SAQ QURYLYS
 
+В этой версии добавлен мониторинг: публичные текстовые источники → отдельная
+очередь → AI-гипотезы → эксперт. Источники — интернет-поиск (фрагменты выдачи)
+и выбранные Telegram-каналы. Добавлен **Instagram / Meta Ad Library через SearchAPI**:
+проверены два настоящих поиска, осталось98 из100. [Интеграция и резерв20](docs/instagram-searchapi.md).
+Код совмещён с готовым frontend в интеграционной ветке; облачное расписание ещё не развёрнуто.
+[Использование, worker, лимиты](docs/monitoring.md),
+[результаты проверок](docs/monitoring-report.md), [план и закрытые задачи](docs/DEVELOPMENT_PLAN.md),
+[проверка доступности Instagram-таргета](docs/instagram-feasibility.md).
+
 Внутреннее приложение для аналитиков ВКО: проверка потенциальных рисков в рекламе
 строящихся ЖК. Система поддерживает решение человека и не устанавливает незаконность.
 Контекст: [AGENTS.md](AGENTS.md), [спецификация](docs/PROJECT_SPEC.md),
@@ -17,7 +26,8 @@
 Windows: [пошаговый запуск](docs/windows-start.md).
 Демонстрация: [новое объявление → проверка → PDF](docs/demo-scenarios.md).
 Организаторам: [показ на 5–7 минут и запасной сценарий](docs/judge-runbook.md).
-Проверки этой версии: [ночной отчёт](docs/night-reviewer-report.md).
+Проверки объединённой версии MON + A-01–04:
+[отчёт интеграции](docs/integration-readiness-report.md).
 Устройство приложения: [архитектура](docs/architecture.md), [API и данные](docs/data-model.md).
 Правила: [R1–R6](docs/risk-rules.md). Данные: [DEMO seed](data/seed/README.md).
 Публичные реестры: [источники и порядок ручной сверки](docs/public-sources.md),
@@ -65,16 +75,18 @@ https://saq-qurylys-api-722228028571.europe-west1.run.app.
 подключении к Firebase использует выбранный облачный проект и его данные.
 Порядок публикации владельцем: [Hosting + Cloud Run](docs/cloud-deployment.md).
 При подготовке проверенной версии фиксируйте полный SHA: текущий `main` может
-не включать исправления из открытых PR. Ночная проверка ведётся в
-`test/night-release-readiness` от `fix/security-demo-hardening` (`d579566`).
+не включать исправления из открытых PR. MON и четыре готовые ветки участника A
+совмещены в `release/integrated-monitoring-readiness` от baseline main `ed38f00`.
+Это проверяемый кандидат, не опубликованная версия. Старые ночные ветки
+не используйте для обновления. [Порядок продолжения выпуска](docs/integration-readiness-report.md#что-осталось-владельцу).
 
 ## Запуск через Docker
 
 Требуются Git, Docker Engine и Docker Compose v2. Для воспроизведения этой проверки
-из новой папки (ветка содержит открытые PR, merge/publication ещё нужны):
+из новой папки (feature-ветка требует review/merge и отдельного deployment):
 
 ```bash
-git clone --branch test/night-release-readiness --single-branch https://github.com/arturk0-0/3a-saq-qurylys.git
+git clone --branch release/integrated-monitoring-readiness --single-branch https://github.com/arturk0-0/3a-saq-qurylys.git
 cd 3a-saq-qurylys
 git rev-parse HEAD
 ```

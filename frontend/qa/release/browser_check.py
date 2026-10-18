@@ -122,6 +122,56 @@ with sync_playwright() as p:
     page.on("pageerror", lambda e: errors.append(str(e)))
     page.on("request", lambda r: requests.append((r.method, r.url)))
     try:
+        # A fresh module cache is necessary: the full workflow below visits all
+        # routes and cannot reproduce a first lazy-import failure afterwards.
+        chunk_context = browser.new_context()
+        chunk_context.route("**/*", local_only)
+        chunk_page = chunk_context.new_page()
+        chunk_page.on("pageerror", lambda e: errors.append(str(e)))
+        chunk_requests = []
+        chunk_page.on("request", lambda r: chunk_requests.append((r.method, r.url)))
+        chunk_pattern = "**/src/features/signals/SignalsPage.tsx*"
+        chunk_page.route(chunk_pattern, lambda route: route.abort())
+        try:
+            chunk_page.goto(BASE + "/signals")
+            expect(
+                chunk_page.get_by_role("button", name="Войти", exact=True)
+            ).to_be_visible()
+            assert not any("/features/signals/" in url for _, url in chunk_requests)
+            login(chunk_page)
+            expect(chunk_page.get_by_role("alert")).to_contain_text(
+                "Не удалось загрузить раздел"
+            )
+            held_chunks = []
+            list_pattern = "**/src/features/complexes/ComplexList.tsx*"
+            chunk_page.route(list_pattern, lambda route: held_chunks.append(route))
+            with chunk_page.expect_request(list_pattern):
+                chunk_page.get_by_role("link", name="Реестр ЖК", exact=True).click()
+            expect(chunk_page.get_by_role("status")).to_contain_text("Загружаем данные")
+            expect(chunk_page.get_by_role("navigation")).to_be_visible()
+            assert held_chunks, "Complex list import was not held"
+            chunk_page.unroute(list_pattern)
+            for held_chunk in held_chunks:
+                held_chunk.continue_()
+            expect(chunk_page.get_by_label("Поиск ЖК")).to_be_visible()
+            expect(chunk_page.locator("#main-content")).to_be_focused()
+            chunk_page.get_by_role("link", name="Сигналы", exact=True).click()
+            expect(chunk_page.get_by_role("alert")).to_contain_text(
+                "Не удалось загрузить раздел"
+            )
+            chunk_page.unroute(chunk_pattern)
+            chunk_page.get_by_role("button", name="Перезагрузить страницу").click()
+            expect(
+                chunk_page.get_by_role("heading", name="Сигналы", exact=True)
+            ).to_be_visible()
+            assert not any(method == "POST" for method, _ in chunk_requests)
+            checkpoint(
+                "lazy route recovery",
+                "Protected route is not fetched before login; failed import keeps navigation; pending import shows loading; another route and focus work; same-URL reload recovers without replaying writes",
+            )
+        finally:
+            chunk_context.close()
+
         page.goto(BASE + "/complexes/demo-complex-04?tab=ads")
         expect(page.get_by_role("heading", name="Вход в SAQ QURYLYS")).to_be_visible()
         assert page.get_by_role("navigation").count() == 0
@@ -163,6 +213,8 @@ with sync_playwright() as p:
         expect(page.get_by_role("heading", name="ЖК не найдены")).to_be_visible()
         page.get_by_label("Поиск ЖК").fill("")
         page.get_by_role("button", name="Найти", exact=True).click()
+        expect(page).not_to_have_url(re.compile(r"(?:\?|&)q="))
+        expect(page.get_by_role("region", name="Жилые комплексы")).to_be_visible()
         page.get_by_label("Город", exact=True).select_option("Риддер")
         page.get_by_label("Приоритет", exact=True).select_option("GREEN")
         expect(page.get_by_role("region", name="Жилые комплексы")).to_contain_text(
@@ -295,7 +347,38 @@ with sync_playwright() as p:
         )
         panel.get_by_role("button", name="Загрузить", exact=True).click()
         expect(panel.get_by_label("Источник анализа")).not_to_have_value("")
+        error_once(
+            page,
+            "**/api/v1/evidence/*/file",
+            200,
+            body="<html>TEST gateway response</html>",
+            content_type="text/html",
+        )
         panel.get_by_role("button", name="Открыть скриншот").click()
+        expect(panel.get_by_role("alert")).to_contain_text(
+            "Сервер не вернул изображение"
+        )
+        error_once(
+            page,
+            "**/api/v1/evidence/*/file",
+            200,
+            body="TEST invalid PNG bytes",
+            content_type="image/png",
+        )
+        panel.get_by_role("button", name="Открыть скриншот").click()
+        expect(panel.get_by_role("alert")).to_contain_text(
+            "Не удалось отобразить скриншот"
+        )
+        panel.get_by_role("button", name="Открыть скриншот").click()
+        expect(panel.get_by_role("img")).to_be_visible()
+        page.wait_for_function(
+            "document.querySelector('.analysis-panel img')?.naturalWidth > 0"
+        )
+        selected_image = panel.get_by_label("Источник анализа").input_value()
+        card.get_by_role("button", name="Скрыть анализ").click()
+        expect(panel).to_be_hidden()
+        card.get_by_role("button", name="Скриншоты и AI-анализ").click()
+        expect(panel.get_by_label("Источник анализа")).to_have_value(selected_image)
         expect(panel.get_by_role("img")).to_be_visible()
         expect(panel.locator(".selected-source")).to_contain_text("Скриншот 1")
         expect(panel.get_by_text("Загружен файл", exact=False)).to_contain_text(
@@ -340,6 +423,11 @@ with sync_playwright() as p:
 
         panel.get_by_role("button", name="Рассмотреть гипотезу").click()
         panel.get_by_label("Обоснование", exact=True).fill(
+            "LOCAL TEST: принять только к проверке источника"
+        )
+        card.get_by_role("button", name="Скрыть анализ").click()
+        card.get_by_role("button", name="Скриншоты и AI-анализ").click()
+        expect(panel.get_by_label("Обоснование", exact=True)).to_have_value(
             "LOCAL TEST: принять только к проверке источника"
         )
         hypothesis = api(page, "GET", f"/api/v1/advertisements/{ad['id']}/hypotheses")[
@@ -706,6 +794,19 @@ with sync_playwright() as p:
         other.get_by_label("Обоснование совпадения").fill(
             "LOCAL DEMO: сверены телефон и WhatsApp"
         )
+        page.get_by_role("button", name="Скрыть рекламный след", exact=True).click()
+        page.get_by_role("button", name="Рекламный след", exact=True).click()
+        expect(other.get_by_label("Обоснование совпадения")).to_have_value(
+            "LOCAL DEMO: сверены телефон и WhatsApp"
+        )
+        other.get_by_role("button", name="Отмена", exact=True).click()
+        trigger = other.get_by_role("button", name="Рассмотреть совпадение")
+        expect(trigger).to_be_focused()
+        expect(trigger).to_have_attribute("aria-expanded", "false")
+        page.keyboard.press("Enter")
+        other.get_by_label("Обоснование совпадения").fill(
+            "LOCAL DEMO: сверены телефон и WhatsApp"
+        )
         other.get_by_role("button", name="Сохранить решение о совпадении").click()
         expect(other.get_by_text("Совпадение подтверждено", exact=True)).to_be_visible()
         page.reload()
@@ -743,6 +844,228 @@ with sync_playwright() as p:
         checkpoint(
             "advertising trace",
             "Exact phone/WhatsApp quotes; explicit confirm/reject and persisted reload; direct ad navigation; conflict keeps notes; 1366/375/320 without overflow; no AI or risk mutation",
+        )
+
+        # MON uses only the explicit MockTransport adapter in local_api.py.
+        # No live social API, real ads, paid Gemini or Scheduler is touched.
+        page.set_viewport_size({"width": 1366, "height": 900})
+        page.goto(BASE + "/monitoring")
+        expect(
+            page.get_by_role("heading", name="Мониторинг рекламы", exact=True)
+        ).to_be_visible()
+        expect(
+            page.get_by_role(
+                "heading", name="Источник Instagram настроен через SearchAPI"
+            )
+        ).to_be_visible()
+        expect(
+            page.get_by_text("Ещё не подтверждён. Ручной сбор доступен в источниках.")
+        ).to_be_visible()
+        page.get_by_role("button", name="Источники сбора", exact=True).click()
+        expect(page.get_by_role("checkbox")).not_to_be_checked()
+        page.get_by_role("button", name="Сохранить источник", exact=True).click()
+        expect(
+            page.get_by_text("Источник сохранён. Он доступен для регулярного сбора.")
+        ).to_be_visible()
+        page.get_by_role("button", name="Получить публикации", exact=True).click()
+        expect(
+            page.get_by_text(
+                "Сбор завершён: прочитано 1, подходит под фильтр 1, новых 1, повторов 0"
+            )
+        ).to_be_visible()
+        page.get_by_role("button", name="Очередь эксперта", exact=True).click()
+        page.get_by_role("button", name="Рассмотреть находку", exact=True).click()
+        detail = page.locator(".monitor-detail")
+        expect(
+            detail.get_by_text("Поисковый фрагмент — требуется оригинал", exact=True)
+        ).to_be_visible()
+        expect(
+            detail.get_by_text("Опубликовано: Не указано", exact=False)
+        ).to_be_visible()
+        note = "LOCAL QA: проверить оригинал и основание; не юридическое заключение"
+        detail.get_by_label("Обоснование решения").fill(note)
+        item_id = page.url.split("item=")[1].split("&")[0]
+        api(
+            page,
+            "POST",
+            f"/api/v1/monitoring/items/{item_id}/review",
+            {
+                "expectedVersion": 1,
+                "decision": "investigating",
+                "notes": "LOCAL QA: concurrent review",
+            },
+        )
+        detail.get_by_role(
+            "button", name="Сохранить решение эксперта", exact=True
+        ).click()
+        expect(detail.get_by_role("alert")).to_contain_text("Данные изменились")
+        detail.get_by_role("button", name="Обновить материал", exact=True).click()
+        expect(detail.get_by_label("Обоснование решения")).to_have_value(note)
+        detail.get_by_role(
+            "button", name="Сохранить решение эксперта", exact=True
+        ).click()
+        expect(
+            detail.get_by_text(
+                "Решение по находке сохранено. Оценка R1–R6 не менялась."
+            )
+        ).to_be_visible()
+        detail.get_by_role(
+            "button", name="Анализировать Gemini — платный запрос", exact=True
+        ).click()
+        expect(
+            detail.get_by_text(
+                "Попытка анализа завершена. Проверьте результат и статус ниже."
+            )
+        ).to_be_visible()
+        expect(
+            detail.get_by_text("R2 · Предложение внести платёж", exact=True)
+        ).to_be_visible()
+        expect(
+            detail.get_by_text("Реальную публикацию нельзя приписывать", exact=False)
+        ).to_be_visible()
+        for width in [1366, 375, 320]:
+            page.set_viewport_size({"width": width, "height": 900})
+            assert page.evaluate(
+                "document.documentElement.scrollWidth <= window.innerWidth + 1"
+            )
+        page.screenshot(
+            path=str(OUT / "monitoring-mobile-test-adapters.png"), full_page=True
+        )
+        page.set_viewport_size({"width": 1366, "height": 900})
+        page.screenshot(
+            path=str(OUT / "monitoring-desktop-test-adapters.png"), full_page=True
+        )
+        page.reload()
+        expect(
+            page.locator(".monitor-detail .inline-notice").filter(has_text=note)
+        ).to_be_visible()
+        assert api(page, "GET", "/api/v1/complexes/demo-complex-04/risk") == trace_risk
+        checkpoint(
+            "public monitoring",
+            "Synthetic RSS → bounded collection → queue → real 409/refresh keeps notes → expert review → MockTransport Gemini → persisted reload; unknown dates/Instagram limitation/DEMO separation; 1366/375/320 without overflow; risk unchanged",
+        )
+
+        # The QA process strips live SEARCHAPI_* and uses the explicit synthetic transport.
+        page.get_by_role("button", name="Источники сбора", exact=True).click()
+        page.get_by_label("Название источника", exact=True).fill(
+            "LOCAL QA Instagram source"
+        )
+        page.get_by_label("Тип источника", exact=True).select_option("instagram_ads")
+        expect(page.get_by_label("Поисковый запрос")).to_have_value("квартиры Өскемен")
+        expect(
+            page.get_by_text("Каждый запуск расходует запрос SearchAPI.", exact=False)
+        ).to_be_visible()
+        page.get_by_role("button", name="Сохранить источник", exact=True).click()
+        panel = page.locator(".monitor-sources > .panel").filter(
+            has=page.get_by_role(
+                "heading", name="LOCAL QA Instagram source", exact=True
+            )
+        )
+        expect(panel.get_by_text("Только ручной сбор.", exact=False)).to_be_visible()
+        panel.get_by_role("button", name="Получить публикации", exact=True).click()
+        expect(
+            page.get_by_text(
+                "Сбор завершён: прочитано 1, подходит под фильтр 1, новых 1, повторов 0"
+            )
+        ).to_be_visible()
+        page.get_by_role("button", name="Очередь эксперта", exact=True).click()
+        finding = page.locator(".monitor-finding").filter(
+            has=page.get_by_role("heading", name="LOCAL QA DEMO Instagram", exact=True)
+        )
+        finding.get_by_role("button", name="Рассмотреть находку").click()
+        detail = page.locator(".monitor-detail")
+        expect(
+            detail.get_by_text("Instagram · Meta Ad Library", exact=True)
+        ).to_be_visible()
+        expect(detail.get_by_text("ID 100000000000099", exact=False)).to_be_visible()
+        expect(
+            detail.get_by_text("Опубликовано: Не указано", exact=False)
+        ).to_be_visible()
+        expect(
+            detail.get_by_text("Это не дата публикации исходного поста.", exact=False)
+        ).to_be_visible()
+        detail.locator("summary").filter(has_text="Рекламные материалы").click()
+        expect(detail.get_by_role("link", name="Видео 1")).to_have_attribute(
+            "href", "https://media.example.org/qa-demo.mp4"
+        )
+        assert detail.locator("img,video,iframe").count() == 0
+        for width in [1366, 375, 320]:
+            page.set_viewport_size({"width": width, "height": 900})
+            assert page.evaluate(
+                "document.documentElement.scrollWidth <= window.innerWidth + 1"
+            )
+        page.screenshot(
+            path=str(OUT / "instagram-mobile-test-adapters.png"), full_page=True
+        )
+        page.set_viewport_size({"width": 1366, "height": 900})
+        page.screenshot(
+            path=str(OUT / "instagram-desktop-test-adapters.png"), full_page=True
+        )
+        page.get_by_role("button", name="Источники сбора", exact=True).click()
+        page.get_by_label("Название источника", exact=True).fill(
+            "LOCAL QA reserve safeguard"
+        )
+        page.get_by_label("Тип источника", exact=True).select_option("instagram_ads")
+        page.get_by_label("Поисковый запрос").fill("квартиры Риддер")
+        page.get_by_role("button", name="Сохранить источник", exact=True).click()
+        reserve_panel = page.locator(".monitor-sources > .panel").filter(
+            has=page.get_by_role(
+                "heading", name="LOCAL QA reserve safeguard", exact=True
+            )
+        )
+        reserve_panel.get_by_role(
+            "button", name="Получить публикации", exact=True
+        ).click()
+        expect(
+            page.get_by_role("alert").filter(has_text="сохраняем минимум 20 запросов")
+        ).to_be_visible()
+        state = api(page, "GET", "/api/v1/monitoring/status")
+        assert (
+            state["searchApi"]["dailyUsed"] == 2
+            and state["searchApi"]["unsettledAttempts"] == 0
+        )
+        assert api(page, "GET", "/api/v1/complexes/demo-complex-04/risk") == trace_risk
+        checkpoint(
+            "Instagram Ad Library",
+            "Synthetic Meta engine → Instagram source → provenance/campaign date/media links → no auto media requests → reserve stops before second search; 1366/375/320; risk unchanged",
+        )
+        page.goto(BASE + f"/advertisements/{empty_ad['id']}")
+        page.get_by_role("button", name="Скриншоты и AI-анализ").click()
+        image_panel = page.get_by_role("region", name="Анализ объявления")
+        image_panel.get_by_label("Добавить скриншот").set_input_files(
+            {
+                "name": "synthetic-image-path.png",
+                "mimeType": "image/png",
+                "buffer": image.getvalue(),
+            }
+        )
+        image_panel.get_by_role("button", name="Загрузить", exact=True).click()
+        expect(image_panel.get_by_label("Источник анализа")).not_to_have_value("")
+        selected = image_panel.get_by_label("Источник анализа").input_value()
+        with page.expect_request(
+            lambda request: (
+                request.url.endswith("/analyze") and request.method == "POST"
+            )
+        ) as image_request:
+            image_panel.get_by_role(
+                "button", name="Анализировать выбранный источник"
+            ).click()
+        payload = image_request.value.post_data_json
+        assert payload["screenshotId"] == selected
+        assert payload["expectedVersion"] == 2
+        expect(
+            image_panel.get_by_role("button", name="Анализировать выбранный источник")
+        ).to_be_enabled()
+        run = api(page, "GET", f"/api/v1/advertisements/{empty_ad['id']}/analysis")[
+            "items"
+        ]
+        assert any(
+            item["screenshotId"] == selected and item["status"] == "succeeded"
+            for item in run
+        )
+        checkpoint(
+            "A-01 recovery",
+            "Image upload → auto-selection → image analysis via MockTransport; HTML/decode recovery; disclosures retain selection/drafts; trace cancel restores keyboard focus",
         )
 
         assert not errors, errors

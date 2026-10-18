@@ -329,3 +329,144 @@ Firebase config действующего сайта и реальным API orig
 Существующие model/env/secrets/IAM не менялись. Для следующего обновления нужен
 свежий checkout main в авторизованном Cloud Shell и команды cloud-deployment.md;
 старый каталог `saq-release-effb87f` новой версии не содержит.
+
+## MON: автоматический сбор и Instagram first · 17 октября 2026
+
+Владелец уточнил основной продуктовый результат: самостоятельно находить
+публичную рекламу и собирать очередь для эксперта; ручной ввод — дополнительный
+путь. Разрешил B необходимый frontend без ожидания A. Ветка
+`feat/MON-01-public-monitoring` от main `ed38f00`. План переработан: активные
+MON-задачи отдельно от 50 выполненных baseline-пунктов, 10 незакрытых проверок
+и 4 отложенных drone-задач. Старый план сохранён как исторический архив.
+
+По дополнительному приоритету владельца сначала проверен Instagram. Официальная
+Ads Archive reference (200) прямо ограничивает неполитические объявления,
+не достигавшие ЕС; это не полный источник housing ads для KZ. Web Ad Library KZ
+из этой среды — 403. Hashtag Search reference (200) описывает публичные media,
+Business/Creator/App Review, а не полный таргет. Обычный Instagram account HTML
+не подтверждает пригодную выдачу рекламы. Подробности/ссылки:
+`docs/instagram-feasibility.md`. Meta credentials/поставщик отсутствуют; новые
+аккаунты/платные сервисы/обход ограничений не использовались.
+
+Независимо проверены публичные bounded HTTP-адаптеры web search RSS и Telegram:
+реальные read-only пробы дали 8 результатов/20 постов; в Firebase они не писались,
+Gemini не вызывался. 33 unit-теста проходят на явно синтетических HTTP-страницах.
+Это проверка чтения/парсинга, не охвата рекламы/точности модели. Остальной
+MON-поток в разработке; публикация и расписание пока не настроены.
+
+
+## MON: проверенная вертикаль · 17 октября 2026
+
+[PR #14](https://github.com/arturk0-0/3a-saq-qurylys/pull/14),
+[задача #13](https://github.com/arturk0-0/3a-saq-qurylys/issues/13).
+Сохранены/pushed c0fbc57 (adapters), 8ab4a8a (backend), a5fecc3 (frontend).
+Реальная очередь не смешивается с DEMO registry; source→bounded fetch→immutable
+lead/revision→опциональный AI→human review→явная real→real передача реализованы.
+Worker с lease, oldest-due fairness, abandoned-run recovery и общими квотами;
+source/AI/body ошибки безопасны. Нет автоматического изменения R1–R6.
+
+Финально: 403 backend passed + Ruff check/format; 13 native SDK/emulator passed;
+68 frontend passed, typecheck/build; 17 Chromium-групп/848 запросов без внешних
+сервисов/page errors, 1366/375/320. Тестовые Firebase/Gemini adapters обозначены,
+WeasyPrint настоящий. Main JS 539.60 kB/gzip163.18, прежний large-chunk warning
+остаётся A-02. Независимый read-only Codex review без найденных blockers,
+не человеческое approval. Артефакты/команды — docs/monitoring-report.md.
+
+MON-01–08 закрыты как реализация в ветке; MON-IG-02 (доступный источник именно
+Instagram Ads KZ) и MON-09 (индексы/Job/Scheduler/deployment/облачная приёмка)
+открыты. Расписание здесь не включалось, paid AI не вызывался, main не сливался.
+Crash после AI reservation требует ручного расследования/аудита, не слепого
+платного retry; ограничения/порядок восстановления — docs/monitoring.md.
+Инструкция cloud deployment дополнена Job/Scheduler, без выполнения команд.
+
+
+## MON-IG: расширенные проверки по запросу владельца · 17 октября 2026
+
+Проверены карточка ID 1573735788124300 и поиск «продажа квартир», country=KZ:
+HTTP www — 403, mobile redirect → 403; Graph без token — 500/OAuthException
+(не успешная API-проверка), Bing RSS — 200 с нерелевантной выдачей,
+Google — JS notice, DDG — challenge. Анонимный Chromium остановился на TLS
+trust store; проверка TLS не отключалась, legacy NSS не менялась, разрешение
+записи туда не предоставлено. Это ограничение браузерной пробы, не доказательство
+Meta 403 в браузере.
+
+SearchAPI search/country/details/pricing docs — 200: KZ поддерживает all,
+но отдельный housing_ads не отмечен; platform=instagram есть. Реальный unauth
+query — 401, данных рекламы нет. Сайт заявляет 100 free без карты; применимость
+к данному engine ещё проверить. Подготовлено secret requirement
+SEARCHAPI_API_KEY → www.searchapi.io в draft среды, успех saved/requires_publish;
+ключ не создан и не введён, runtime не изменён. Apify metadata/build schema — 200,
+input/count/лимиты/текущий pricing прочитаны; запусков акторов/paid calls не было.
+Точный результат по ID/охват KZ не подтверждён. Полная матрица, ссылки и следующие
+два запроса — docs/instagram-access-probes.md. MON-IG-02 остаётся открытым,
+новые источники в production не подключались.
+
+
+## MON-IG: настоящий trial и внедрение · 17 октября 2026
+
+После публикации среды появился SEARCHAPI_API_KEY, Account API авторизован.
+С разрешения владельца выполнены РОВНО ДВА search вызова, без retry/pagination:
+«продажа квартир»/KZ/Instagram/active/all → HTTP 200,16 карточек, все active и
+содержат INSTAGRAM, включая ID 1573735788124300;14 с текстом. «квартиры Өскемен»
+→ HTTP 200,4 карточки,3 текстовых,3 подходят под фильтр жилья/ВКО. Account API
+подтвердил 100 → 99 → 98 remaining credits. Дальше real search не вызывался.
+Сохранённый ответ проверен через cached adapter/MemoryStore:3 находки, без
+облачных записей/AI/изменения risk. Подробности — docs/instagram-searchapi.md.
+
+Код backend сохранён/pushed2a66b3b: fixed Meta engine, Authorization-only key,
+Account balance guard/reserve>=20, global provider lease и повторный CAS до
+search, pendingSearches до внешнего вызова, conservative unknown outcomes,
+дневной cap2; schedule отдельно opt-in выключен. Вторая проверенная правка:
+исчерпавшая лимит Meta очередь не блокирует RSS/Telegram worker. UI: выбор
+Instagram, ID/платформы/начало показа отдельно от публикации, media только ссылки,
+баланс «перед поиском», безопасное ожидание/не советовать повтор вслепую.
+
+Финальные локальные проверки:431 backend + Ruff, 14 SDK/emulator,72 frontend +
+typecheck/build,18 Chromium-групп/863 запроса без внешних запросов/page errors;
+1366/375/320. Все автоматические интеграции явно synthetic, keys/ad copy не
+коммитились. Review отдельным агентом Codex без blockers, не human approval.
+Основной JS 545.96 kB/gzip 164.80, warning>500 kB остаётся A-02.
+MON-IG-02 закрыт по реальному sample; MON-09 открыт: cloud secret/image/Hosting/
+Job/indexes и приёмка. Публикация/merge main/Cloud IAM здесь не выполнялись.
+Минимум 20 credits сохраняется кодом, оставшийся реальный баланс 98 на конец trial.
+
+
+## Интеграция MON + завершённая очередь A · 17 октября 2026
+
+По поручению владельца выполнена оставшаяся автономная подготовка без cloud
+deployment и платных запросов. Создана `release/integrated-monitoring-readiness`
+от MON `6b077d8`. Сохранены исходные коммиты A-01 `b36c403`, A-02 `51409b7`,
+A-03 `6d25238`, A-04 `dcaf27f`; в конфликтах App/browser runner сохранены оба
+набора возможностей. Monitoring также загружается lazy после auth. Начальный
+JS — 436,75 kB / gzip 137,68 вместо 545,96 / 164,80; warning >500 kB исчез.
+Код интеграции сохранён и отправлен в `67ab123`.
+
+Фактически пройдены 431 backend-тест и Ruff (94 файла), 14 SDK/emulator,
+78 frontend-тестов (19 файлов), typecheck/build, 20 Chromium-групп / 794 основных
+запроса, без page errors и внешних browser-запросов; ширины 1366/375/320.
+Явные MemoryStore/FakeFiles/Auth/Gemini/SearchAPI adapters, настоящий WeasyPrint.
+Независимое read-only Codex review без blockers — не человеческий GitHub approval.
+Ruff QA и diff-check пройдены.
+
+Compose запущен отдельным project `saq-integrated-qa` без облачных env/ключей:
+оба контейнера healthy, health API/proxy — 200, MON без token — 401; Chromium
+показывает экран подключения среды. Первый build не прошёл TLS к PyPI; исправлено
+поддержанным `custom_ca` BuildKit secret с системным trust bundle, без отключения
+TLS. Контейнеры остановлены. Gitleaks 8.30.1 проверен официальным checksum;
+`--all --full-history --redact` не нашёл секретов. Исторических credential-путей
+не обнаружено, кроме шаблона `.env.example`. История не переписывалась; IAM и
+облачный Storage проверяются отдельно.
+
+Документы A интегрированы, добавлен честный MON-вариант питча, обновлены README,
+план и командная очередь; 73 относительные ссылки проверены. AI evaluation CLI
+только перечислил семь входов, без `--run`. SEC-01 локальная, DOC-01 и материалы
+PITCH-01 закрыты с ограничениями; PITCH-02 (репетиция) выделен отдельно.
+Подробный итог/команды/следующий шаг: `docs/integration-readiness-report.md`
+и `docs/security-release-check.md`.
+
+Реальных SearchAPI/Gemini-запросов — 0, последний известный баланс — 98/100.
+Main, живой сайт, IAM, индексы, расписание, реальные данные и публичность не менялись.
+Остаются review/CI общего SHA, cloud secret и единый API/Hosting deployment,
+индексы/Job/Scheduler, выбор публичных Telegram-каналов, работа с реальными ЖК
+отдельно от DEMO, live RU/KZ/image/Storage приёмка, второй ПК, репетиция,
+дедлайн/tag и публичная сдача.

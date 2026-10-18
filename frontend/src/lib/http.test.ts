@@ -3,6 +3,16 @@ import { ApiError, createApiClient } from './http'
 import { getHealth } from './api'
 import { errorMessage } from './labels'
 
+it('does not suggest a blind retry when a provider collection reply is lost', async () => {
+  vi.stubEnv('VITE_API_BASE_URL', '')
+  const fetcher = vi.fn().mockRejectedValue(new TypeError('connection lost'))
+  vi.stubGlobal('fetch', fetcher)
+  const error = await createApiClient(async () => 'test-token')('/api/v1/monitoring/sources/s1/run', { method: 'POST' }).catch((value: unknown) => value)
+  expect(errorMessage(error)).toMatch(/Проверьте историю запусков перед повтором/)
+  expect(errorMessage(error)).toMatch(/поиск мог расходовать квоту/)
+  expect(fetcher).toHaveBeenCalledTimes(1)
+})
+
 afterEach(() => vi.unstubAllEnvs())
 
 it('uses the local proxy when no production origin is configured', async () => {

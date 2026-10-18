@@ -26,6 +26,13 @@ six-page PDF was reread and its mandatory scenarios remain consistent with this 
 
 ## 2. Mandatory end-to-end journey (REQUIRED)
 
+**Product scope update requested by owner, 17 October (TEAM DECISION):** complete
+the intake with automatic public-source monitoring, revision/deduplication and an
+expert queue. Manual entry remains a fallback. Investigate Instagram targeted ads
+first; supported-source coverage and access restrictions must be explicit. This
+extends the implementation scope; it does not invent an organiser-provided API.
+See [current plan](DEVELOPMENT_PLAN.md) and [Instagram access findings](instagram-feasibility.md).
+
 1. **Overview:** analyst searches and filters a list/map of local residential complexes by risk zone and opens an object.
 2. **Object check:** object card displays developer/BIN, address, coordinates when available, construction status/completion, claimed or verified funding basis and source/status of verification.
 3. **Advertisement:** analyst adds or reviews a social media publication with URL, platform, account, date, text/screenshot; publication is linked to an object. AI highlights an excerpt that *may* solicit funds.

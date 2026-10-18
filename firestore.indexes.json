@@ -38,6 +38,24 @@
       {"fieldPath": "complexId", "order": "ASCENDING"},
       {"fieldPath": "createdAt", "order": "DESCENDING"},
       {"fieldPath": "__name__", "order": "ASCENDING"}
+    ]},
+    {"collectionGroup": "monitorItems", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath": "createdAt", "order": "DESCENDING"},
+      {"fieldPath": "__name__", "order": "ASCENDING"}
+    ]},
+    {"collectionGroup": "monitorItems", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath": "status", "order": "ASCENDING"},
+      {"fieldPath": "createdAt", "order": "DESCENDING"},
+      {"fieldPath": "__name__", "order": "ASCENDING"}
+    ]},
+    {"collectionGroup": "monitorRuns", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath": "createdAt", "order": "DESCENDING"},
+      {"fieldPath": "__name__", "order": "ASCENDING"}
+    ]},
+    {"collectionGroup": "monitorEvents", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath": "entityId", "order": "ASCENDING"},
+      {"fieldPath": "createdAt", "order": "DESCENDING"},
+      {"fieldPath": "__name__", "order": "ASCENDING"}
     ]}
   ],
   "fieldOverrides": []

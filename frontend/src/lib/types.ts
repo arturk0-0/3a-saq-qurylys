@@ -27,7 +27,7 @@ export interface Complex {
 }
 export interface Advertisement {
   id: string; complexId: string; platform: string; account: string; sourceUrl: string; text: string
-  publishedAt: string; capturedAt: string; createdBy: string; attachmentIds: string[]; demo: boolean; version: number
+  publishedAt: string | null; capturedAt: string; createdBy: string; attachmentIds: string[]; demo: boolean; version: number
 }
 export interface Evidence {
   id: string; complexId: string; advertisementId: string | null

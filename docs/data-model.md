@@ -7,6 +7,14 @@
 `seedRuns`, `analysisRuns`, `aiHypotheses`, `signals`, `signalRevisions`,
 `usageLimits`, `adLinks`; `users` зарезервирована адаптером, роль берётся из проверенного
 Firebase ID token, а не доверяется пользовательскому документу.
+Мониторинг добавляет отдельные `monitorSources`, `monitorItems`, `monitorRuns`,
+`monitorEvents`, `monitorLimits`, `monitorAiRuns`; квоты Gemini общие через
+`usageLimits`. [Полный контракт и границы реальной очереди](monitoring.md).
+Source.kind дополнен `instagram_ads`, finding.contentKind — `instagram_ad`;
+adArchiveId/adStartedAt/adActive/platforms/media и run.unreadable/providerCreditsBefore
+описаны в [SearchAPI контракте](instagram-searchapi.md). Начало показа не дата поста.
+Для импортированной находки `Advertisement.publishedAt` может быть null, если
+источник не указал дату. Ручное создание объявления продолжает требовать дату.
 JSON использует camelCase, даты ISO 8601 с часовым поясом, идентификаторы — ASCII.
 DEMO scope проверяется сервером. Исходный текст объявления не редактируется.
 

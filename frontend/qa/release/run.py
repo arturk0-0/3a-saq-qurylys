@@ -28,7 +28,7 @@ for port in [8011, 5181]:
 env = {
     key: value
     for key, value in os.environ.items()
-    if not key.startswith(("FIREBASE_", "GEMINI_", "VITE_"))
+    if not key.startswith(("FIREBASE_", "GEMINI_", "VITE_", "SEARCHAPI_"))
     and key != "GOOGLE_APPLICATION_CREDENTIALS"
 }
 env["PYTHONPATH"] = os.pathsep.join([str(here), str(repo / "backend")])

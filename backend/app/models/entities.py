@@ -84,7 +84,7 @@ class Advertisement(DomainModel):
     account: ShortText
     source_url: HttpUrl
     text: str = Field(min_length=1, max_length=20000)
-    published_at: AwareDatetime
+    published_at: AwareDatetime | None
     captured_at: AwareDatetime
     created_by: str = Field(min_length=1, max_length=128)
     attachment_ids: list[Identifier] = Field(default_factory=list, max_length=10)

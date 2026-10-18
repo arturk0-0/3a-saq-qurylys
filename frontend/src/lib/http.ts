@@ -1,4 +1,5 @@
 import { apiUrl } from './apiUrl'
+import { monitorErrors } from '@/features/monitoring/types'
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string, public requestId?: string) {
@@ -14,20 +15,38 @@ export function createApiClient(getToken: () => Promise<string>): ApiClient {
     const headers = new Headers(init.headers)
     headers.set('Authorization', `Bearer ${await getToken()}`)
     if (init.body && !(init.body instanceof FormData) && !(init.body instanceof Blob)) headers.set('Content-Type', 'application/json')
-    const timeout = AbortSignal.timeout(path.endsWith('/analyze') ? 90000 : 40000)
+    const sourceRun = path.startsWith('/api/v1/monitoring/sources/') && path.endsWith('/run')
+    const timeout = AbortSignal.timeout(sourceRun ? 280000 : path.endsWith('/analyze') ? 90000 : 40000)
     const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout
     let response: Response
     try {
       response = await fetch(url, { ...init, headers, signal })
     } catch (error) {
       if (init.signal?.aborted) throw error
-      throw new ApiError(0, 'NETWORK_ERROR', 'Нет связи с сервером. Проверьте подключение и повторите.')
+      throw new ApiError(0, 'NETWORK_ERROR', sourceRun
+        ? 'Ответ о сборе не получен. Проверьте историю запусков перед повтором: поиск мог расходовать квоту и ещё выполняться на сервере.'
+        : 'Нет связи с сервером. Проверьте подключение и повторите.')
     }
     if (!response.ok) {
       const payload: unknown = await response.json().catch(() => null)
       const error = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {}
       const code = typeof error.code === 'string' && /^[A-Z][A-Z0-9_]{0,63}$/.test(error.code) ? error.code : 'REQUEST_FAILED'
       const knownMessages: Record<string, string> = {
+        ...monitorErrors,
+        MONITOR_NOT_DUE: 'Интервал источника ещё не истёк. Следующее время сбора указано в карточке.',
+        MONITOR_BUSY: 'Источник уже обрабатывается. Обновите историю запусков.',
+        MONITOR_PAUSED: 'Источник на паузе. Возобновите его перед сбором.',
+        MONITOR_DAILY_LIMIT: 'Достигнут суточный лимит сбора. Новый день считается по UTC.',
+        MONITOR_SOURCE_LIMIT: 'Достигнут лимит 20 источников мониторинга.',
+        MONITOR_SOURCE_INVALID: 'Введите поисковый запрос или имя публичного Telegram-канала без ссылки на отдельный пост.',
+        MONITOR_SOURCE_BLOCKED: 'Источник ограничил доступ. Это не означает отсутствия публикаций.',
+        MONITOR_SOURCE_FORMAT: 'Не удалось прочитать публикации: формат источника изменён или он недоступен.',
+        MONITOR_SOURCE_HTTP: 'Источник недоступен или перенаправляет запрос. Сбор не выполнен.',
+        MONITOR_SOURCE_NETWORK: 'Нет связи с публичным источником. Сохранённые находки доступны.',
+        MONITOR_SOURCE_TIMEOUT: 'Превышено время сбора. Проверьте историю запусков перед новой попыткой.',
+        MONITOR_SOURCE_SIZE: 'Источник вернул слишком большую страницу. Сбор остановлен.',
+        MONITOR_RUN_FAILED: 'Сбор не завершён. Проверьте состояние источника и историю запусков.',
+        MONITOR_LIVE_REGISTRY_REQUIRED: 'Реальные публикации нельзя связывать с DEMO-объектами. Нужен реальный реестр ЖК.',
         AI_DAILY_LIMIT: 'Достигнут дневной лимит анализов. Повторите в следующие сутки UTC.',
         AI_PROVIDER_QUOTA: 'Лимит Gemini исчерпан. Повторите позже или проверьте квоту проекта.',
         AI_NOT_CONFIGURED: 'AI ещё не настроен. Попросите администратора проверить модель и ключ Gemini на сервере.',

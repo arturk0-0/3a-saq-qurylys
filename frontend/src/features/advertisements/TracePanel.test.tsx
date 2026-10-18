@@ -63,3 +63,16 @@ it('shows bounded and empty results without implying absence of common ownership
   expect(screen.getByText(/Показана ограниченная выборка/)).toBeInTheDocument()
   expect(screen.getByText(/Совпадение не доказывает общего владельца/)).toBeInTheDocument()
 })
+
+it('returns focus to the exact review trigger after cancelling a trace decision', async () => {
+  const api = vi.fn().mockResolvedValue(result())
+  setup(api)
+  const trigger = await screen.findByRole('button', { name: 'Рассмотреть совпадение' })
+  fireEvent.click(trigger)
+  expect(screen.getByRole('heading', { name: 'Проверка совпадения' })).toHaveFocus()
+  expect(trigger).toHaveAttribute('aria-expanded', 'true')
+  fireEvent.click(screen.getByRole('button', { name: 'Отмена' }))
+  expect(trigger).toHaveFocus()
+  expect(trigger).toHaveAttribute('aria-expanded', 'false')
+  expect(api).toHaveBeenCalledTimes(1)
+})
