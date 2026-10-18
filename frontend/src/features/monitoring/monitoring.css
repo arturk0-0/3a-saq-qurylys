@@ -42,3 +42,13 @@
 .monitor-meta-info { background: #eff6f4; padding: 14px; border-radius: 10px; margin-top: 16px; color: #214e46; }
 .monitor-meta-info p + p { margin-top: 8px; }
 .monitor-media { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; }
+
+.monitor-check-time { color: #526971; font-size: .9rem; margin-top: 12px; }
+.monitor-settings { margin-top: 20px; }
+.monitor-settings > summary { cursor: pointer; font-weight: 650; color: #285e57; }
+.monitor-settings[open] > summary { margin-bottom: 20px; }
+.monitor-settings .monitor-instagram { background: #f6f9f8; border-color: #d4e1de; color: #2c4844; }
+.monitoring details > summary { cursor: pointer; line-height: 1.6; }
+.monitoring details[open] > :not(summary) { animation: monitor-reveal 160ms ease-out; }
+@keyframes monitor-reveal { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .monitoring details[open] > :not(summary) { animation: none; } }

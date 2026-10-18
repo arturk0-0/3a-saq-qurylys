@@ -1,3 +1,4 @@
+import { ActorName } from '@/components/ActorName'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -59,7 +60,7 @@ export function TracePanel({ adId }: { adId: string }) {
           {item.snapshot.nameOnly && <p className="form-hint">Совпало только название — слабая подсказка. Общий контакт не найден.</p>}
           {item.snapshot.matches.map((match, index) => <div className="trace-match" key={index}><strong>{kindLabels[match.kind]}: {match.normalized}</strong><div className="trace-quotes"><div><span>Это объявление</span><blockquote>{(isLeft ? match.left : match.right)[0].quote}</blockquote></div><div><span>Другое объявление</span><blockquote>{(isLeft ? match.right : match.left)[0].quote}</blockquote></div></div></div>)}
           <div className="form-actions"><Link className="detail-link" to={`/advertisements/${item.otherAdvertisement.id}`}>К связанному объявлению →</Link><SourceLink url={item.otherAdvertisement.sourceUrl} /></div>
-          {record?.reviewer && <div className="trace-review-result"><p>Проверил {record.reviewer} · {formatDate(record.reviewedAt)}</p><p>{record.notes}</p></div>}
+          {record?.reviewer && <div className="trace-review-result"><p>Проверил <ActorName uid={record.reviewer} /> · {formatDate(record.reviewedAt)}</p><p>{record.notes}</p></div>}
           {(!record || record.status === 'proposed') && <Button className="mt-4" size="sm" id={`trace-trigger-${adId}-${item.id}`} aria-expanded={selected === item.id} aria-controls={selected === item.id ? `trace-review-${adId}-${item.id}` : undefined} disabled={busy} onClick={() => { if (selected !== item.id) { setNotes(''); setDecision('confirmed') }; setSelected(item.id) }}>Рассмотреть совпадение</Button>}
           {selected === item.id && ((!record || record.status === 'proposed') ? <form className="editor-form" id={`trace-review-${adId}-${item.id}`} onSubmit={event => submit(event, item)}>
             <EditorHeading>Проверка совпадения</EditorHeading><p className="form-hint">Сверьте оба оригинала. Подтверждайте только совпадение контакта или названия; это не вывод об общем владельце.</p>

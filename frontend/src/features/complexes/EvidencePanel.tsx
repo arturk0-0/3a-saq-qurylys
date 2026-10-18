@@ -1,3 +1,4 @@
+import { ActorName } from '@/components/ActorName'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -90,7 +91,7 @@ export function EvidenceReviewForm({ item: initialItem, onSaved, onCancel }: { i
     <FormField label="Результат проверки"><select name="decision" value={decision} disabled={busy} onChange={(event) => setDecision(event.target.value as 'confirmed' | 'rejected')}><option value="confirmed">Подтвердить источник и отмеченные факты</option><option value="rejected">Отклонить источник</option></select></FormField>
     <FormField label="Обоснование решения"><textarea name="notes" required disabled={busy} maxLength={5000} rows={3} /></FormField>
     <p className="form-hint">Это действие ещё не подтверждает фактор риска. Решение по фактору принимается в панели R1–R6.</p>
-    {item.version !== initialItem.version && <p className="inline-notice">Актуальная версия источника: {item.version}. {({ confirmed: 'Источник проверен', rejected: 'Источник отклонён', unknown: 'Источник не проверен', proposed: 'Требует проверки источника' })[item.status]}{item.reviewer && ` · ${item.reviewer}`}. Ваши поля сохранены; сверьте их с текущим источником перед повторным решением.</p>}
+    {item.version !== initialItem.version && <p className="inline-notice">Актуальная версия источника: {item.version}. {({ confirmed: 'Источник проверен', rejected: 'Источник отклонён', unknown: 'Источник не проверен', proposed: 'Требует проверки источника' })[item.status]}{item.reviewer && <> · <ActorName uid={item.reviewer} /></>}. Ваши поля сохранены; сверьте их с текущим источником перед повторным решением.</p>}
     {error && <ErrorState message={error} />}
     {record.conflict && <><p className="form-hint">Обновите источник перед повторным решением. Если он уже поддерживает подтверждённый фактор, сначала пересмотрите этот фактор в панели R1–R6.</p><Button type="button" variant="outline" disabled={record.refreshing} onClick={() => { void record.refresh() }}>{record.refreshing ? 'Обновляем источник…' : 'Обновить источник'}</Button></>}
     <div className="form-actions"><Button disabled={busy || record.conflict || record.refreshing}>{busy ? 'Сохраняем проверку…' : 'Сохранить проверку'}</Button><Button type="button" variant="outline" onClick={onCancel} disabled={busy || record.refreshing}>Отмена</Button></div>
@@ -126,7 +127,7 @@ export function EvidencePanel({ complex_, onChanged }: { complex_: Complex; onCh
           {item.id === sourceId && <p className="inline-notice" ref={selectedNotice} tabIndex={-1}>Источник, выбранный по ссылке</p>}
           <div className="flex flex-wrap items-center justify-between gap-2"><strong>{evidenceTypes[item.type]}</strong><StatusBadge status={item.status} label={{ confirmed: 'Источник проверен', unknown: 'Источник не проверен', proposed: 'Требует проверки источника', rejected: 'Источник отклонён' }[item.status]} /></div>
           <blockquote>{item.excerpt}</blockquote><EvidenceProvenance reference={item.sourceReference} /><SourceLink url={item.sourceUrl} />
-          <p className="mt-3 text-xs text-muted-foreground">Зафиксировано {formatDate(item.capturedAt)}{item.reviewer && ` · Проверил ${item.reviewer}, ${formatDate(item.reviewedAt)}`}</p>
+          <p className="mt-3 text-xs text-muted-foreground">Зафиксировано {formatDate(item.capturedAt)}{item.reviewer && <> · Проверил <ActorName uid={item.reviewer} />, {formatDate(item.reviewedAt)}</>}</p>
           {item.sha256 && <p className="mt-2 break-all text-xs text-muted-foreground">SHA-256: {item.sha256}</p>}
           {item.storagePath && <EvidenceFile id={item.id} />}
           {locked ? <p className="mt-3 text-xs text-muted-foreground">Источник поддерживает подтверждённый фактор. Для повторной проверки сначала пересмотрите фактор.</p>

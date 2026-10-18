@@ -90,7 +90,7 @@ export function ComplexMap({ complexes }: { complexes: MapRecord[] }) {
   if (!located.length) return <p className="inline-notice" role="status">В этой выборке нет объектов с координатами. Откройте карточки из списка ниже.</p>
   return <div className="complex-map-section">
     <p className="map-caption">На карте: {located.length} из {complexes.length} объектов текущей страницы.
-      {complexes.some((item) => item.demo) && ' DEMO-координаты условные и не указывают на реальные стройки.'}</p>
+      {complexes.some((item) => item.demo) && ' Координаты учебных объектов условные.'}</p>
     {state === 'loading' && <p role="status" className="map-caption">Загружаем карту…</p>}
     {(state === 'failed' || tileFailed) && <p role="status" className="inline-notice">{state === 'failed' ? 'Карта недоступна.' : 'Не удалось загрузить часть подложки OpenStreetMap.'} Все объекты доступны в списке ниже.</p>}
     <div ref={container} className={`complex-map ${state === 'failed' ? 'hidden' : ''}`} role="region" aria-label="Карта жилых комплексов ВКО" />

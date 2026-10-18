@@ -23,7 +23,7 @@ export function MatchingCandidates({ adId, runId }: { adId: string; runId: strin
         {group.ambiguous && <p className="inline-notice">Неоднозначно: найдено {group.candidateCount} ЖК. Сравните адрес, город и оригинал; автоматического выбора нет.</p>}
         {!group.candidates.length && <p className="form-hint">Совпадений в проверенной части реестра нет. Это не означает отсутствие правового основания и не даёт R1.</p>}
         {group.candidates.map((candidate) => <div className="my-3" key={candidate.complexId}>
-          <p>{candidate.name} · {candidate.city}{candidate.demo ? ' · DEMO' : ''}</p>
+          <p>{candidate.name} · {candidate.city}{candidate.demo ? ' · Учебная запись' : ''}</p>
           <p className="form-hint">{reasons[candidate.matchedBy]}: {candidate.matchedName}. {candidate.complexId === data.currentComplexId && 'Текущая привязка объявления.'}</p>
           <Button size="sm" variant="outline" aria-label={`Сравнить: ${candidate.name}`} aria-pressed={selected?.complexId === candidate.complexId} onClick={() => setSelected(candidate)}>Выбрать для сравнения</Button>
         </div>)}

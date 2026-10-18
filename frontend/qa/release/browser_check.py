@@ -854,18 +854,25 @@ with sync_playwright() as p:
             page.get_by_role("heading", name="Мониторинг рекламы", exact=True)
         ).to_be_visible()
         expect(
+            page.get_by_text("Источники можно запустить вручную", exact=False)
+        ).to_be_visible()
+        assert (
+            page.get_by_role(
+                "heading", name="Источник Instagram настроен через SearchAPI"
+            ).count()
+            == 0
+        )
+        page.get_by_role("button", name="Источники сбора", exact=True).click()
+        page.get_by_text("Подключения и лимиты", exact=True).click()
+        expect(
             page.get_by_role(
                 "heading", name="Источник Instagram настроен через SearchAPI"
             )
         ).to_be_visible()
-        expect(
-            page.get_by_text("Ещё не подтверждён. Ручной сбор доступен в источниках.")
-        ).to_be_visible()
-        page.get_by_role("button", name="Источники сбора", exact=True).click()
         expect(page.get_by_role("checkbox")).not_to_be_checked()
         page.get_by_role("button", name="Сохранить источник", exact=True).click()
         expect(
-            page.get_by_text("Источник сохранён. Он доступен для регулярного сбора.")
+            page.get_by_text("Источник сохранён. Настройки применены.")
         ).to_be_visible()
         page.get_by_role("button", name="Получить публикации", exact=True).click()
         expect(
@@ -909,9 +916,12 @@ with sync_playwright() as p:
                 "Решение по находке сохранено. Оценка R1–R6 не менялась."
             )
         ).to_be_visible()
-        detail.get_by_role(
-            "button", name="Анализировать Gemini — платный запрос", exact=True
-        ).click()
+        actor_id = api(page, "GET", f"/api/v1/monitoring/items/{item_id}")["reviewer"]
+        assert actor_id not in detail.inner_text()
+        assert "[object Object]" not in detail.inner_text()
+        assert "платный запрос" not in page.inner_text("body")
+        assert "DEMO" not in page.locator(".topbar").inner_text()
+        detail.get_by_role("button", name="Проанализировать с AI", exact=True).click()
         expect(
             detail.get_by_text(
                 "Попытка анализа завершена. Проверьте результат и статус ниже."
@@ -921,7 +931,9 @@ with sync_playwright() as p:
             detail.get_by_text("R2 · Предложение внести платёж", exact=True)
         ).to_be_visible()
         expect(
-            detail.get_by_text("Реальную публикацию нельзя приписывать", exact=False)
+            detail.get_by_text(
+                "Для продолжения нужна карточка реального ЖК", exact=False
+            )
         ).to_be_visible()
         for width in [1366, 375, 320]:
             page.set_viewport_size({"width": width, "height": 900})
@@ -953,7 +965,9 @@ with sync_playwright() as p:
         page.get_by_label("Тип источника", exact=True).select_option("instagram_ads")
         expect(page.get_by_label("Поисковый запрос")).to_have_value("квартиры Өскемен")
         expect(
-            page.get_by_text("Каждый запуск расходует запрос SearchAPI.", exact=False)
+            page.get_by_text(
+                "Поиск активной рекламы Instagram по Казахстану.", exact=False
+            )
         ).to_be_visible()
         page.get_by_role("button", name="Сохранить источник", exact=True).click()
         panel = page.locator(".monitor-sources > .panel").filter(
@@ -961,7 +975,7 @@ with sync_playwright() as p:
                 "heading", name="LOCAL QA Instagram source", exact=True
             )
         )
-        expect(panel.get_by_text("Только ручной сбор.", exact=False)).to_be_visible()
+        expect(panel.get_by_text("Ручной сбор.", exact=False)).to_be_visible()
         panel.get_by_role("button", name="Получить публикации", exact=True).click()
         expect(
             page.get_by_text(

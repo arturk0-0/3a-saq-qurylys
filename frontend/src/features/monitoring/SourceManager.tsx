@@ -21,7 +21,7 @@ export function SourceManager({ sources, changed, provider }: { sources: Source[
       await api('/api/v1/monitoring/sources', { method: 'POST', body: JSON.stringify({
         name, kind, target, intervalMinutes: interval, autoAnalyze: autoAi,
       }) })
-      setResult('Источник сохранён. Он доступен для регулярного сбора.'); changed()
+      setResult('Источник сохранён. Настройки применены.'); changed()
     } catch (failure) { setError(errorMessage(failure)) } finally { setBusy(false) }
   }
   async function action(source: Source, run: boolean, toggleAi = false) {
@@ -50,13 +50,13 @@ export function SourceManager({ sources, changed, provider }: { sources: Source[
         <FormField label="Тип источника"><select value={kind} disabled={busy} onChange={e => {
           const value = e.target.value as typeof kind; setKind(value)
           setTarget(value === 'telegram' ? '' : value === 'instagram_ads' ? 'квартиры Өскемен' : 'новостройки квартиры Усть-Каменогорск Риддер')
-        }}><option value="web_search">Поиск по интернету — фрагменты выдачи</option><option value="telegram">Публичный Telegram-канал — тексты постов</option><option value="instagram_ads">Instagram — Meta Ad Library через SearchAPI</option></select></FormField>
-        {kind === 'instagram_ads' && <p className="inline-notice">Поиск именно рекламы Instagram: Казахстан, активные объявления, тип all. Каждый запуск расходует запрос SearchAPI. Одна страница без автоматических повторов; минимум {provider?.searchApi?.creditReserve ?? 20} запросов сохраняются. Расписание по умолчанию выключено.</p>}
+        }}><option value="web_search">Поиск по интернету — фрагменты выдачи</option><option value="telegram">Публичный Telegram-канал — тексты постов</option><option value="instagram_ads">Instagram — реклама</option></select></FormField>
+        {kind === 'instagram_ads' && <p className="inline-notice">Поиск активной рекламы Instagram по Казахстану. Укажите город и тему объявления.</p>}
         <FormField label={kind === 'telegram' ? 'Канал Telegram' : 'Поисковый запрос'} hint={kind === 'telegram' ? '@channel или https://t.me/channel. Закрытые каналы не поддерживаются.' : kind === 'instagram_ads' ? 'Например: квартиры Өскемен. Несколько городов лучше искать отдельными источниками. В очередь проходят тексты с признаками ВКО и жилья.' : 'Добавьте город и слова о жилье. Выдача поисковика не является полным текстом рекламы.'}>
           <input value={target} required maxLength={250} disabled={busy} onChange={e => setTarget(e.target.value)} placeholder={kind === 'telegram' ? '@channel' : 'Жильё в ВКО'} />
         </FormField>
-        <FormField label="Интервал сбора, минуты" hint="15–1440 минут. Для выполнения интервала нужен включённый серверный worker."><input type="number" min={15} max={1440} value={interval} required disabled={busy} onChange={e => setIntervalMinutes(Number(e.target.value))} /></FormField>
-        <label className="monitor-checkbox"><input type="checkbox" checked={autoAi} disabled={busy} onChange={e => setAutoAi(e.target.checked)} /><span>Автоматически анализировать Gemini: платно, максимум одну находку за запуск; действуют общие дневные лимиты.</span></label>
+        <FormField label="Интервал сбора, минуты" hint="Минимальный интервал между сборами: от 15 минут до суток."><input type="number" min={15} max={1440} value={interval} required disabled={busy} onChange={e => setIntervalMinutes(Number(e.target.value))} /></FormField>
+        <label className="monitor-checkbox"><input type="checkbox" checked={autoAi} disabled={busy} onChange={e => setAutoAi(e.target.checked)} /><span>Анализировать новые находки с AI автоматически (до одной за сбор).</span></label>
         <Button disabled={busy || !name.trim() || !target.trim()}>{busy ? 'Выполняем…' : 'Сохранить источник'}</Button>
       </form>
     </section>
@@ -68,15 +68,15 @@ export function SourceManager({ sources, changed, provider }: { sources: Source[
       const waiting = Boolean(source.nextRunAt && new Date(source.nextRunAt).getTime() > Date.now())
       return <section className="panel" key={source.id}>
         <div className="monitor-heading"><h2>{source.name}</h2><span className="monitor-tag">{source.enabled ? 'Источник включён' : 'На паузе'}</span></div>
-        <p>{source.kind === 'telegram' ? 'Telegram · @' : source.kind === 'instagram_ads' ? 'Instagram / SearchAPI · ' : 'Интернет-поиск · '}{source.target}</p>
-        {source.kind === 'instagram_ads' && <p className="form-hint">{provider?.searchApi?.scheduled ? 'Расписание Instagram разрешено сервером; фактические запуски смотрите в истории.' : 'Только ручной сбор. Расписание Instagram на сервере выключено.'} Дневной лимит: {provider?.searchApi?.dailyLimit ?? 2} попытки.</p>}
+        <p>{source.kind === 'telegram' ? 'Telegram · @' : source.kind === 'instagram_ads' ? 'Instagram · ' : 'Интернет-поиск · '}{source.target}</p>
+        {source.kind === 'instagram_ads' && <p className="form-hint">{provider?.searchApi?.scheduled ? 'Доступен сбор по расписанию.' : 'Ручной сбор.'}</p>}
         <p className="form-hint">Последний сбор: {formatDate(source.lastRunAt)} · Следующий: {formatDate(source.nextRunAt)} · Интервал {source.intervalMinutes} мин.</p>
-        <p>Авто-AI: <strong>{source.autoAnalyze ? 'включён, платные запросы' : 'выключен'}</strong></p>
+        <p>Авто-AI: <strong>{source.autoAnalyze ? 'включён' : 'выключен'}</strong></p>
         {source.lastError && <p className="inline-notice">{safeMonitorError(source.lastError)}</p>}
         <div className="form-actions">
           <Button disabled={busy || !source.enabled || running || waiting} onClick={() => void action(source, true)}>{running ? 'Сбор выполняется…' : waiting ? 'Ожидает своего интервала' : 'Получить публикации'}</Button>
           <Button variant="outline" disabled={busy || running} onClick={() => void action(source, false)}>{source.enabled ? 'Поставить на паузу' : 'Возобновить источник'}</Button>
-          <Button variant="outline" disabled={busy || running} onClick={() => void action(source, false, true)}>{source.autoAnalyze ? 'Выключить авто-AI' : 'Включить платный авто-AI'}</Button>
+          <Button variant="outline" disabled={busy || running} onClick={() => void action(source, false, true)}>{source.autoAnalyze ? 'Выключить авто-AI' : 'Включить авто-AI'}</Button>
         </div>
       </section>
     })}

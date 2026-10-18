@@ -1,3 +1,4 @@
+import { ActorName } from '@/components/ActorName'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -10,7 +11,7 @@ import type { AuditEvent, Complex, Evidence, Page, RiskResult } from '@/lib/type
 
 type SignalStatus = 'draft' | 'pending_review' | 'confirmed' | 'returned'
 const labels: Record<SignalStatus, string> = { draft: 'Черновик', pending_review: 'На проверке', confirmed: 'Подтверждён аналитиком', returned: 'Возвращён' }
-interface SignalSummary { id: string; complexId: string; complexName: string; title: string; reason: string; status: SignalStatus; risk: RiskResult; createdAt: string; version: number }
+interface SignalSummary { demo: boolean; id: string; complexId: string; complexName: string; title: string; reason: string; status: SignalStatus; risk: RiskResult; createdAt: string; version: number }
 interface Signal extends Omit<SignalSummary, 'risk' | 'complexName'> {
   snapshot: { complex: Complex; developer: { name: string; bin: string }; risk: RiskResult; evidence: (Evidence & { excerptTruncated: boolean })[]; capturedAt: string }
   createdBy: string; reviewer: string | null; reviewedAt: string | null; reviewNotes: string
@@ -51,9 +52,9 @@ export function CreateSignal() {
   if (!id) return <EmptyState title="Выберите ЖК"><Link to="/complexes">Открыть реестр</Link></EmptyState>
   if (complex_.loading) return <LoadingState />
   if (complex_.error) return <ErrorState message={complex_.error} retry={complex_.refresh} />
-  return <><PageHeading eyebrow="Решение аналитика" title="Новый сигнал" description={complex_.data?.name || ''} />
+  return <><PageHeading eyebrow="Решение аналитика" title="Новый сигнал" description={complex_.data?.name || ''} action={complex_.data?.demo ? <DemoBadge /> : undefined} />
     <section className="panel"><form className="editor-form" onSubmit={submit}><RiskBadge risk={complex_.data!.risk} />
-      <FormField label="Заголовок сигнала"><input name="title" required maxLength={500} value={title ?? `DEMO — проверка ${complex_.data?.name.replace(/^DEMO — /, '')}`} onChange={event => setTitle(event.target.value)} /></FormField>
+      <FormField label="Заголовок сигнала"><input name="title" required maxLength={500} value={title ?? `Проверка ${complex_.data?.name.replace(/^DEMO — /, '')}`} onChange={event => setTitle(event.target.value)} /></FormField>
       <FormField label="Основание для проверки"><textarea name="reason" rows={4} required maxLength={2000} value={reason} onChange={event => setReason(event.target.value)} /></FormField>
       <p className="inline-notice">Будет создан черновик со снимком текущих проверенных данных. Подтверждение сигнала — отдельное действие. В органы ничего не отправляется.</p>
       {error && <ErrorState message={error} />}
@@ -68,7 +69,7 @@ export function SignalsPage() {
   return <><PageHeading eyebrow="Проверка и отчётность" title="Сигналы" description="Снимки проверенных данных и отдельные решения аналитиков." />
     <section className="panel"><div className="filter-bar"><select aria-label="Статус сигнала" value={status} onChange={(event) => { setStatus(event.target.value); setCursor('') }}><option value="">Все статусы</option>{Object.entries(labels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><Link className="detail-link" to="/complexes">Создать сигнал из карточки ЖК →</Link></div>
       {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={refresh} /> : !data?.items.length ? <EmptyState title="Сигналов пока нет"><p>Проверьте факторы в карточке ЖК и создайте черновик.</p></EmptyState>
-        : <ScrollableTable label="Сигналы"><table className="data-table"><thead><tr><th>Сигнал / объект</th><th>Статус</th><th>Снимок риска</th><th>Создан</th></tr></thead><tbody>{data.items.map((signal) => <tr key={signal.id}><td><Link className="detail-link" to={`/signals/${signal.id}`}>{signal.title}</Link><span>{signal.complexName}</span></td><td>{labels[signal.status]}</td><td><RiskBadge risk={signal.risk} /></td><td>{formatDate(signal.createdAt)}</td></tr>)}</tbody></table></ScrollableTable>}
+        : <ScrollableTable label="Сигналы"><table className="data-table"><thead><tr><th>Сигнал / объект</th><th>Статус</th><th>Снимок риска</th><th>Создан</th></tr></thead><tbody>{data.items.map((signal) => <tr key={signal.id}><td><Link className="detail-link" to={`/signals/${signal.id}`}>{signal.title}</Link><span>{signal.complexName}</span>{signal.demo && <DemoBadge />}</td><td>{labels[signal.status]}</td><td><RiskBadge risk={signal.risk} /></td><td>{formatDate(signal.createdAt)}</td></tr>)}</tbody></table></ScrollableTable>}
       {(cursor || data?.nextCursor) && <div className="pagination"><Button variant="outline" onClick={() => setCursor('')}>В начало</Button>{data?.nextCursor && <Button variant="outline" onClick={() => setCursor(data.nextCursor!)}>Далее</Button>}</div>}</section></>
 }
 
@@ -113,15 +114,15 @@ export function SignalDetail() {
   if (!signal) return <EmptyState title="Сигнал не найден" />
   const snapshot = signal.snapshot
   const stale = current.data && current.data.version !== snapshot.complex.version
-  return <><Link to="/signals" className="back-link">← Все сигналы</Link><PageHeading eyebrow={`Сигнал · версия ${signal.version}`} title={signal.title} description={labels[signal.status]} action={<DemoBadge />} />
+  return <><Link to="/signals" className="back-link">← Все сигналы</Link><PageHeading eyebrow={`Сигнал · версия ${signal.version}`} title={signal.title} description={labels[signal.status]} action={snapshot.complex.demo ? <DemoBadge /> : undefined} />
     <section className="panel content-pad"><div className="flex flex-wrap items-center justify-between gap-4"><div><h2>{snapshot.complex.name}</h2><Link className="detail-link" to={`/complexes/${signal.complexId}`}>Текущая карточка ЖК →</Link></div><RiskBadge risk={snapshot.risk} /></div>
       <p className="my-4">{signal.reason}</p><p className="form-hint">Снимок версии ЖК {snapshot.complex.version} от {formatDate(snapshot.capturedAt)}. Последующие изменения карточки не меняют этот документ.</p>
       {stale && <p className="inline-notice">Карточка ЖК изменена. Для подтверждения верните сигнал и повторно передайте на проверку: будет сохранён новый снимок.</p>}
       {current.error && <ErrorState message={`Не удалось проверить актуальность карточки ЖК. ${current.error}`} retry={current.refresh} />}
       <ScrollableTable label="Факторы риска сигнала"><table className="data-table"><thead><tr><th>Фактор</th><th>Статус</th><th>Баллы</th><th>Источники</th></tr></thead><tbody>{snapshot.risk.factors.map((factor) => <tr key={factor.code}><td>{factor.code} · {factorLabels[factor.code]}</td><td>{statusLabels[factor.status]}</td><td>{factor.points}</td><td>{factor.evidenceIds.map((eid) => <a className="detail-link block" key={eid} href={`#source-${eid}`}>{eid}</a>)}</td></tr>)}</tbody></table></ScrollableTable>
-      <h2 className="mt-6">Проверенные источники</h2>{!snapshot.evidence.length && <p className="form-hint">В снимке нет подтверждённых источников.</p>}{snapshot.evidence.map((item) => <article className="evidence-card" id={`source-${item.id}`} key={item.id}><strong>{item.id}</strong><blockquote>{item.excerpt}{item.excerptTruncated && ' [выдержка сокращена]'}</blockquote><EvidenceProvenance reference={item.sourceReference} /><SourceLink url={item.sourceUrl} /><p className="form-hint">{item.reviewer} · {formatDate(item.reviewedAt)}</p></article>)}
-      <p className="mt-4 text-sm">Создал: {signal.createdBy} · {formatDate(signal.createdAt)}</p>
-      {signal.reviewer && <p className="text-sm">Проверил: {signal.reviewer} · {formatDate(signal.reviewedAt)}</p>}
+      <h2 className="mt-6">Проверенные источники</h2>{!snapshot.evidence.length && <p className="form-hint">В снимке нет подтверждённых источников.</p>}{snapshot.evidence.map((item) => <article className="evidence-card" id={`source-${item.id}`} key={item.id}><strong>{item.id}</strong><blockquote>{item.excerpt}{item.excerptTruncated && ' [выдержка сокращена]'}</blockquote><EvidenceProvenance reference={item.sourceReference} /><SourceLink url={item.sourceUrl} /><p className="form-hint"><ActorName uid={item.reviewer} /> · {formatDate(item.reviewedAt)}</p></article>)}
+      <p className="mt-4 text-sm">Создал: <ActorName uid={signal.createdBy} /> · {formatDate(signal.createdAt)}</p>
+      {signal.reviewer && <p className="text-sm">Проверил: <ActorName uid={signal.reviewer} /> · {formatDate(signal.reviewedAt)}</p>}
       {signal.reviewNotes && <blockquote className="my-3">{signal.reviewNotes}</blockquote>}
       {signal.status !== 'confirmed' && <form className="editor-form" onSubmit={decision} aria-busy={busy}>
         <FormField label="Действие по сигналу"><select name="action" disabled={busy} defaultValue={signal.status === 'pending_review' ? 'return' : 'submit'} key={signal.status}>{signal.status === 'pending_review' ? <><option value="return">Вернуть на доработку</option><option value="confirm" disabled={Boolean(stale) || current.loading || Boolean(current.error) || !current.data}>Подтвердить сигнал</option></> : <option value="submit">Передать на проверку с актуальным снимком</option>}</select></FormField>
@@ -130,8 +131,8 @@ export function SignalDetail() {
       </form>}
       {actionError && <ErrorState message={actionError} />}
       <div className="form-actions mt-5 print:hidden"><Button disabled={busy} onClick={download}>{downloading ? 'Готовим PDF…' : 'Скачать PDF'}</Button><Button variant="outline" onClick={() => window.print()}>Печать карточки</Button><Button variant="outline" disabled={busy} onClick={() => { refresh(); history.refresh(); current.refresh() }}>Обновить</Button></div>
-      <p className="page-footnote">DEMO: вымышленные данные. Приоритет проверки не является выводом о незаконности.</p></section>
-    <section className="panel content-pad mt-6"><h2>История сигнала</h2>{history.loading ? <LoadingState /> : history.error ? <ErrorState message={history.error} retry={history.refresh} /> : !history.data?.items.length ? <p className="form-hint">События истории пока не найдены.</p> : history.data.items.map((event) => <p key={event.id} className="my-3 text-sm">{formatDate(event.createdAt)} · {event.actorUid} · {typeof event.details.to === 'string' ? labels[event.details.to as SignalStatus] : 'Создание'}<br />{String(event.details.notes || '')}</p>)}
+      <p className="page-footnote">Приоритет проверки не является выводом о незаконности.</p></section>
+    <section className="panel content-pad mt-6"><h2>История сигнала</h2>{history.loading ? <LoadingState /> : history.error ? <ErrorState message={history.error} retry={history.refresh} /> : !history.data?.items.length ? <p className="form-hint">События истории пока не найдены.</p> : history.data.items.map((event) => <p key={event.id} className="my-3 text-sm">{formatDate(event.createdAt)} · <ActorName uid={event.actorUid} /> · {typeof event.details.to === 'string' ? labels[event.details.to as SignalStatus] : 'Создание'}<br />{String(event.details.notes || '')}</p>)}
       {(historyCursor || history.data?.nextCursor) && <div className="pagination"><Button variant="outline" onClick={() => setHistoryCursor('')}>В начало</Button>{history.data?.nextCursor && <Button variant="outline" onClick={() => setHistoryCursor(history.data!.nextCursor!)}>Далее</Button>}</div>}</section>
   </>
 }
