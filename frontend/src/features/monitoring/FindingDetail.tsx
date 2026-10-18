@@ -81,7 +81,7 @@ export function FindingDetail({ id, liveRegistry, changed }: { id: string; liveR
             <Button variant="outline" disabled={busy || !complexId || !notes.trim() || item.aiStatus === 'running'} onClick={() => void operation('attach')}>Передать в карточку ЖК с обоснованием выше</Button></>}
       </section>
       <details className="monitor-section"><summary>История решений по находке</summary>
-        {history.loading ? <LoadingState /> : history.error ? <ErrorState message={history.error} retry={history.refresh} /> : history.data?.items.length ? history.data.items.map(e => <p key={e.id}>{formatDate(e.createdAt)} · <ActorName uid={e.actorUid} /> · {e.action === 'item.review' ? 'Решение эксперта' : 'Попытка AI-анализа'}<br />{e.details.notes}</p>) : <p>Решений пока нет.</p>}
+        {history.loading ? <LoadingState /> : history.error ? <ErrorState message={history.error} retry={history.refresh} /> : history.data?.items.length ? history.data.items.map(e => <p key={e.id} className="history-entry">{formatDate(e.createdAt)} · <ActorName uid={e.actorUid} /> · {e.action === 'item.review' ? 'Решение эксперта' : 'Попытка AI-анализа'}<br />{e.details.notes}</p>) : <p>Решений пока нет.</p>}
         {(historyCursor || history.data?.nextCursor) && <div className="form-actions"><Button variant="outline" onClick={() => setHistoryCursor('')}>Начало истории</Button>{history.data?.nextCursor && <Button variant="outline" onClick={() => setHistoryCursor(history.data!.nextCursor!)}>Далее по истории</Button>}</div>}
       </details>
     </>}

@@ -251,3 +251,9 @@ details[open] > :not(summary) { animation: surface-enter 180ms ease-out; }
 .trace-empty { padding: 22px 0; }
 .advertisement-card:focus { outline: 3px solid #419c8d; outline-offset: 3px; scroll-margin-top: 20px; }
 @media (max-width: 700px) { .trace-panel { padding: 16px; }.trace-quotes { grid-template-columns: 1fr; } }
+
+/* Keep an action and its explanation together; separate neighbouring actions. */
+.history-entry { margin: 0; padding: 16px 0; overflow-wrap: anywhere; }
+.history-entry + .history-entry { border-top: 1px solid #cbd8d6; }
+.timeline .history-entry { padding: 16px 0; }
+.timeline .history-entry::before { top: 22px; }
