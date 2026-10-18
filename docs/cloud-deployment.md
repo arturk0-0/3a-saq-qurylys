@@ -190,8 +190,8 @@ Admin credential. Gemini/Admin secrets в Vite не попадают.
 
 Команды публикации в живом проекте Codex здесь **не выполнял**: для них нужен
 авторизованный Google Cloud Shell владельца. Исходники этой версии —
-`1373d0daec5939df8211d10d6ba52721b4988221`: дизайн #6, рекламный след #7,
-исправления API/PDF #11 и распределение команды #10. Секреты в исходники
+`34eab8aaa9ce9bccf85a3c7244a1d6f4500c1895` (PR #15, включён 18 октября): мониторинг/Instagram,
+исправления A-01–04, дизайн, рекламный след и API/PDF. Секреты в исходники
 не добавлять; Cloud Run сохраняет настроенную service identity и Secret Manager.
 
 В Cloud Shell получить свежие исходники приватного GitHub можно через штатную
@@ -199,7 +199,7 @@ Admin credential. Gemini/Admin secrets в Vite не попадают.
 
 ```bash
 gh auth status || gh auth login --hostname github.com --git-protocol https --web
-SAQ_RELEASE_SHA=1373d0daec5939df8211d10d6ba52721b4988221
+SAQ_RELEASE_SHA=34eab8aaa9ce9bccf85a3c7244a1d6f4500c1895
 SAQ_RELEASE_DIR="$HOME/saq-release-$SAQ_RELEASE_SHA"
 gh repo clone arturk0-0/3a-saq-qurylys "$SAQ_RELEASE_DIR"
 cd "$SAQ_RELEASE_DIR"
@@ -210,7 +210,7 @@ git rev-parse HEAD
 Последний вывод должен совпасть с `SAQ_RELEASE_SHA`. При повторном запуске
 используйте уже созданный каталог только после проверки чистого `git status`
 и нужного SHA; не перезаписывайте изменённые файлы. Если `gh` недоступен,
-скачать [ZIP этого commit](https://github.com/arturk0-0/3a-saq-qurylys/archive/1373d0daec5939df8211d10d6ba52721b4988221.zip)
+скачать [ZIP этого commit](https://github.com/arturk0-0/3a-saq-qurylys/archive/34eab8aaa9ce9bccf85a3c7244a1d6f4500c1895.zip)
 в GitHub, загрузить через Cloud Shell Upload и распаковать в новую папку.
 Войти в корень с `firebase.json` и задать тот же `SAQ_RELEASE_SHA`.
 Старый каталог `saq-release-effb87f` новой версии не содержит.
@@ -218,10 +218,10 @@ git rev-parse HEAD
 ### 6.1 Индексы и диагностика истории
 
 Индексы ранее опубликованы владельцем, история на `effb87f` уже проверена.
-Новая версия не меняет `firestore.indexes.json`: не нужно повторять index deploy
-только ради обновления API/Hosting. Если индексы меняются в следующей версии
-или API сообщает об отсутствующем индексе, выполнить раздел 2 и дождаться
-готовности в Console. На сайте открыть историю и «Повторить». Если ошибка ушла,
+Версия MON добавляет индексы `monitorItems`, `monitorRuns`, `monitorEvents`.
+Для нового мониторинга выполнить публикацию индексов по разделу 7 и дождаться
+READY в Console. Прежняя успешная проверка истории не подтверждает готовность
+новых индексов. На сайте открыть историю и «Повторить». Если ошибка ушла,
 это подтверждает исправление deployment, но не завершает проверки PDF/Storage.
 Если не ушла — получить безопасные диагностические записи (не все логи подряд):
 
@@ -249,7 +249,7 @@ gcloud builds submit . --project=saq-qurylys --config=deploy/cloudbuild.yaml --s
 **Только после STATUS: SUCCESS**:
 
 ```bash
-gcloud run services update saq-qurylys-api --project=saq-qurylys --region=europe-west1 --image="$SAQ_IMAGE"
+gcloud run services update saq-qurylys-api --project=saq-qurylys --region=europe-west1 --image="$SAQ_IMAGE" --timeout=300
 ```
 
 Этот update сохраняет настроенные environment, Secret Manager references,

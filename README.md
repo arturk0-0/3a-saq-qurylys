@@ -4,7 +4,8 @@
 очередь → AI-гипотезы → эксперт. Источники — интернет-поиск (фрагменты выдачи)
 и выбранные Telegram-каналы. Добавлен **Instagram / Meta Ad Library через SearchAPI**:
 проверены два настоящих поиска, осталось98 из100. [Интеграция и резерв20](docs/instagram-searchapi.md).
-Код совмещён с готовым frontend в интеграционной ветке; облачное расписание ещё не развёрнуто.
+18 октября общая версия включена в main через PR #15 (`34eab8a`).
+Облачная публикация этой версии и расписание ещё не выполнены.
 [Использование, worker, лимиты](docs/monitoring.md),
 [результаты проверок](docs/monitoring-report.md), [план и закрытые задачи](docs/DEVELOPMENT_PLAN.md),
 [проверка доступности Instagram-таргета](docs/instagram-feasibility.md).
@@ -77,7 +78,7 @@ https://saq-qurylys-api-722228028571.europe-west1.run.app.
 При подготовке проверенной версии фиксируйте полный SHA: текущий `main` может
 не включать исправления из открытых PR. MON и четыре готовые ветки участника A
 совмещены в `release/integrated-monitoring-readiness` от baseline main `ed38f00`.
-Это проверяемый кандидат, не опубликованная версия. Старые ночные ветки
+Кандидат включён в main через PR #15 (`34eab8a`), но ещё не опубликован на сайте. Старые ночные ветки
 не используйте для обновления. [Порядок продолжения выпуска](docs/integration-readiness-report.md#что-осталось-владельцу).
 
 ## Запуск через Docker
@@ -86,8 +87,9 @@ https://saq-qurylys-api-722228028571.europe-west1.run.app.
 из новой папки (feature-ветка требует review/merge и отдельного deployment):
 
 ```bash
-git clone --branch release/integrated-monitoring-readiness --single-branch https://github.com/arturk0-0/3a-saq-qurylys.git
+git clone https://github.com/arturk0-0/3a-saq-qurylys.git
 cd 3a-saq-qurylys
+git checkout --detach 34eab8aaa9ce9bccf85a3c7244a1d6f4500c1895
 git rev-parse HEAD
 ```
 

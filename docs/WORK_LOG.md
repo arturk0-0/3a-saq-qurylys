@@ -470,3 +470,17 @@ Main, живой сайт, IAM, индексы, расписание, реаль
 индексы/Job/Scheduler, выбор публичных Telegram-каналов, работа с реальными ЖК
 отдельно от DEMO, live RU/KZ/image/Storage приёмка, второй ПК, репетиция,
 дедлайн/tag и публичная сдача.
+
+
+## Перенос общей версии в main · 18 октября 2026
+
+По команде владельца «давай дальше» повторно проверены чистое дерево,
+неизменный head PR #15 ea4f259, mergeability и все восемь успешных CI checks.
+Независимое review кода/документов выполнено ранее, без blockers; не human approval.
+PR #15 squash-merged: main 34eab8aaa9ce9bccf85a3c7244a1d6f4500c1895.
+Сохранены MON/Instagram и A-01–04. Живая инфраструктура не менялась.
+В среде нет gcloud/ADC/Cloud SDK credentials, путь Firebase credential отсутствует;
+наличие SearchAPI key не даёт Cloud Run deployment-доступ.
+Deployment-документ закреплён на новом SHA, индексы MON отмечены обязательными,
+API timeout — 300 секунд. README и план различают main merge и публикацию.
+Ожидается Cloud Shell владельца для сборки/публикации.
