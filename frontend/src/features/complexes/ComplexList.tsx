@@ -45,7 +45,7 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
       <div className={`stat-card stat-${tone}`} key={title}><Icon size={21} /><span>{title}</span>
         <strong>{loading ? '—' : value}</strong><small>{title === 'Объектов в выборке' ? 'По текущему фильтру' : 'На текущей странице'}</small></div>)}</div>}
     <section className="panel">
-      <div className="panel-heading"><div><h2>Жилые комплексы</h2><p>Внутренний реестр · синтетические DEMO-записи</p></div><div className="flex items-center gap-3"><Button variant="outline" aria-expanded={showMap} aria-controls="complex-map" onClick={() => setShowMap(!showMap)}>{showMap ? 'Скрыть карту' : 'Показать карту'}</Button><DemoBadge /></div></div>
+      <div className="panel-heading"><div><h2>Жилые комплексы</h2><p>Каталог объектов ВКО</p></div><div className="flex items-center gap-3"><Button variant="outline" aria-expanded={showMap} aria-controls="complex-map" onClick={() => setShowMap(!showMap)}>{showMap ? 'Скрыть карту' : 'Показать карту'}</Button></div></div>
       <form className="filter-bar" onSubmit={(event) => { event.preventDefault(); updateFilter('q', query) }}>
         <label className="search-input"><Search size={17} /><input aria-label="Поиск ЖК" placeholder="Название, город или адрес" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
         <select aria-label="Город" value={city} onChange={(event) => updateFilter('city', event.target.value)}>
@@ -59,10 +59,10 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
       </form>
       {showMap && !loading && !error && <div id="complex-map"><ComplexMap complexes={visible} /></div>}
       {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={refresh} />
-        : !visible.length ? <EmptyState title="ЖК не найдены"><p>Измените фильтры или попросите администратора загрузить DEMO-набор.</p></EmptyState>
+        : !visible.length ? <EmptyState title="ЖК не найдены"><p>Измените фильтры или добавьте объекты в реестр.</p></EmptyState>
         : <ScrollableTable label="Жилые комплексы"><table className="data-table"><thead><tr><th>Жилой комплекс</th><th>Город / этап</th><th>Готовность</th><th>Приоритет проверки</th><th><span className="sr-only">Карточка</span></th></tr></thead>
           <tbody>{visible.map((complex_) => <tr key={complex_.id}>
-            <td><strong>{complex_.name.replace(/^DEMO — /, '')}</strong><span>{complex_.address}</span>{complex_.scenario && <small>Сценарий {complex_.scenario}</small>}</td>
+            <td><strong>{complex_.name.replace(/^DEMO — /, '')}</strong><span>{complex_.address}</span>{complex_.demo && <DemoBadge />}</td>
             <td><strong>{complex_.city}</strong><span>{stageLabels[complex_.stage]}</span></td>
             <td><strong>{complex_.progress.verifiedPercent === null ? 'Не проверено' : `${complex_.progress.verifiedPercent}%`}</strong><span>Заявлено: {complex_.progress.claimedPercent ?? '—'}%</span></td>
             <td><RiskBadge risk={complex_.risk} /></td><td><DetailLink to={`/complexes/${complex_.id}`}>Карточка</DetailLink></td>

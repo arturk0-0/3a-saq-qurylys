@@ -69,7 +69,7 @@ export function App() {
       <div className="sidebar-region"><MapPin size={15} /> Восточно-Казахстанская область</div>
     </aside>
     <div className="workspace-main">
-      <header className={'topbar' + (pathname === '/monitoring' ? ' monitor-topbar' : '')}><div><span className="demo-badge">{pathname === '/monitoring' ? 'Публичные источники' : 'DEMO'}</span><span className="topbar-context">Внутренний аналитический контур</span></div>
+      <header className={'topbar' + (pathname === '/monitoring' ? ' monitor-topbar' : '')}><div><span className="topbar-context">Рабочее пространство · ВКО</span></div>
         <div className="user-menu"><span className="avatar">{(profile?.displayName || profile?.email || 'А').slice(0, 1).toUpperCase()}</span><span><strong>{profile?.displayName || profile?.email || 'Аналитик'}</strong><small>{profile?.role === 'admin' ? 'Администратор' : 'Аналитик'}</small></span>
           <button type="button" className="icon-button" aria-label="Выйти" onClick={() => { logout().catch(() => setLogoutError('Не удалось выйти. Повторите.')) }}><LogOut size={18} /></button></div>
       </header>

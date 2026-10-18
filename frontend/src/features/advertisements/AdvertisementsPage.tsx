@@ -31,7 +31,7 @@ export function AdvertisementForm({ complexId, onSaved, onCancel }: { complexId?
     <p className="form-hint">Сохраните оригинальный текст и ссылку. Оценка факторов выполняется отдельно.</p>
     {!complexId && <><FormField label="Жилой комплекс"><select name="complexId" required defaultValue="" disabled={complexes.loading || Boolean(complexes.error)}><option value="" disabled>{complexes.loading ? 'Загружаем ЖК…' : 'Выберите ЖК'}</option>{complexes.data?.items.map((row) => <option value={row.id} key={row.id}>{row.name}</option>)}</select></FormField>
       {complexes.error && <ErrorState message={complexes.error} retry={complexes.refresh} />}
-      {!complexes.loading && !complexes.error && !complexes.data?.items.length && <p className="inline-notice">В реестре нет ЖК. Администратор должен загрузить DEMO-набор.</p>}
+      {!complexes.loading && !complexes.error && !complexes.data?.items.length && <p className="inline-notice">В реестре пока нет объектов. Сначала добавьте жилой комплекс.</p>}
       {complexes.data?.nextCursor && <p className="form-hint">Показаны первые 100 ЖК. Нужный объект можно найти в реестре и добавить объявление из его карточки.</p>}</>}
     <div className="form-grid"><FormField label="Площадка"><input name="platform" required maxLength={500} placeholder="Например, Instagram" /></FormField>
       <FormField label="Аккаунт / автор"><input name="account" required maxLength={500} /></FormField></div>
@@ -71,7 +71,7 @@ export function AdvertisementsPage() {
       action={<Button onClick={() => setCreating(true)}><Plus size={16} className="mr-2" />Добавить объявление</Button>} />
     {creating && <section className="panel mb-6"><AdvertisementForm onSaved={() => { setCreating(false); setCursor(''); refresh() }} onCancel={() => setCreating(false)} /></section>}
     {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={refresh} />
-      : !data?.items.length ? <EmptyState title="Объявлений пока нет"><p>Добавьте первую публикацию или загрузите DEMO-набор.</p></EmptyState>
+      : !data?.items.length ? <EmptyState title="Объявлений пока нет"><p>Добавьте публикацию или откройте мониторинг рекламы.</p></EmptyState>
       : <div className="space-y-4">{data.items.map((ad) => <AdvertisementCard key={ad.id} ad={ad} />)}</div>}
     {(cursor || data?.nextCursor) && <div className="pagination"><Button variant="outline" onClick={() => setCursor('')}>В начало</Button>{data?.nextCursor && <Button variant="outline" onClick={() => setCursor(data.nextCursor!)}>Далее</Button>}</div>}
   </>

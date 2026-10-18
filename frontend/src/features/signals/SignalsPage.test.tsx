@@ -1,9 +1,9 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { expect, it, vi } from 'vitest'
 import { AuthContext } from '@/features/auth/AuthProvider'
 import { ApiError, type ApiClient } from '@/lib/http'
-import { CreateSignal, SignalDetail } from './SignalsPage'
+import { CreateSignal, SignalDetail, SignalsPage } from './SignalsPage'
 
 it('requires a separate reason and sends the signal version for a return', async () => {
   const signal = { id: 's1', complexId: 'c1', title: 'Учебный сигнал', reason: 'Проверка',
@@ -178,4 +178,19 @@ it('refreshes a stale complex version before retrying signal creation without lo
   await screen.findByText('Сигнал создан')
   expect(JSON.parse(String(api.mock.calls.filter(([, init]) => init?.method === 'POST').at(-1)![1]?.body)))
     .toMatchObject({ expectedComplexVersion: 2, title: 'Мой заголовок', reason: 'Текст проверки, введённый до конфликта' })
+})
+
+it('marks only synthetic signals locally when global demo branding is absent', async () => {
+  const common = { status: 'draft', complexName: 'Жилой комплекс', risk: { score: 10, zone: 'GREEN' }, createdAt: '2026-10-18T09:00:00Z' }
+  const api = vi.fn(async () => ({ items: [
+    { ...common, id: 'synthetic', title: 'Учебная проверка', demo: true },
+    { ...common, id: 'real', title: 'Рабочая проверка', demo: false },
+  ], nextCursor: null }))
+  render(<AuthContext.Provider value={{ status: 'authenticated', profile: null, error: null, api: api as ApiClient, signIn: vi.fn(), logout: vi.fn() }}>
+    <MemoryRouter><SignalsPage /></MemoryRouter>
+  </AuthContext.Provider>)
+  const synthetic = (await screen.findByRole('link', { name: 'Учебная проверка' })).closest('tr')!
+  const real = screen.getByRole('link', { name: 'Рабочая проверка' }).closest('tr')!
+  expect(within(synthetic).getByText('Учебная запись')).toBeVisible()
+  expect(within(real).queryByText('Учебная запись')).not.toBeInTheDocument()
 })

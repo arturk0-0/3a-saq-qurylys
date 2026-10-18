@@ -27,7 +27,7 @@ export function PublicSources({ complexId, demo }: { complexId: string; demo: bo
   return <section className="mt-6 border-t border-border pt-5" aria-label="Открытые источники для сверки">
     <h3 className="font-semibold">Открытые источники для ручной сверки</h3>
     <p className="form-hint">Ссылки открываются отдельно. Данные из реестров не загружаются автоматически; совпадение проверяет аналитик по БИН, адресу и очереди строительства.</p>
-    {demo && <p className="inline-notice">Этот ЖК вымышленный. Записи о нём в реальных реестрах не ожидаются; отсутствие совпадения не подтверждает R1.</p>}
+    {demo && <p className="form-hint">Учебный объект: отсутствие записи в реальном реестре не подтверждает R1.</p>}
     <SourceList sources={basisSources} />
     <details className="mt-4"><summary className="cursor-pointer font-medium">Дополнительные источники об организации и объекте</summary><SourceList sources={contextSources} /></details>
     <p className="form-hint mt-4">Лицензия организации, права на землю и разрешение на привлечение денег — разные документы. Действующая применимая гарантия также может быть правовым основанием.</p>

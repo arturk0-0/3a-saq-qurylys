@@ -36,9 +36,9 @@ it('distinguishes Instagram target unavailability and search snippets without st
   })
   const result = setup(<MonitoringPage />, api as ApiClient)
   expect(await screen.findByText('Synthetic QA lead')).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Автосбор таргетированной рекламы KZ пока не подключён' })).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Автосбор таргетированной рекламы KZ пока не подключён' })).not.toBeInTheDocument()
   expect(screen.getByText('Фрагмент поиска')).toBeInTheDocument()
-  expect(screen.getByText(/Ручной сбор доступен/)).toBeInTheDocument()
+  expect(screen.getByText(/Источники можно запустить вручную/)).toBeInTheDocument()
   expect(result.container.querySelector('img')).toBeNull()
   expect(api.mock.calls.every(([, init]) => !init?.method)).toBe(true)
   fireEvent.click(screen.getByRole('button', { name: 'Рассмотреть находку' }))
@@ -92,10 +92,10 @@ it('expert conflict keeps notes across refresh and retries with the new version 
 it('does not offer attaching real findings to the DEMO registry or invent a publication date', async () => {
   const api = vi.fn(async (path: string) => path.includes('/history') ? { items: [], nextCursor: null } : item)
   setup(<FindingDetail id="lead1" liveRegistry={false} changed={vi.fn()} />, api as ApiClient)
-  expect(await screen.findByText(/Реальную публикацию нельзя приписывать/)).toBeInTheDocument()
+  expect(await screen.findByText(/Для продолжения нужна карточка реального ЖК/)).toBeInTheDocument()
   expect(screen.getByText(/Опубликовано: Не указано/)).toBeInTheDocument()
   expect(screen.queryByLabelText('Реальный жилой комплекс')).not.toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Анализировать Gemini — платный запрос' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Проанализировать с AI' })).toBeInTheDocument()
 })
 
 it('creates an Instagram Ad Library source with a single-city query and no automatic AI', async () => {
@@ -103,7 +103,7 @@ it('creates an Instagram Ad Library source with a single-city query and no autom
   setup(<SourceManager sources={[]} changed={vi.fn()} />, api as ApiClient)
   fireEvent.change(screen.getByLabelText('Тип источника'), { target: { value: 'instagram_ads' } })
   expect(screen.getByLabelText('Поисковый запрос')).toHaveValue('квартиры Өскемен')
-  expect(screen.getByText(/Каждый запуск расходует запрос SearchAPI/)).toBeInTheDocument()
+  expect(screen.getByText(/Поиск активной рекламы Instagram по Казахстану/)).toBeInTheDocument()
   expect(api).not.toHaveBeenCalled()
   fireEvent.click(screen.getByRole('button', { name: 'Сохранить источник' }))
   await screen.findByText(/Источник сохранён/)
@@ -133,8 +133,32 @@ it('reports configured Instagram and reserved quota without launching a provider
     return { items: [], nextCursor: null }
   })
   setup(<MonitoringPage />, api as ApiClient)
-  expect(await screen.findByRole('heading', { name: 'Источник Instagram настроен через SearchAPI' })).toBeInTheDocument()
+  await screen.findByText(/Источники можно запустить вручную/)
+  expect(screen.queryByRole('heading', { name: 'Источник Instagram настроен через SearchAPI' })).not.toBeInTheDocument()
+  expect(screen.queryByText(/Берегём квоту/)).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Источники сбора' }))
+  const settings = screen.getByText('Подключения и лимиты')
+  expect(settings.parentElement).not.toHaveAttribute('open')
+  fireEvent.click(settings)
+  expect(await screen.findByRole('heading', { name: 'Источник Instagram настроен через SearchAPI' })).toBeVisible()
   expect(screen.getByText(/Берегём квоту: резерв 20 запросов/)).toBeInTheDocument()
   expect(screen.getByText(/Это не текущий баланс/)).toBeInTheDocument()
   expect(api.mock.calls.every(([, init]) => !init?.method)).toBe(true)
+})
+
+it('hides reviewer identifiers in the saved decision and audit while keeping timestamps and notes', async () => {
+  const reviewed = { ...item, reviewer: 'private-reviewer-uid', reviewedAt: item.createdAt,
+    notes: 'Проверить документы', status: 'investigating' }
+  const api = vi.fn(async (path: string) => path.includes('/history')
+    ? { items: [{ id: 'event1', actorUid: 'private-reviewer-uid', action: 'item.review',
+      createdAt: item.createdAt, details: { notes: 'Проверить документы' } }], nextCursor: null }
+    : reviewed)
+  const result = setup(<FindingDetail id="lead1" liveRegistry={false} changed={vi.fn()} />, api as ApiClient)
+  await screen.findByText(/Решение: В работе эксперта/)
+  fireEvent.click(screen.getByText('История решений по находке'))
+  await waitFor(() => expect(result.container.textContent?.match(/Аналитик/g)).toHaveLength(2))
+  expect(result.container.innerHTML).not.toContain('private-reviewer-uid')
+  expect(result.container.textContent).not.toContain('[object Object]')
+  expect(screen.queryByText(/платный запрос/)).not.toBeInTheDocument()
+  expect(api.mock.calls.every(([path]) => String(path).startsWith('/api/v1/'))).toBe(true)
 })

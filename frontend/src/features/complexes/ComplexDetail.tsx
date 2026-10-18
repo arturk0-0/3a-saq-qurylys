@@ -1,3 +1,4 @@
+import { ActorName } from '@/components/ActorName'
 import { useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, MapPin } from 'lucide-react'
@@ -68,7 +69,7 @@ function HistoryPanel({ id }: { id: string }) {
   const actionLabels: Record<string, string> = { 'advertisement.create': 'Добавлено объявление', 'evidence.create': 'Добавлен источник', 'evidence.review': 'Проверен источник', 'factor.review': 'Пересмотрен фактор', 'basis.review': 'Проверено правовое основание', 'complex.create': 'Создан ЖК', 'adLink.propose': 'Сохранено рекламное совпадение', 'adLink.review': 'Проверено рекламное совпадение' }
   return <div className="content-pad"><h2>История действий</h2>{loading ? <LoadingState /> : error ? <ErrorState message={error} retry={refresh} /> : !data?.items.length ? <EmptyState title="Действий аналитиков пока нет" />
     : <ol className="timeline">{[...data.items].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((event) => <li key={event.id}><strong>{actionLabels[event.action] || event.action}</strong>
-      <p>{formatDate(event.createdAt)} · {event.actorUid}</p>{typeof event.details.notes === 'string' && <blockquote>{event.details.notes}</blockquote>}
+      <p>{formatDate(event.createdAt)} · <ActorName uid={event.actorUid} /></p>{typeof event.details.notes === 'string' && <blockquote>{event.details.notes}</blockquote>}
       {typeof event.details.beforeScore === 'number' && <small>Баллы: {event.details.beforeScore} → {String(event.details.afterScore)}</small>}</li>)}</ol>}
     {(cursor || data?.nextCursor) && <div className="pagination"><Button variant="outline" onClick={() => setCursor('')}>В начало</Button>{data?.nextCursor && <Button variant="outline" onClick={() => setCursor(data.nextCursor!)}>Далее</Button>}</div>}
   </div>
@@ -95,15 +96,14 @@ export function ComplexDetail() {
   }
   return <><Link to="/complexes" className="back-link"><ArrowLeft size={16} /> К реестру</Link>
     <PageHeading eyebrow={`Карточка объекта · ${complex_.city}`} title={complex_.name.replace(/^DEMO — /, '')} description={complex_.address} action={<div className="flex items-center gap-4">{complex_.demo && <DemoBadge />}<Link className="detail-link" to={`/signals/new?complex=${complex_.id}`}>Создать сигнал →</Link></div>} />
-    <ReviewGuide />
+    <details className="review-help"><summary>Порядок проверки</summary><ReviewGuide /></details>
     <div className="detail-layout"><section className="panel min-w-0"><div className="tabs" role="tablist" aria-label="Разделы карточки" onKeyDown={navigateTabs}>{tabs.map(([key, label]) => <button key={key} type="button" role="tab" tabIndex={tab === key ? 0 : -1} aria-selected={tab === key} aria-controls={`panel-${key}`} id={`tab-${key}`} onClick={() => setTab(key)}>{label}</button>)}</div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {tab === 'overview' && <div className="content-pad"><div className="object-illustration"><MapPin size={26} /><span>{complex_.city} · Восточно-Казахстанская область</span></div>
-          <h2 className="mt-6">Сведения об объекте</h2><dl className="details-grid"><div><dt>Застройщик</dt><dd>{complex_.developer?.name}</dd></div><div><dt>БИН (вымышленный)</dt><dd>{complex_.developer?.bin}</dd></div>
+          <h2 className="mt-6">Сведения об объекте</h2><dl className="details-grid"><div><dt>Застройщик</dt><dd>{complex_.developer?.name}</dd></div><div><dt>БИН</dt><dd>{complex_.developer?.bin}</dd></div>
             <div><dt>Этап строительства</dt><dd>{stageLabels[complex_.stage]}</dd></div><div><dt>Регион</dt><dd>ВКО</dd></div></dl>
           <h3 className="mt-6 font-semibold">Готовность строительства</h3><div className="progress-comparison"><div><span>Заявленная</span><strong>{complex_.progress.claimedPercent === null ? 'Нет данных' : `${complex_.progress.claimedPercent}%`}</strong><progress max={100} value={complex_.progress.claimedPercent ?? 0} aria-label="Заявленная готовность" /><small>{complex_.progress.claimedSource || 'Источник не указан'}</small></div>
             <div><span>Проверенная</span><strong>{complex_.progress.verifiedPercent === null ? 'Не проверено' : `${complex_.progress.verifiedPercent}%`}</strong><progress max={100} value={complex_.progress.verifiedPercent ?? 0} aria-label="Проверенная готовность" /><small>{complex_.progress.verifiedSource || 'Нет подтверждённого источника'}</small></div></div>
-          <p className="inline-notice">DEMO: название, застройщик, БИН и адрес вымышлены. Запись не является сведением государственного реестра.</p>
         </div>}
         {tab === 'ads' && <ComplexAdvertisements id={complex_.id} />}
         {tab === 'documents' && <DocumentsPanel complex_={complex_} onChanged={refresh} />}

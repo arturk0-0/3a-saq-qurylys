@@ -65,7 +65,7 @@ export function ScrollableTable({ label, children }: { label: string; children: 
   const hintId = useId()
   return <><p id={hintId} className="sr-only">Если таблица не помещается, прокручивайте её по горизонтали клавишами со стрелками.</p><div className="table-scroll" role="region" aria-label={label} aria-describedby={hintId} tabIndex={0}>{children}</div></>
 }
-export function DemoBadge() { return <span className="demo-badge">DEMO</span> }
+export function DemoBadge() { return <span className="demo-badge" title="Вымышленный объект для обучения">Учебная запись</span> }
 export function SourceLink({ url }: { url: string | null }) {
   if (!url) return null
   try { if (!['http:', 'https:'].includes(new URL(url).protocol)) return <span>Недопустимая ссылка</span> }

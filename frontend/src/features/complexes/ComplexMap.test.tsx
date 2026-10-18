@@ -20,7 +20,7 @@ it('shows the server score, escapes source names, and survives tile outages and 
   expect(screen.getByText(record.name)).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Открыть карточку' })).toHaveAttribute('href', '/complexes/demo-a')
   expect(container.querySelector('.leaflet-popup-content img')).toBeNull()
-  expect(screen.getByText(/DEMO-координаты условные/)).toBeInTheDocument()
+  expect(screen.getByText(/Координаты учебных объектов условные/)).toBeInTheDocument()
   const tile = container.querySelector<HTMLImageElement>('.leaflet-tile')
   expect(tile).not.toBeNull()
   fireEvent.error(tile!)
