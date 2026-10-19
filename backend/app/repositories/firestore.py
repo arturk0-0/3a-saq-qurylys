@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 COLLECTIONS = frozenset(
     {
         "developers",
+        "companies",
+        "companyProjects",
         "complexes",
         "advertisements",
         "adLinks",

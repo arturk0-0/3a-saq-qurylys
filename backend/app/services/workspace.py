@@ -60,14 +60,33 @@ class WorkspaceService:
     def complex(self, record_id: str, tx: UnitOfWork | None = None) -> Complex:
         return Complex.model_validate(self.require_record("complexes", record_id, tx))
 
+    def project_company(
+        self, complex_: Complex, role: str, tx: UnitOfWork | None = None
+    ) -> Developer | None:
+        company_id = (
+            complex_.developer_id if role == "developer" else complex_.authorized_company_id
+        )
+        if not company_id:
+            return None
+        legacy = Developer.model_validate(self.require_record("developers", company_id, tx))
+        party = next(
+            (p for p in complex_.party_snapshots if p.role == role and p.company_id == company_id),
+            None,
+        )
+        if party:
+            return Developer(
+                id=party.company_id, name=party.name, bin=party.bin, demo=complex_.demo
+            )
+        return legacy
+
     def complex_detail(self, record_id: str) -> dict:
         complex_ = self.complex(record_id)
-        developer = Developer.model_validate(
-            self.require_record("developers", complex_.developer_id)
-        )
+        developer = self.project_company(complex_, "developer")
+        authorized = self.project_company(complex_, "authorized_company")
         return {
             **serialize(complex_),
             "developer": serialize(developer),
+            "authorizedCompany": serialize(authorized) if authorized else None,
             "risk": serialize(calculate_risk(complex_.factors)),
         }
 

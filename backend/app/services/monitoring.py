@@ -35,6 +35,7 @@ from app.services.public_sources import (
     safe_original_url,
 )
 from app.services.registries import RegistryClient
+from app.services.registry_usage import reserve_registry_read
 from app.services.searchapi import MonitoringCollector
 from app.services.workspace import WorkspaceService, audit_event, serialize
 
@@ -518,15 +519,7 @@ class MonitoringService:
         return self.store.atomic(review)
 
     def _registry_attempt(self):
-        key = f"registry-{utc_now():%Y%m%d}"
-
-        def reserve(tx):
-            counter = tx.get("monitorLimits", key) or {"id": key, "count": 0}
-            if counter["count"] >= 100:
-                raise AppError(429, "REGISTRY_LIMIT", "Daily registry check limit reached")
-            tx.set("monitorLimits", key, {**counter, "count": counter["count"] + 1})
-
-        self.store.atomic(reserve)
+        reserve_registry_read(self.store)
 
     def registry_search(self, item_id, query):
         self.item(item_id)

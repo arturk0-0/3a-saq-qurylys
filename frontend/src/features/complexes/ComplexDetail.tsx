@@ -1,3 +1,4 @@
+import { ProjectParties } from '@/features/companies/ProjectParties'
 import { ActorName } from '@/components/ActorName'
 import { useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
@@ -100,7 +101,7 @@ export function ComplexDetail() {
     <div className="detail-layout"><section className="panel min-w-0"><div className="tabs" role="tablist" aria-label="Разделы карточки" onKeyDown={navigateTabs}>{tabs.map(([key, label]) => <button key={key} type="button" role="tab" tabIndex={tab === key ? 0 : -1} aria-selected={tab === key} aria-controls={`panel-${key}`} id={`tab-${key}`} onClick={() => setTab(key)}>{label}</button>)}</div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {tab === 'overview' && <div className="content-pad"><div className="object-illustration"><MapPin size={26} /><span>{complex_.city} · Восточно-Казахстанская область</span></div>
-          <h2 className="mt-6">Сведения об объекте</h2><dl className="details-grid"><div><dt>Застройщик</dt><dd>{complex_.developer?.name}</dd></div><div><dt>БИН</dt><dd>{complex_.developer?.bin}</dd></div>
+          <ProjectParties complex_={complex_} /><h2 className="mt-6">Сведения об объекте</h2><dl className="details-grid">
             <div><dt>Этап строительства</dt><dd>{stageLabels[complex_.stage]}</dd></div><div><dt>Регион</dt><dd>ВКО</dd></div></dl>
           <h3 className="mt-6 font-semibold">Готовность строительства</h3><div className="progress-comparison"><div><span>Заявленная</span><strong>{complex_.progress.claimedPercent === null ? 'Нет данных' : `${complex_.progress.claimedPercent}%`}</strong><progress max={100} value={complex_.progress.claimedPercent ?? 0} aria-label="Заявленная готовность" /><small>{complex_.progress.claimedSource || 'Источник не указан'}</small></div>
             <div><span>Проверенная</span><strong>{complex_.progress.verifiedPercent === null ? 'Не проверено' : `${complex_.progress.verifiedPercent}%`}</strong><progress max={100} value={complex_.progress.verifiedPercent ?? 0} aria-label="Проверенная готовность" /><small>{complex_.progress.verifiedSource || 'Нет подтверждённого источника'}</small></div></div>

@@ -4,7 +4,7 @@ from uuid import uuid4
 from app.core.errors import AppError, Conflict
 from app.models.auth import Principal
 from app.models.common import utc_now
-from app.models.entities import Developer, Evidence
+from app.models.entities import Evidence
 from app.models.signals import (
     EvidenceSnapshot,
     Signal,
@@ -23,9 +23,8 @@ class SignalService:
 
     def snapshot(self, complex_id, tx) -> SignalSnapshot:
         complex_ = self.workspace.complex(complex_id, tx)
-        developer = Developer.model_validate(
-            self.workspace.require_record("developers", complex_.developer_id, tx)
-        )
+        developer = self.workspace.project_company(complex_, "developer", tx)
+        authorized = self.workspace.project_company(complex_, "authorized_company", tx)
         factors = [f for f in complex_.factors if f.status == "confirmed"]
         ids = sorted({eid for f in factors for eid in f.evidence_ids})
         evidence = {
@@ -42,6 +41,7 @@ class SignalService:
         snapshot = SignalSnapshot(
             complex=complex_,
             developer=developer,
+            authorized_company=authorized,
             risk=calculate_risk(complex_.factors),
             captured_at=utc_now(),
             evidence=[

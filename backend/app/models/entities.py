@@ -3,6 +3,7 @@ from typing import Literal, Self
 from pydantic import AwareDatetime, Field, HttpUrl, model_validator
 
 from app.models.common import DomainModel, Identifier, ShortText
+from app.models.provenance import FactSource, PartySnapshot
 from app.models.risk import RiskFactor, VerificationStatus
 
 
@@ -55,6 +56,11 @@ class Complex(DomainModel):
     region: Literal["ВКО"] = "ВКО"
     address: ShortText
     developer_id: Identifier
+    authorized_company_id: Identifier | None = None
+    participant_source: FactSource | None = None
+    party_snapshots: list[PartySnapshot] = Field(default_factory=list, max_length=2)
+    coordinate_source: FactSource | None = None
+    coordinate_status: str | None = None
     stage: Literal["planning", "under_construction", "commissioned"] = "under_construction"
     coordinates: Coordinates | None = None
     progress: Progress = Field(default_factory=Progress)

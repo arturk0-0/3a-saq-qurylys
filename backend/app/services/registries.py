@@ -90,8 +90,8 @@ class RegistryClient:
         except httpx.HTTPError:
             raise AppError(503, "REGISTRY_UNAVAILABLE", "Registry unavailable") from None
 
-    def home_search(self, query: str) -> tuple[list[dict], bool]:
-        body = self.read(
+    def catalog_data(self, query: str) -> bytes:
+        return self.read(
             "POST",
             HOME_API + "getobjects",
             {
@@ -104,6 +104,9 @@ class RegistryClient:
                 "status": "2,3",
             },
         )
+
+    def home_search(self, query: str) -> tuple[list[dict], bool]:
+        body = self.catalog_data(query)
         try:
             page = json.loads(body)["data"]["objects"]
             rows = page["data"]

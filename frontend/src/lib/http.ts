@@ -16,7 +16,8 @@ export function createApiClient(getToken: () => Promise<string>): ApiClient {
     headers.set('Authorization', `Bearer ${await getToken()}`)
     if (init.body && !(init.body instanceof FormData) && !(init.body instanceof Blob)) headers.set('Content-Type', 'application/json')
     const sourceRun = path.startsWith('/api/v1/monitoring/sources/') && path.endsWith('/run')
-    const timeout = AbortSignal.timeout(sourceRun ? 280000 : path.endsWith('/analyze') ? 90000 : 40000)
+    const companySource = path.startsWith('/api/v1/company-projects/') || (path.startsWith('/api/v1/companies/') && path.endsWith('/refresh'))
+    const timeout = AbortSignal.timeout(companySource ? 90000 : sourceRun ? 280000 : path.endsWith('/analyze') ? 90000 : 40000)
     const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout
     let response: Response
     try {
@@ -33,6 +34,11 @@ export function createApiClient(getToken: () => Promise<string>): ApiClient {
       const code = typeof error.code === 'string' && /^[A-Z][A-Z0-9_]{0,63}$/.test(error.code) ? error.code : 'REQUEST_FAILED'
       const knownMessages: Record<string, string> = {
         ...monitorErrors,
+        COMPANY_SOURCE_INVALID: 'Карточки источника недостаточно для определения участников. Проверьте оригинал.',
+        COMPANY_LIVE_REGISTRY_REQUIRED: 'Добавление реальных ЖК в этом режиме недоступно. Участников можно сохранить отдельно.',
+        COMPANY_PROJECT_INCOMPLETE: 'В источнике не установлен застройщик или этап строительства. Можно сохранить участников без добавления ЖК.',
+        COMPANY_RECORD_LIMIT: 'Достигнут предел сохранённых сведений организации. Прежние записи сохранены.',
+
         REGISTRY_UNAVAILABLE: 'Реестр сейчас недоступен. Сохранённые данные доступны; отсутствие ответа не означает отсутствие разрешения.',
         REGISTRY_RESPONSE_INVALID: 'Формат ответа реестра изменился. Проверьте документ на сайте источника.',
         REGISTRY_RECORD_UNVERIFIABLE: 'Карточки недостаточно для подтверждения. Проверьте регион, реквизиты и оригинал документа.',

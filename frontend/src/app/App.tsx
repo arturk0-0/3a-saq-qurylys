@@ -7,6 +7,8 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { EmptyState, LoadingState } from '@/components/WorkspaceUI'
 import { RouteBoundary } from './RouteBoundary'
 
+const CompaniesPage = lazy(() => import('@/features/companies/CompaniesPage').then(module => ({ default: module.CompaniesPage })))
+const CompanyDetail = lazy(() => import('@/features/companies/CompanyDetail').then(module => ({ default: module.CompanyDetail })))
 const MonitoringPage = lazy(() => import('@/features/monitoring/MonitoringPage').then(module => ({ default: module.MonitoringPage })))
 const ComplexList = lazy(() => import('@/features/complexes/ComplexList').then(module => ({ default: module.ComplexList })))
 const ComplexDetail = lazy(() => import('@/features/complexes/ComplexDetail').then(module => ({ default: module.ComplexDetail })))
@@ -21,6 +23,7 @@ const modules = [
   { path: '/', title: 'Обзор', icon: LayoutDashboard },
   { path: '/monitoring', title: 'Мониторинг рекламы', icon: ScanSearch },
   { path: '/complexes', title: 'Реестр ЖК', icon: Building2 },
+  { path: '/companies', title: 'Организации', icon: Building2 },
   { path: '/advertisements', title: 'Объявления', icon: Megaphone },
   { path: '/signals', title: 'Сигналы', icon: FileCheck2 },
 ]
@@ -80,6 +83,8 @@ export function App() {
           <Route path="/monitoring" element={<MonitoringPage />} />
           <Route path="/complexes" element={<ComplexList />} />
           <Route path="/complexes/:id" element={<ComplexDetail />} />
+          <Route path="/companies" element={<CompaniesPage />} />
+          <Route path="/companies/:id" element={<CompanyDetail key={pathname} />} />
           <Route path="/advertisements" element={<AdvertisementsPage />} />
           <Route path="/advertisements/:id" element={<AdvertisementDetail />} />
           <Route path="/signals" element={<SignalsPage />} />

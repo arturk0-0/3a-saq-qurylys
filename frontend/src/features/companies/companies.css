@@ -1,0 +1,26 @@
+.company-feature { max-width: 1200px; margin: 0 auto; overflow-wrap: anywhere; }
+.company-feature .panel + .panel { margin-top: 24px; }
+.company-feature h2, .company-parties h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 16px; }
+.company-feature h3 { font-size: 1.1rem; font-weight: 650; }
+.company-facts > div { padding: 20px 0; border-top: 1px solid #d4dfdf; display: grid; grid-template-columns: minmax(150px, .35fr) minmax(0, 1fr); gap: 20px; }
+.company-facts dt { font-weight: 650; color: #294a50; }
+.company-facts dd { min-width: 0; }
+.company-facts dd small { display: block; margin-top: 6px; color: #526971; }
+.company-fact-value { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.company-fact-value + .company-fact-value { margin-top: 14px; }
+.company-citation { display: inline-block; font-size: .82rem; color: #16675b; text-decoration: underline; text-underline-offset: 3px; }
+.company-citation:focus-visible { outline: 2px solid #167d6c; outline-offset: 4px; }
+.company-unknown { color: #526971; }
+.company-project { padding: 20px 0; border-top: 1px solid #d4dfdf; }
+.company-project p, .company-preview p { margin: 8px 0; }
+.company-search { display: flex; flex-wrap: wrap; align-items: end; gap: 16px; margin: 20px 0; }
+.company-search > label { flex: 1; min-width: 0; }
+.company-preview { margin-top: 24px; padding: 20px; border: 1px solid #a6c9c0; border-radius: 12px; background: #f4f9f7; }
+.company-preview article { padding: 16px 0; }
+.company-check { display: flex; align-items: flex-start; gap: 12px; margin: 20px 0; }
+.company-check input { width: 20px; height: 20px; flex: 0 0 auto; margin-top: 3px; }
+.company-party-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; margin: 18px 0; }
+.company-party-grid article { min-width: 0; padding: 18px; background: #f0f6f4; border-radius: 10px; overflow-wrap: anywhere; }
+.company-party-grid h4 { font-weight: 650; margin-bottom: 12px; }
+.company-parties { margin: 24px 0; }
+@media (max-width: 700px) { .company-party-grid { grid-template-columns: 1fr; } .company-facts > div { grid-template-columns: 1fr; gap: 10px; } .company-preview { padding: 14px; } }
