@@ -25,3 +25,11 @@ class Store(Protocol):
         newest_first: bool = False,
     ) -> list[Document]: ...
     def atomic(self, operation: Callable[[UnitOfWork], T]) -> T: ...
+
+
+def matches_filter(row: Document, field: str, operator: str, value: Any) -> bool:
+    if operator == "==":
+        return row.get(field) == value
+    if operator == "in":
+        return row.get(field) in value
+    raise ValueError("Unsupported cursor filter operator")

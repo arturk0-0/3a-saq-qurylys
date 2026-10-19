@@ -14,7 +14,7 @@ from google.cloud import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 from app.core.errors import AppError, Conflict, IntegrationUnavailable
-from app.repositories.store import Document, T, UnitOfWork
+from app.repositories.store import Document, T, UnitOfWork, matches_filter
 
 logger = logging.getLogger(__name__)
 COLLECTIONS = frozenset(
@@ -122,7 +122,7 @@ class FirestoreStore:
                 if (
                     not row
                     or not row.get("createdAt")
-                    or any(row.get(f) != v for f, _, v in filters or [])
+                    or any(not matches_filter(row, f, op, v) for f, op, v in filters or [])
                 ):
                     raise Conflict("Cursor no longer exists in this query")
                 cursor["createdAt"] = row["createdAt"]

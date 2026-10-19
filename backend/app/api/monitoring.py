@@ -1,11 +1,18 @@
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 
 from app.api.dependencies import CurrentUser
 from app.api.workspace import Cursor, Limit, Workspace
 from app.models.common import Identifier
-from app.models.monitoring import ItemAnalyze, ItemAttach, ItemReview, SourceInput, SourceUpdate
+from app.models.monitoring import (
+    ItemAnalyze,
+    ItemAttach,
+    ItemBasisReview,
+    ItemReview,
+    SourceInput,
+    SourceUpdate,
+)
 from app.services.monitoring import MonitoringService
 from app.services.workspace import serialize
 
@@ -52,7 +59,7 @@ def items(
     service: Monitor,
     cursor: Cursor = None,
     limit: Limit = 30,
-    status: Literal["new", "investigating", "dismissed"] | None = None,
+    status: Literal["active", "new", "investigating", "dismissed"] | None = None,
 ):
     return service.items(status, cursor, limit)
 
@@ -91,3 +98,27 @@ def attach(record_id: Identifier, payload: ItemAttach, user: CurrentUser, servic
 @router.get("/runs")
 def runs(user: CurrentUser, service: Monitor, cursor: Cursor = None, limit: Limit = 20):
     return service.runs(cursor, limit)
+
+
+@router.get("/items/{record_id}/registry")
+def registry_search(
+    record_id: Identifier,
+    user: CurrentUser,
+    service: Monitor,
+    q: Annotated[str, Query(min_length=3, max_length=100)],
+):
+    return service.registry_search(record_id, q)
+
+
+@router.get("/items/{record_id}/registry/{registry_id}")
+def registry_detail(
+    record_id: Identifier, registry_id: Identifier, user: CurrentUser, service: Monitor
+):
+    return service.registry_detail(record_id, registry_id)
+
+
+@router.post("/items/{record_id}/basis-review")
+def confirm_basis(
+    record_id: Identifier, payload: ItemBasisReview, user: CurrentUser, service: Monitor
+):
+    return serialize(service.confirm_basis(record_id, payload, user))

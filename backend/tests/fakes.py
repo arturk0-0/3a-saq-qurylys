@@ -5,7 +5,7 @@ from copy import deepcopy
 from threading import RLock
 
 from app.core.errors import Conflict
-from app.repositories.store import T, UnitOfWork
+from app.repositories.store import T, UnitOfWork, matches_filter
 
 
 class MemoryUnitOfWork:
@@ -46,8 +46,7 @@ class MemoryStore:
         if newest_first:
             rows.sort(key=lambda row: row["createdAt"], reverse=True)
         for field, operator, value in filters or []:
-            assert operator == "==", "Implement a test adapter only for used query operators"
-            rows = [row for row in rows if row.get(field) == value]
+            rows = [row for row in rows if matches_filter(row, field, operator, value)]
         if after_id:
             if newest_first:
                 index = next((i for i, row in enumerate(rows) if row["id"] == after_id), None)
