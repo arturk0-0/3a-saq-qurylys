@@ -105,3 +105,27 @@ detail при подтверждении читается заново. Прав
 не включать новый авто-AI/поиск и не менять Scheduler при этом.
 Новые ключи, IAM/rules и индексы не добавляются. Сначала API, потом Hosting:
 старый frontend совместим с новым сервером, новый ожидает registry endpoints/active.
+
+
+## Проверки реализации
+
+PR [#19](https://github.com/arturk0-0/3a-saq-qurylys/pull/19), функциональный SHA
+`b3be603d5cb5884e73c59f7d68a339caf48658ff`. Все восемь checks CI (push + PR)
+успешны: 467 backend pytest, Ruff/format, 15 native Firestore SDK/emulator,
+89 frontend tests, TypeScript/Vite build и Docker Compose healthchecks.
+Локально: 60 целевых backend tests; после уточнения часового пояса в тестовых
+датах — 33 registry tests; 89 frontend tests (`--maxWorkers=1 --testTimeout=20000`).
+Первая одновременная установка Firebase CLI/полные тесты перегрузили CPU и дали
+таймауты; изолированный прогон и штатный CI прошли без изменения runtime/assertions.
+Установка локального emulator tooling была прервана; native SDK результат выше
+получен в CI на локальном эмуляторе, не в облачном Firestore проекта владельца.
+Независимое read-only review: найден и исправлен TOCTOU документа; повторное
+review без blockers. Это не human GitHub approval. Gemini/SearchAPI не вызывались.
+
+Chromium: 21 группы / 864 основных browser-запроса passed, без page errors и
+внешних запросов. В новом пути: кандидаты → документ → шесть проверок/дата/notes →
+архивирование → active/all → аудит, оценка ЖК неизменна, 1366/375/320 без overflow.
+Первый прогон остановился на default 5s DOM count при загрузке общего списка;
+добавлены ожидание конкретного API-ответа и проверка basisReview в нём. Повторный
+полный прогон успешен; продуктовые ожидания/утверждения не ослаблялись. Артефакты
+остаются локально в /tmp/saq-registry-browser-final (только тестовые адаптеры).

@@ -1077,7 +1077,24 @@ with sync_playwright() as p:
         expect(
             page.locator(".monitor-finding").filter(has_text="Фрагмент поиска")
         ).to_have_count(0)
-        page.get_by_label("Статус находки", exact=True).select_option("all")
+        assert item_id not in [
+            row["id"]
+            for row in api(page, "GET", "/api/v1/monitoring/items?status=active")[
+                "items"
+            ]
+        ]
+        # Wait for the actual new query, not a transient empty/loading DOM.
+        with page.expect_response(
+            lambda response: (
+                "/api/v1/monitoring/items?" in response.url
+                and "status=" not in response.url
+            )
+        ) as all_response:
+            page.get_by_label("Статус находки", exact=True).select_option("all")
+        assert any(
+            row["id"] == item_id and row.get("basisReview")
+            for row in all_response.value.json()["items"]
+        )
         expect(
             page.locator(".monitor-finding").filter(
                 has_text="Правовое основание подтверждено"

@@ -65,9 +65,10 @@ heartbeat worker и успешное выполнение по Scheduler. Фак
   Scheduler; execution `saq-qurylys-monitor-ltms7` завершился успешно, heartbeat виден.
 - [ ] **MON-09b** — подтвердить следующий фактический сбор по расписанию после
   наступления nextRunAt и новый run в истории, а не только успешный heartbeat.
-- [ ] **REG-01 · B** — публичные кандидаты Homeportal/Ashyq, сверка применимого
+- [x] **REG-01 · B** — публичные кандидаты Homeportal/Ashyq, сверка применимого
   разрешения/гарантии и исключение подтверждённой находки из активной очереди.
-  [Реализация и границы](registry-screening.md), ветка `feat/registry-basis-screening`.
+  [Реализация и границы](registry-screening.md), [PR #19](https://github.com/arturk0-0/3a-saq-qurylys/pull/19).
+  Сервер/UI/SDK/Compose проверены; публикация остаётся REG-02.
 - [ ] **REG-02 · B + владелец** — после review/CI опубликовать API + Hosting и проверить
   разрешение/гарантию в облаке; факторы R1–R6 остаются прежними.
 

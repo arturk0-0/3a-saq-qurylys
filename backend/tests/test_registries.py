@@ -4,6 +4,7 @@ import csv
 import io
 from copy import deepcopy
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 
 import httpx
 import pytest
@@ -58,7 +59,7 @@ def payload(item, **changes):
         expected_version=item["version"],
         expected_document_sha256=registry().detail("12")["documentSha256"],
         record_id="12",
-        advertisement_date=utc_now().date(),
+        advertisement_date=utc_now().astimezone(ZoneInfo("Asia/Qyzylorda")).date(),
         object_matches=True,
         phase_matches=True,
         holder_matches=True,
@@ -216,7 +217,11 @@ def test_scope_and_other_risks_must_be_explicitly_checked(check):
 def test_late_permit_does_not_clear_earlier_advertisement(service):
     _, _, item = collect(service)
     service.registry = registry(
-        detail(issue_date=(utc_now() + timedelta(days=1)).strftime("%d.%m.%Y"))
+        detail(
+            issue_date=(
+                utc_now().astimezone(ZoneInfo("Asia/Qyzylorda")) + timedelta(days=1)
+            ).strftime("%d.%m.%Y")
+        )
     )
     with pytest.raises(AppError) as error:
         service.confirm_basis(
@@ -233,7 +238,13 @@ def test_unknown_published_date_requires_human_date_and_future_is_rejected(servi
     service.registry = registry()
     with pytest.raises(AppError) as error:
         service.confirm_basis(
-            item["id"], payload(item, advertisement_date=utc_now().date() + timedelta(days=1)), USER
+            item["id"],
+            payload(
+                item,
+                advertisement_date=utc_now().astimezone(ZoneInfo("Asia/Qyzylorda")).date()
+                + timedelta(days=1),
+            ),
+            USER,
         )
     assert error.value.code == "REGISTRY_DATE_MISMATCH"
 
