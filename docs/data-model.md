@@ -108,3 +108,18 @@ MemoryStore используется только явно обозначенн�
 [контракт и ограничения](registry-screening.md#контракты-и-ограничения).
 Доказательство относится к версии находки и дате рекламы, не является
 общим whitelist ЖК и не изменяет LegalBasis/факторы карточек ЖК.
+
+## Source-attributed companies (Issue #21)
+
+Additive model in [company API](company-api.md): `companies/bin-{BIN}` stores
+source facts, bounded source-card portfolio and optimistic version;
+`companyProjects/homeportal-{id}` stores the saved preview/version. Both are
+server-only collections under existing deny-by-default client rules.
+
+Complex retains developerId/coordinates and adds nullable authorizedCompanyId,
+per-role partySnapshots (companyId/name/bin/role/source), participantSource and
+coordinateSource/status. Old seed stays unchanged. New SignalSnapshot optionally
+contains authorizedCompany and freezes the project-specific participant names;
+old signals do not re-resolve current company names. No migration or new index
+is required for ID-ordered company pagination. Sources do not modify legal basis
+or any confirmed factor.

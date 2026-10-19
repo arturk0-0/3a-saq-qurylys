@@ -11,7 +11,9 @@
 **Полное распределение, границы файлов и готовые промпты:**
 [map-company-split.md](tasks/map-company-split.md).
 Самодостаточные ТЗ: [A — карта](tasks/A-city-map.md), [B — компании](tasks/B-company-profiles.md).
-Это новая очередь; реализация пока не начата. Старые A-01–04 завершены;
+По B подготовлен [PR #23](https://github.com/arturk0-0/3a-saq-qurylys/pull/23)
+поверх #19; [отчёт](company-profiles-report.md). Merge/CI/совместная приёмка
+с картой A отслеживаются отдельно. Старые A-01–04 завершены;
 [Issue #9](https://github.com/arturk0-0/3a-saq-qurylys/issues/9) закрыт и не открывается снова.
 [Issue #8](https://github.com/arturk0-0/3a-saq-qurylys/issues/8) сохраняет прежнюю общую очередь выпуска B.
 

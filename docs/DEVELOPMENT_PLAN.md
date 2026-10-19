@@ -16,7 +16,10 @@ heartbeat worker и успешное выполнение по Scheduler. Фак
 
 ## Новая очередь: карта и участники ЖК · 19 октября
 
-Реализация ещё не начата. [Разделение и промпты](tasks/map-company-split.md).
+B подготовил реализацию ORG-01–06/GEO-01 в [PR #23](https://github.com/arturk0-0/3a-saq-qurylys/pull/23) поверх #19; это не merge и не облачный выпуск.
+[Отчёт и проверки B](company-profiles-report.md), [контракты](company-api.md).
+Чекбоксы интеграции остаются открыты до merge и совместной проверки с картой A.
+[Разделение и промпты](tasks/map-company-split.md).
 A работает без облачных кабинетов/ключей; B делает всю сложную интеграцию и frontend компаний.
 
 - [ ] **MAP-01–06 · A** — [#20](https://github.com/arturk0-0/3a-saq-qurylys/issues/20):

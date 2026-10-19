@@ -46,7 +46,7 @@ def test_bin_matched_registration_date_only_and_fixed_public_url():
         '<script id="__NUXT_DATA__">[{"bin":1,"reg_date":2},["Ref",1],["Ref",2]]</script>',
         (
             '<script id="__NUXT_DATA__">[{"bin":1,"reg_date":2},'
-            '{"bin":1,"reg_date":3},"01-01-2010","02-01-2010"]</script>'
+            '"000000000001","01-01-2010",{"bin":1,"reg_date":4},"02-01-2010"]</script>'
         ),
     ],
 )
@@ -77,3 +77,19 @@ def test_secondary_unavailable_retains_cached_registration_and_other_sources():
     assert registration in after["facts"]
     assert after["lastError"] == "COMPANY_DIRECTORY_UNAVAILABLE"
     assert after["projects"] and after["version"] == before["version"] + 1
+
+
+def test_bad_bin_and_redirect_never_fetch_arbitrary_or_redirect_target():
+    requests = []
+
+    def response(request):
+        requests.append(str(request.url))
+        return httpx.Response(302, headers={"location": "http://127.0.0.1/private"})
+
+    directory = CompanyDirectory(RegistryClient(httpx.MockTransport(response)))
+    with pytest.raises(AppError):
+        directory.registration("../../secret")
+    assert not requests
+    with pytest.raises(AppError):
+        directory.registration("000000000001")
+    assert requests == ["https://pk.adata.kz/company/000000000001"]
