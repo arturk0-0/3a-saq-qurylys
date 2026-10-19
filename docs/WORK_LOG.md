@@ -584,14 +584,16 @@ PR #19 открыт и учитывается как отдельное прод
   и разных проектных названиях. Исправлено per-project PartySnapshot и единым
   resolver для карточки, нового сигнала и PDF; старые снимки не переписываются.
   Повторное read-only review: оставшихся подтверждённых blockers нет.
-- Локально полный backend: 503 passed до добавления одной дополнительной проверки
-  redirect/БИН; native SDK на эмуляторе 17 passed; сборка/typecheck passed.
+- Итог: полный backend 504 passed, frontend 94 passed; native SDK на эмуляторе
+  17 passed; Ruff/format, сборка/typecheck, Compose config passed.
   Отдельный Chromium company workflow с явными test adapters passed, без внешних
   browser-запросов/page errors, включая mobile. Итоговые counts уточняются в
   [отчёте](company-profiles-report.md). Старые UI-тесты lazy loading получили
   достаточное время ожидания без изменения проверяемого поведения.
 - Файлы карты A/ComplexList/общие CSS/общий browser runner не менялись.
   Платных Gemini/SearchAPI запросов 0, deployment/облачных записей 0.
-- PR #23 создан draft поверх ветки #19. GitHub Actions пока queued, green CI
-  не заявлен. Продолжение: итоговые тесты/CI → ready PR → после зависимостей и
-  карты A совместная проверка; merge и публикация отдельно.
+- PR #23 подготовлен поверх ветки #19. GitHub Actions пока queued, green CI
+  не заявлен. В отдельном detached worktree B 70e57af + A 6ea62b4 прошёл
+  совместный browser сценарий здание → ЖК → компания → источник; mock OSM tiles,
+  main не менялся, исходники карты совпадают с A. Продолжение: CI/review →
+  после зависимостей retarget main и выбрать общую версию; merge/выпуск отдельно.

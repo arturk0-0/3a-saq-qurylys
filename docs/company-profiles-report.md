@@ -59,15 +59,78 @@
 достоверного отдельного источника. Утверждения компаний не становятся проверкой
 законности; R1–R6, auth/rules и подтверждённые факторы не менялись.
 
-## Проверки и продолжение
+## Проверки: фактические итоги
 
-Промежуточно: полный backend до последних уточнений снимков — 490 passed;
-после исправления project-name → signal/PDF — 46 целевых passed. Frontend:
-92 passed / 2 старых теста с таймаутом ожидания lazy-страницы; проверяется
-повторным запуском без параллельной нагрузки. Новый UI компаний: 5 passed.
-Это локальные тестовые адаптеры, не облачная проверка.
+| Проверка | Результат |
+| --- | --- |
+| Полный backend pytest | **504 passed**, 1 upstream Starlette/httpx deprecation warning |
+| Полный frontend Vitest | **94 passed / 22 файла**, один worker / vmThreads |
+| Native Firestore SDK, локальный эмулятор | **17 passed**, включая новые атомарность/пагинацию компаний |
+| Ruff / format backend + отдельный company QA | Passed, 110 Python-файлов |
+| TypeScript typecheck / Vite production build | Passed; страницы компаний отдельными lazy chunks |
+| Отдельный Chromium company workflow | Passed: 9 групп, desktop/mobile, source links, refresh/reload, auth |
+| Пробное объединение с A, без изменения main | Без конфликтов; совместный browser workflow passed |
+| Git diff whitespace / Compose configuration | Passed; Compose runtime/build локально не запускался |
+| Независимое read-only review | После исправлений подтверждённых blockers нет; это не human approval |
+| GitHub Actions | **Queued**, green CI пока не подтверждён |
 
-Следующие шаги: закончить регрессии ADATA, выполнить итоговые линтеры/build,
-локальный browser workflow и native SDK на эмуляторе; независимое review и CI.
-Окончательные результаты и PR будут дописаны здесь. Слияние и публикация
-в облако в эту задачу не входят.
+Команды из корня:
+
+```bash
+backend/.venv/bin/ruff check backend frontend/qa/companies
+backend/.venv/bin/ruff format --check backend frontend/qa/companies
+backend/.venv/bin/pytest backend/tests -q
+npm test --prefix frontend -- --maxWorkers=1 --pool=vmThreads
+npm run build --prefix frontend
+python frontend/qa/companies/run.py
+python backend/qa/firestore/run.py
+```
+
+Локальный native SDK прогон использовал установленный официальный
+firebase-tools **15.34.0** напрямую вместо повторной npm-установки; конфигурация,
+очистка credential env, AnonymousCredentials, `demo-*` project-ID, localhost
+проверки и набор integration_tests сохранены из штатного runner. В CI используется
+последняя команда выше без локальной подстановки пути CLI.
+
+Первые frontend-прогоны: 92 passed / 2 таймаута ожидания lazy-страниц. Исправлено
+только ожидание загруженных страниц в App.test (5s вместо стандартного 1s,
+suite deadline 15s), проверки данных/API/focus сохранены. После этого полный
+прогон — 94 passed. Тесты карты A и его исходники не правились.
+
+Browser: явные MemoryStore/Auth/Homeportal/ADATA/Gemini test adapters, фиктивные
+БИН/имена, localhost-only. Нет page errors и внешних browser-запросов. Артефакты
+в `/tmp/saq-company-browser`, не включают реальных досье. Это **не облачная проверка**.
+
+Совместная проверка: отдельный detached worktree, B `70e57af` + A
+`6ea62b4b08ad8de1450e2ad6b920c218b1bd6457`. Пробный merge без commit/push,
+исходники карты совпадают с A. Browser прошёл «шаблонное здание → ЖК → компания →
+ссылка на дату регистрации» плюс обычный company workflow. Подложка OSM заменена
+локальным PNG-ответом, реальные тайлы не запрашивались. Основная рабочая ветка
+осталась B; это не интеграция в main и не публикация. Артефакты:
+`/tmp/saq-company-map-browser`. При более новых изменениях A совместный прогон
+нужно повторить на выбранных финальных SHA.
+
+## PR, ограничения и продолжение
+
+[PR #23](https://github.com/arturk0-0/3a-saq-qurylys/pull/23) — stacked поверх
+ветки [PR #19](https://github.com/arturk0-0/3a-saq-qurylys/pull/19). План из #22
+также сохранён. Основная реализация `3d1cc7d`, QA/контракты `70e57af`.
+Main не объединялся. Файлы A, общий CSS и общий browser runner не менялись.
+
+GitHub Actions создал push/PR runs, но задания пока не стартовали. Проверка
+через GitHub API показала queued и 0 in-progress по репозиторию; причина
+очереди не установлена. Не подменяем это утверждением об успешном CI.
+Чекбоксы интеграции в общем плане и Issue остаются открыты.
+
+Следующее действие — дождаться CI, рассмотреть PR, после интеграции #19/#22
+перевести base на main и выбрать общую версию с картой A. Не сливать main до
+зелёного CI и review. Публикация API/Hosting — отдельная задача владельца,
+автоматически не выполнялась и в этой задаче не выполняется.
+
+Ручная облачная приёмка после будущего выпуска: auth/роль аналитика, старые
+DEMO-карточки/сигналы/PDF, явное сохранение публичной компании, дата регистрации
+и её источник, отказ/частичное обновление, scope real-registry и координаты.
+Не включать `DEMO_ONLY=false` без отдельного решения о реальных записях.
+Публичное чтение не является гарантией точности до участка, юридического статуса
+или полного портфеля компании. Юридический адрес/статус/неизвестное количество
+сданных объектов остаются неизвестными. Источники могут менять формат и данные.
