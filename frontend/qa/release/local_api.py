@@ -20,6 +20,7 @@ from app.services.files import FileService
 from app.services.gemini import GeminiClient
 from app.services.monitoring import MonitoringService
 from app.services.public_sources import PublicCollector
+from app.services.registries import RegistryClient
 from app.services.searchapi import MonitoringCollector, SearchApiCollector
 from app.services.seed_data import build_demo_seed
 from app.services.workspace import WorkspaceService
@@ -148,10 +149,68 @@ qa_collector.public = PublicCollector(httpx.MockTransport(public_source_response
 qa_collector.instagram = SearchApiCollector(
     settings, httpx.MockTransport(meta_source_response)
 )
+
+
+def registry_response(request):
+    # Fully synthetic, fixed transport: never contact a registry during browser QA.
+    if request.url.path.endswith("getobjects"):
+        return httpx.Response(
+            200,
+            json={
+                "data": {
+                    "objects": {
+                        "data": [
+                            {
+                                "id": 12,
+                                "name": "Учебный берег",
+                                "address": "Риддер, учебный адрес",
+                                "region": {"ru": "Восточно-Казахстанская область"},
+                                "developerName": "Учебный застройщик",
+                                "authorizedName": "Учебный получатель",
+                            }
+                        ],
+                        "next_page_url": None,
+                    }
+                }
+            },
+        )
+    if "objects-detail/" in request.url.path:
+        return httpx.Response(
+            200,
+            json={
+                "data": {
+                    "basicData": {
+                        "name": "Учебный берег",
+                        "address": "Риддер, учебный адрес",
+                        "authority": {"id": 1},
+                        "region": {"id": 16},
+                        "warranty_number": "SYNTHETIC-QA-PERMIT",
+                        "issue_date": "01.01.2020",
+                    },
+                    "companyData": {
+                        "developerData": {
+                            "name": "Учебный застройщик",
+                            "bin": "000000000001",
+                        },
+                        "authorizedData": {
+                            "name": "Учебный получатель",
+                            "bin": "000000000002",
+                        },
+                    },
+                }
+            },
+        )
+    return httpx.Response(
+        200,
+        text="id,object_name,builder_name,auth_org_name,address_name,number,sdu_load_date\n",
+    )
+
+
 monitoring = MonitoringService(
     workspace,
     settings,
     qa_collector,
     GeminiClient(settings, httpx.MockTransport(model_response)),
+    registry=RegistryClient(httpx.MockTransport(registry_response)),
 )
 app.dependency_overrides[monitoring_service] = lambda: monitoring

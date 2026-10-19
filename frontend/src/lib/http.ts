@@ -33,6 +33,16 @@ export function createApiClient(getToken: () => Promise<string>): ApiClient {
       const code = typeof error.code === 'string' && /^[A-Z][A-Z0-9_]{0,63}$/.test(error.code) ? error.code : 'REQUEST_FAILED'
       const knownMessages: Record<string, string> = {
         ...monitorErrors,
+        REGISTRY_UNAVAILABLE: 'Реестр сейчас недоступен. Сохранённые данные доступны; отсутствие ответа не означает отсутствие разрешения.',
+        REGISTRY_RESPONSE_INVALID: 'Формат ответа реестра изменился. Проверьте документ на сайте источника.',
+        REGISTRY_RECORD_UNVERIFIABLE: 'Карточки недостаточно для подтверждения. Проверьте регион, реквизиты и оригинал документа.',
+        REGISTRY_QUERY_INVALID: 'Введите название ЖК или адрес: от 3 до 100 символов.',
+        REGISTRY_RECORD_INVALID: 'Выберите карточку объекта из результатов Homeportal.',
+        REGISTRY_LIMIT: 'Достигнут дневной лимит проверок реестров. Продолжите на сайтах источников или завтра.',
+        REGISTRY_DATE_MISMATCH: 'Проверьте дату оригинальной рекламы: она должна совпадать с известной датой публикации и быть не позже получения.',
+        REGISTRY_DOCUMENT_CHANGED: 'Реквизиты документа изменились после просмотра. Откройте документ заново и повторите сверку.',
+        REGISTRY_DOCUMENT_TOO_RECENT: 'Документ выдан после даты рекламы. Он не подтверждает основание на дату публикации.',
+
         MONITOR_NOT_DUE: 'Интервал источника ещё не истёк. Следующее время сбора указано в карточке.',
         MONITOR_BUSY: 'Источник уже обрабатывается. Обновите историю запусков.',
         MONITOR_PAUSED: 'Источник на паузе. Возобновите его перед сбором.',

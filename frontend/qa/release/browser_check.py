@@ -1043,6 +1043,56 @@ with sync_playwright() as p:
             "Instagram Ad Library",
             "Synthetic Meta engine → Instagram source → provenance/campaign date/media links → no auto media requests → reserve stops before second search; 1366/375/320; risk unchanged",
         )
+        # Candidate -> original/scope checks -> archived finding; no risk mutation.
+        page.goto(BASE + f"/monitoring?item={item_id}")
+        detail = page.locator(".monitor-detail")
+        detail.get_by_text("Сверить разрешение или гарантию", exact=True).click()
+        registry = detail.locator(".registry-panel")
+        registry.get_by_label("Название ЖК или адрес для сверки").fill("Учебный берег")
+        registry.get_by_role("button", name="Найти в реестрах", exact=True).click()
+        registry.get_by_role("button", name="Проверить документ", exact=True).click()
+        expect(
+            registry.get_by_role(
+                "button", name="Основание проверено — завершить проверку"
+            )
+        ).to_be_disabled()
+        registry.get_by_label("Проверенная дата рекламы").fill("2026-10-01")
+        registry.get_by_label("Обоснование сверки документа").fill(
+            "LOCAL QA: synthetic scope/validity review"
+        )
+        for checkbox in registry.get_by_role("checkbox").all():
+            checkbox.check()
+        for width in [1366, 375, 320]:
+            page.set_viewport_size({"width": width, "height": 900})
+            assert page.evaluate(
+                "document.documentElement.scrollWidth <= window.innerWidth + 1"
+            )
+        page.set_viewport_size({"width": 1366, "height": 900})
+        registry.get_by_role(
+            "button", name="Основание проверено — завершить проверку", exact=True
+        ).click()
+        expect(
+            detail.get_by_text("Правовое основание сохранено.", exact=False)
+        ).to_be_visible()
+        expect(
+            page.locator(".monitor-finding").filter(has_text="Фрагмент поиска")
+        ).to_have_count(0)
+        page.get_by_label("Статус находки", exact=True).select_option("all")
+        expect(
+            page.locator(".monitor-finding").filter(
+                has_text="Правовое основание подтверждено"
+            )
+        ).to_have_count(1)
+        detail.get_by_text("История решений по находке", exact=True).click()
+        expect(
+            detail.get_by_text("Проверено правовое основание", exact=False)
+        ).to_be_visible()
+        assert api(page, "GET", "/api/v1/complexes/demo-complex-04/risk") == trace_risk
+        checkpoint(
+            "registry basis screening",
+            "Synthetic Homeportal/CSV -> explicit six checks/date/notes -> atomic archive -> active/all queue -> audit; 1366/375/320; no score mutation or live registry calls",
+        )
+
         page.goto(BASE + f"/advertisements/{empty_ad['id']}")
         page.get_by_role("button", name="Скриншоты и AI-анализ").click()
         image_panel = page.get_by_role("region", name="Анализ объявления")
