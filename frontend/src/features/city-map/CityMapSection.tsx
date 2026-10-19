@@ -9,7 +9,7 @@ class MapBoundary extends Component<{ children: ReactNode }, { failed: boolean }
   state = { failed: false }
   static getDerivedStateFromError() { return { failed: true } }
   render() {
-    return this.state.failed ? <p role="status">Не удалось загрузить модуль карты. Реестр остаётся доступен. Повторите после обновления страницы.</p> : this.props.children
+    return this.state.failed ? <div className="city-map-canvas city-map-placeholder" role="status">Не удалось загрузить модуль карты. Реестр остаётся доступен. Повторите после обновления страницы.</div> : this.props.children
   }
 }
 
@@ -32,7 +32,8 @@ export function CityMapSection({ complexes, loading, failed, catalogLimited }: {
         {selection.located.some(record => record.demo) && <p className="city-map-caption">DEMO: координаты учебных объектов условные и не указывают реальные стройки.</p>}
         {selection.missing > 0 && <p className="city-map-caption">Без корректных координат: {selection.missing}. Эти объекты остаются в таблице реестра.</p>}
         {!selection.located.length ? <p role="status">Нет объектов для карты в этой выборке. Нужны статус «Строится» и корректные координаты выбранного города. Измените город или фильтры; карточки доступны в таблице.</p>
-          : <MapBoundary><Suspense fallback={<p role="status">Загружаем модуль карты…</p>}><CityBuildingsMap groups={selection.groups} /></Suspense></MapBoundary>}
+          : <><MapBoundary><Suspense fallback={<div className="city-map-canvas city-map-placeholder" role="status">Загружаем модуль карты…</div>}><CityBuildingsMap groups={selection.groups} /></Suspense></MapBoundary>
+            <p className="city-map-caption">Tab — выбор здания, Enter — сведения и ссылка на карточку. Карту можно перемещать; масштаб — кнопками +/−. Колесо мыши прокручивает страницу.</p></>}
       </>}
     </div>}
   </section>

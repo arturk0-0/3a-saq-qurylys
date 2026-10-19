@@ -4,6 +4,9 @@
 .city-map-feature .city-map-city select { max-width: 100%; min-width: 0; }
 .city-map-feature .city-map-caption { font-size: .875rem; line-height: 1.5; margin: .75rem 0; overflow-wrap: anywhere; }
 .city-map-feature .city-map-canvas { height: 360px; width: 100%; background: #edf2f5; border: 1px solid #b5c6d2; border-radius: .75rem; isolation: isolate; }
+.city-map-feature .city-map-stage { position: relative; }
+.city-map-feature .city-map-placeholder { padding: 1rem; }
+.city-map-feature .city-map-status { position: absolute; top: 8px; left: 52px; right: 8px; z-index: 500; padding: .5rem; margin: 0; background: #fff; border: 1px solid #b5c6d2; border-radius: .5rem; font-size: .875rem; line-height: 1.5; }
 .city-map-feature .city-map-building { position: relative; width: 64px; height: 84px; filter: drop-shadow(2px 3px 2px #172f4555); }
 .city-map-feature .city-map-building svg { width: 64px; height: 84px; }
 .city-map-feature .city-map-count { position: absolute; top: 0; right: 0; min-width: 24px; padding: 2px 5px; text-align: center; border-radius: 12px; background: #163e60; color: white; font: 600 14px/20px sans-serif; }

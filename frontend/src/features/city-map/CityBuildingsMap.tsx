@@ -48,9 +48,12 @@ export function CityBuildingsMap({ groups }: { groups: ReturnType<typeof citySel
             autoPan: true, autoPanPadding: [12, 12], minWidth: 120, maxWidth: 180, maxHeight: 140,
           })
         }
-        map.fitBounds(groups.map(group => group.point), { paddingTopLeft: [40, 90], paddingBottomRight: [40, 35], maxZoom: 14, animate: false })
+        const fitBuildings = () => map?.fitBounds(groups.map(group => group.point), {
+          paddingTopLeft: [40, 90], paddingBottomRight: [40, 35], maxZoom: 14, animate: false,
+        })
+        fitBuildings()
         if (typeof ResizeObserver !== 'undefined') {
-          observer = new ResizeObserver(() => map?.invalidateSize({ pan: false }))
+          observer = new ResizeObserver(() => { if (!disposed) { map?.invalidateSize({ pan: false }); fitBuildings() } })
           observer.observe(container.current)
         }
         setState('ready')
@@ -62,12 +65,11 @@ export function CityBuildingsMap({ groups }: { groups: ReturnType<typeof citySel
     return () => { disposed = true; observer?.disconnect(); map?.remove() }
   }, [groups, attempt])
 
-  return <>
-    {state === 'loading' && <p role="status">Загружаем карту города…</p>}
-    {state === 'failed' && <div role="status"><p>Карта города недоступна. Карточки ЖК доступны в таблице реестра.</p>
-      <Button variant="outline" onClick={() => setAttempt(value => value + 1)}>Повторить загрузку карты</Button></div>}
-    {tileFailed && <p role="status">Не удалось загрузить часть подложки OpenStreetMap. Здания можно выбрать, карточки также доступны в таблице реестра.</p>}
+  return <div className="city-map-stage">
     <div ref={container} className="city-map-canvas" role="region" aria-label="Карта города с условными зданиями" aria-busy={state === 'loading'} />
-    <p className="city-map-caption">Tab — выбор здания, Enter — сведения и ссылка на карточку. Карту можно перемещать; масштаб — кнопками +/−. Колесо мыши прокручивает страницу.</p>
-  </>
+    {state === 'loading' && <p className="city-map-status" role="status">Загружаем карту города…</p>}
+    {state === 'failed' && <div className="city-map-status" role="status"><p>Карта города недоступна. Карточки ЖК доступны в таблице реестра.</p>
+      <Button variant="outline" onClick={() => setAttempt(value => value + 1)}>Повторить загрузку карты</Button></div>}
+    {tileFailed && <p className="city-map-status" role="status">Не удалось загрузить часть подложки OpenStreetMap. Здания можно выбрать, карточки также доступны в таблице реестра.</p>}
+  </div>
 }
