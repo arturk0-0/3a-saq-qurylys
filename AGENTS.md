@@ -11,7 +11,21 @@ This file is the repository-level operating guide. Read it **before** editing co
 
 ## Two-person ownership
 
-Owner update, 17 October: automatic public-ad monitoring is now the immediate P0.
+**Owner update, 19 October — current MAP/ORG assignment:** A (friend) owns the
+secondary city-map feature and minimal ComplexList mount, [Issue #20](https://github.com/arturk0-0/3a-saq-qurylys/issues/20).
+B (owner) owns public-source company data, backend/contracts, company pages,
+ComplexDetail and routes, [Issue #21](https://github.com/arturk0-0/3a-saq-qurylys/issues/21).
+This explicitly overrides blanket frontend ownership below for company pages.
+Use [the scoped file boundaries and prompts](docs/tasks/map-company-split.md).
+Keep Leaflet/OSM: identical stylized volumetric building markers, no progress
+visualisation and no new map platform. The map is a collapsible secondary block.
+A requires no cloud accounts, API keys, paid calls or manual owner setup.
+These are authorised future implementation tasks; this planning change does not
+claim implementation. Completed A-01–04 must not be repeated.
+
+
+Historical owner update, 17 October: automatic public-ad monitoring was the immediate P0.
+The 19 October assignment above defines the current MAP/ORG queue.
 For the MON vertical slice the owner explicitly authorizes B to implement both
 backend and necessary frontend without waiting for A. This overrides the file
 ownership split for MON only. Instagram targeted ads have first priority for
@@ -21,8 +35,8 @@ See `docs/instagram-feasibility.md` and the current development plan.
 The team has **two** contributors; current queues and copy/paste prompts are in
 [`docs/two-person-team.md`](docs/two-person-team.md), assignments in
 [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md). GitHub queues:
-[A / friend #9](https://github.com/arturk0-0/3a-saq-qurylys/issues/9),
-[B / owner #8](https://github.com/arturk0-0/3a-saq-qurylys/issues/8).
+[A / friend #20](https://github.com/arturk0-0/3a-saq-qurylys/issues/20),
+[B / owner #21](https://github.com/arturk0-0/3a-saq-qurylys/issues/21).
 
 - **A = the owner's friend and their Codex:** owns all `frontend/**` and the
   user/demo documents listed in the team guide. Develop/test using the existing
