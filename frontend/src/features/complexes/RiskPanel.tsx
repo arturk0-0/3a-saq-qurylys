@@ -31,8 +31,8 @@ export function RiskPanel({ complex_: initialComplex, onChanged }: { complex_: C
       setSelected(null); onChanged()
     } catch (error) { record.failed(error) } finally { setBusy(false) }
   }
-  return <aside className="panel risk-panel" aria-label="Приоритет и решения по факторам"><div className="panel-heading"><h2>Приоритет проверки</h2><span className="text-xs text-muted-foreground">R1–R6</span></div>
-    <div className="risk-total"><strong>{complex_.risk.score}<small>/100</small></strong><RiskBadge risk={complex_.risk} /></div>
+  return <aside className="panel risk-panel" aria-label="Подтверждённые риски и решения по факторам"><div className="panel-heading"><h2>Подтверждённые риски</h2><span className="text-xs text-muted-foreground">R1–R6</span></div>
+    <div className="risk-total"><strong>{complex_.risk.score}<small>/100</small></strong><RiskBadge confirmed risk={complex_.risk} /></div>
     <p className="risk-description">Учитываются только подтверждённые факторы с проверенными доказательствами.</p>
     <div className="factor-list">{complex_.risk.factors.map((factor) => <div key={factor.code} className="factor-item">
       <div className="factor-top"><span className="factor-code">{factor.code}</span><strong>{factorLabels[factor.code]}</strong><span className="factor-points">{factor.points}<small>/{factor.weight}</small></span></div>

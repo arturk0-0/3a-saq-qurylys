@@ -27,7 +27,7 @@ it('retains the selected screenshot and hypothesis draft through collapsing and 
   const api = setup()
   fireEvent.click(screen.getByRole('button', { name: 'Скриншоты и AI-анализ' }))
   fireEvent.click(await screen.findByRole('button', { name: 'Рассмотреть гипотезу' }))
-  fireEvent.change(screen.getByLabelText('Источник анализа'), { target: { value: 'image1' } })
+  fireEvent.change(screen.getByLabelText('Сохранённый материал'), { target: { value: 'image1' } })
   fireEvent.change(screen.getByLabelText('Решение по гипотезе'), { target: { value: 'rejected' } })
   fireEvent.change(screen.getByLabelText('Обоснование'), { target: { value: 'Моя несохранённая заметка' } })
   const reads = api.mock.calls.length
@@ -36,7 +36,7 @@ it('retains the selected screenshot and hypothesis draft through collapsing and 
   fireEvent.click(screen.getByRole('button', { name: 'Скриншоты и AI-анализ' }))
   expect(await screen.findByLabelText('Обоснование')).toHaveValue('Моя несохранённая заметка')
   expect(screen.getByLabelText('Решение по гипотезе')).toHaveValue('rejected')
-  expect(screen.getByLabelText('Источник анализа')).toHaveValue('image1')
+  expect(screen.getByLabelText('Сохранённый материал')).toHaveValue('image1')
   expect(api).toHaveBeenCalledTimes(reads)
 })
 

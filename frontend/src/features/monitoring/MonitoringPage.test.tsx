@@ -95,7 +95,7 @@ it('does not offer attaching real findings to the DEMO registry or invent a publ
   expect(await screen.findByText(/Для продолжения нужна карточка реального ЖК/)).toBeInTheDocument()
   expect(screen.getByText(/Опубликовано: Не указано/)).toBeInTheDocument()
   expect(screen.queryByLabelText('Реальный жилой комплекс')).not.toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Проанализировать с AI' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Проанализировать с AI' })).not.toBeInTheDocument()
 })
 
 it('creates an Instagram Ad Library source with a single-city query and no automatic AI', async () => {

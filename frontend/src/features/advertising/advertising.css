@@ -1,0 +1,32 @@
+.advertising { max-width: 1440px; margin: 0 auto; overflow-wrap: anywhere; }
+.advertising .ad-tabs { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 24px; }
+.advertising .ad-tabs a { padding: 12px 16px; border: 1px solid #cbded8; border-radius: 8px; background: #fff; }
+.advertising .ad-tabs a[aria-current] { background: #e4f0ed; color: #145b50; font-weight: 700; }
+.advertising .ad-stack { display: grid; gap: 20px; min-width: 0; }
+.advertising .ad-stack > .ad-original, .advertising .ad-stack > .ad-meta { margin: 0; }
+.advertising .ad-stack > h2, .advertising .ad-stack > h3 { margin-bottom: 0; }
+.advertising .ad-panel { padding: 24px; }
+.advertising .ad-panel > .editor-form { padding: 0; border: 0; }
+.advertising .ad-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.advertising .ad-grid > *, .advertising .ad-filters > * { min-width: 0; }
+.advertising .ad-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.advertising .ad-panel h2, .advertising .ad-panel h3 { margin-bottom: 12px; }
+.advertising .ad-priority { border-left: 3px solid #6683a0; padding: 12px 16px; background: #f0f5fa; }
+.advertising .ad-priority ul { list-style: disc; margin: 8px 0 0 18px; }
+.advertising .ad-analysis-state { padding: 12px 16px; border: 1px solid #dce5e2; border-radius: 8px; }
+.advertising .ad-analysis-state p { margin-top: 6px; }
+.advertising .ad-original { white-space: pre-wrap; line-height: 1.8; margin: 16px 0; overflow-wrap: anywhere; }
+.advertising .ad-hypothesis { border: 1px solid #dce5e2; border-radius: 8px; padding: 18px; display: grid; gap: 12px; }
+.advertising blockquote { border-left: 3px solid #91b3a7; padding: 10px 14px; white-space: pre-wrap; }
+.advertising .ad-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 12px 0; font-size: 14px; color: #526471; }
+.advertising .ad-form { display: grid; gap: 20px; }
+.advertising .ad-media { display: grid; gap: 12px; }
+.advertising details > summary { cursor: pointer; padding: 8px 0; font-weight: 600; }
+.advertising button { height: auto; min-height: 42px; white-space: normal; max-width: 100%; }
+.advertising a, .advertising button, .advertising input, .advertising select, .advertising textarea { scroll-margin: 20px; }
+.advertising :focus-visible { outline: 3px solid #397565; outline-offset: 3px; }
+@media (max-width: 700px) {
+  .advertising .ad-grid, .advertising .ad-filters { grid-template-columns: minmax(0, 1fr); }
+  .advertising .ad-panel { padding: 18px; }
+  .advertising .ad-stack { gap: 16px; }
+}

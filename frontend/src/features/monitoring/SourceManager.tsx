@@ -5,7 +5,7 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { errorMessage, formatDate } from '@/lib/labels'
 import { safeMonitorError, type Source, type Run, type MonitorStatus } from './types'
 
-export function SourceManager({ sources, changed, provider }: { sources: Source[]; changed: () => void; provider?: MonitorStatus | null }) {
+export function SourceManager({ sources, changed, provider, unifiedMaterials = false }: { sources: Source[]; changed: () => void; provider?: MonitorStatus | null; unifiedMaterials?: boolean }) {
   const { api } = useAuth()
   const [kind, setKind] = useState<Source['kind']>('web_search')
   const [target, setTarget] = useState('новостройки квартиры Усть-Каменогорск Риддер')
@@ -56,7 +56,7 @@ export function SourceManager({ sources, changed, provider }: { sources: Source[
           <input value={target} required maxLength={250} disabled={busy} onChange={e => setTarget(e.target.value)} placeholder={kind === 'telegram' ? '@channel' : 'Жильё в ВКО'} />
         </FormField>
         <FormField label="Интервал сбора, минуты" hint="Минимальный интервал между сборами: от 15 минут до суток."><input type="number" min={15} max={1440} value={interval} required disabled={busy} onChange={e => setIntervalMinutes(Number(e.target.value))} /></FormField>
-        <label className="monitor-checkbox"><input type="checkbox" checked={autoAi} disabled={busy} onChange={e => setAutoAi(e.target.checked)} /><span>Анализировать новые находки с AI автоматически (до одной за сбор).</span></label>
+        {unifiedMaterials ? <p className="form-hint">Поддерживаемые новые материалы обрабатываются автоматически. Статусы анализа доступны во вкладке «Все материалы».</p> : <label className="monitor-checkbox"><input type="checkbox" checked={autoAi} disabled={busy} onChange={e => setAutoAi(e.target.checked)} /><span>Анализировать новые находки с AI автоматически (до одной за сбор).</span></label>}
         <Button disabled={busy || !name.trim() || !target.trim()}>{busy ? 'Выполняем…' : 'Сохранить источник'}</Button>
       </form>
     </section>
@@ -71,12 +71,12 @@ export function SourceManager({ sources, changed, provider }: { sources: Source[
         <p>{source.kind === 'telegram' ? 'Telegram · @' : source.kind === 'instagram_ads' ? 'Instagram · ' : 'Интернет-поиск · '}{source.target}</p>
         {source.kind === 'instagram_ads' && <p className="form-hint">{provider?.searchApi?.scheduled ? 'Доступен сбор по расписанию.' : 'Ручной сбор.'}</p>}
         <p className="form-hint">Последний сбор: {formatDate(source.lastRunAt)} · Следующий: {formatDate(source.nextRunAt)} · Интервал {source.intervalMinutes} мин.</p>
-        <p>Авто-AI: <strong>{source.autoAnalyze ? 'включён' : 'выключен'}</strong></p>
+        <p>{unifiedMaterials ? 'Анализ материалов — автоматически в общей очереди.' : <>Авто-AI: <strong>{source.autoAnalyze ? 'включён' : 'выключен'}</strong></>}</p>
         {source.lastError && <p className="inline-notice">{safeMonitorError(source.lastError)}</p>}
         <div className="form-actions">
           <Button disabled={busy || !source.enabled || running || waiting} onClick={() => void action(source, true)}>{running ? 'Сбор выполняется…' : waiting ? 'Ожидает своего интервала' : 'Получить публикации'}</Button>
           <Button variant="outline" disabled={busy || running} onClick={() => void action(source, false)}>{source.enabled ? 'Поставить на паузу' : 'Возобновить источник'}</Button>
-          <Button variant="outline" disabled={busy || running} onClick={() => void action(source, false, true)}>{source.autoAnalyze ? 'Выключить авто-AI' : 'Включить авто-AI'}</Button>
+          {!unifiedMaterials && <Button variant="outline" disabled={busy || running} onClick={() => void action(source, false, true)}>{source.autoAnalyze ? 'Выключить авто-AI' : 'Включить авто-AI'}</Button>}
         </div>
       </section>
     })}

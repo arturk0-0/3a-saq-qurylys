@@ -11,6 +11,11 @@ This file is the repository-level operating guide. Read it **before** editing co
 
 ## Two-person ownership
 
+**Integration update, 20 October:** B backend #32 is merged; A frontend and
+B integration fixes are in PR #33. A’s original work is preserved. Joint
+acceptance is recorded in `docs/unified-advertising-integration-report.md`.
+Cloud publication remains separate; do not infer deployment from a merged PR.
+
 **Owner update, 20 October — current unified advertising assignment:**
 A (second Codex) owns **all frontend** for [Issue #30](https://github.com/arturk0-0/3a-saq-qurylys/issues/30):
 unified Advertising, two tabs, one review page, priority presentation, spacing and QA.

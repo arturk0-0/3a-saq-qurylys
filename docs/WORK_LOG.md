@@ -724,3 +724,21 @@ SDK — 19 passed. Новый HTTP flow auto priority35/confirmed0 → review35,
 Локальный старый flow до 35/сигнала/PDF/private upload прошёл. Итог CI/SDK и
 ограничения фиксируются в `unified-advertising-backend-report.md`.
 Без платных запросов и деплоя; объединённый UI ждёт A / #30.
+
+
+### 20 октября — совместная интеграция единой рекламы A+B
+
+По поручению владельца открыт frontend PR #33 из опубликованной ветки A;
+backend PR #32 после зелёных проверок/review объединён в main (`c3ac492`).
+Работа A сохранена целиком, совместное дерево собрано без конфликтов.
+Независимые review нашли повторный выбор цитаты и неподключённый legacy resolver;
+B исправил оба. Дополнительно устранён противоречивый insufficient+reviewed:
+UI автоматически оставляет материал для проверки, server guard сохранён.
+
+133 frontend tests/32 файла, typecheck/build, Ruff QA/diff check passed.
+11 contract browser групп и 5 native API browser групп passed, включая одно
+review→35→история→сигнал→PDF. Настоящий persistent local-demo с новым UI:
+auto intake/review35/reload/history/1440/375/320 passed, external requests и
+page errors отсутствуют. Полный совместный CI и точный SHA фиксируются в PR #33.
+План A/B/интеграции закрыт; MAT-DEPLOY остаётся отдельно, сайт не публиковался.
+Подробности: `unified-advertising-integration-report.md`.

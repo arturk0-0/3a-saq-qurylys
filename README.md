@@ -68,7 +68,8 @@ python scripts/check-local-demo.py
 проверки. Предварительный приоритет отделён от подтверждённых рисков.
 [Контракт для интерфейса](docs/material-workflow-contract.md),
 [проверки и ограничения](docs/unified-advertising-backend-report.md).
-Интерфейс этой очереди разрабатывается отдельно в #30.
+Интерфейс и сервер совмещены в новой «Рекламе»: две вкладки и одна проверка.
+[Совместная проверка](docs/unified-advertising-integration-report.md).
 
 ## Опубликованный сайт
 
