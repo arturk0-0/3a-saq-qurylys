@@ -1,42 +1,49 @@
 # План SAQ QURYLYS
 
-Актуализирован **19 октября 2026** по поручению владельца. Регион — ВКО.
+Актуализирован **20 октября 2026** по поручению владельца. Регион — ВКО.
 Команда: **A — друг, frontend/материалы; B — владелец, backend/AI/выпуск**.
 Для MON-задачи владелец отдельно разрешил B одновременно реализовать необходимый
 frontend, не ожидая A. Это ограниченное исключение, а не передача всего frontend.
 
 
-**Текущее состояние, 19 октября:** main `6cd5db0` содержит мониторинг и улучшения
-интерфейса. Владелец опубликовал API `release-34eab8a`, Hosting и индексы,
-проверил Instagram → AI → решение/историю. Job/Scheduler созданы; подтверждены
-heartbeat worker и успешное выполнение по Scheduler. Фактический повторный сбор
-источника после истечения интервала ещё требуется проверить. Новая сверка
-разрешений разрабатывается в `feat/registry-basis-screening`; это ещё не live-релиз.
+**Текущее состояние, 20 октября:** общий выпуск объединён в main
+`107798f` через [PR #25](https://github.com/arturk0-0/3a-saq-qurylys/pull/25).
+Включены сверка оснований (#19), план (#22), компании (#23), дрон (#24), карта A
+и отдельный локальный режим без облачных ключей. Все пять CI jobs release HEAD
+зелёные; 537 backend / 109 frontend тестов. Полный локальный smoke прошёл
+дважды с перезапуском; браузер проверил компании, карту и дрон с сохранением решения.
+[Отчёт выпуска](judge-release-report.md), [локальный запуск](local-demo.md).
 
+**Публикация сайта отложена владельцем.** В облаке остаётся ранее опубликованная
+версия; наличие новых модулей в main не подтверждает их доступность на сайте.
+Job/Scheduler ранее подтвердили heartbeat и успешное выполнение; повторный сбор
+источника после истечения интервала остаётся отдельной облачной проверкой.
 
 ## Новая очередь: карта и участники ЖК · 19 октября
 
-B подготовил реализацию ORG-01–06/GEO-01 в [PR #23](https://github.com/arturk0-0/3a-saq-qurylys/pull/23) поверх #19; это не merge и не облачный выпуск.
-[Отчёт и проверки B](company-profiles-report.md), [контракты](company-api.md).
-Чекбоксы интеграции остаются открыты до merge и совместной проверки с картой A.
+Реализация B из [PR #23](https://github.com/arturk0-0/3a-saq-qurylys/pull/23)
+и карта A интегрированы через PR #25 после review/CI.
+[Отчёт B](company-profiles-report.md), [контракты](company-api.md).
+Чекбоксы ниже относятся к реализации и локальной интеграции; публикация и
+проверка реальных данных выделены отдельно.
 [Разделение и промпты](tasks/map-company-split.md).
 A работает без облачных кабинетов/ключей; B делает всю сложную интеграцию и frontend компаний.
 
-- [ ] **MAP-01–06 · A** — [#20](https://github.com/arturk0-0/3a-saq-qurylys/issues/20):
+- [x] **MAP-01–06 · A** — [#20](https://github.com/arturk0-0/3a-saq-qurylys/issues/20):
   вторичный сворачиваемый блок в реестре ЖК, Leaflet/OSM, одинаковые объёмные здания
   на известных координатах, адрес/переход к ЖК. Без процентов готовности. Lazy loading,
   mobile/keyboard/empty/error, тесты и handoff; backend/компании A не меняет.
-- [ ] **ORG-01–05 · B** — [#21](https://github.com/arturk0-0/3a-saq-qurylys/issues/21):
+- [x] **ORG-01–05 · B** — [#21](https://github.com/arturk0-0/3a-saq-qurylys/issues/21):
   исследование открытых источников, идентификация по БИН, отдельные роли юридического
   застройщика/уполномоченной компании, provenance каждого факта, ограниченные адаптеры,
   хранение/защищённый API. Количество завершённых объектов только с перечнем/границами охвата.
-- [ ] **ORG-06 · B** — блок двух организаций в карточке ЖК, отдельные страницы компаний,
+- [x] **ORG-06 · B** — блок двух организаций в карточке ЖК, отдельные страницы компаний,
   компактные ссылки на конкретные источники возле значений, даты/неизвестное/расхождения.
 - [ ] **GEO-01 · B** — достоверные реальные ЖК/адреса/координаты с источником и точностью;
   не привязывать реальные компании к DEMO-записям и не подменять стройку офисом продаж.
-- [ ] **ORG-07–08 · B** — проверки, отчёт, review/CI и интеграция с картой A.
-  Публикация API/Hosting — отдельный шаг. Сохранить открытый PR #19 со сверкой реестров;
-  не повторять готовую реализацию и не считать наличие PR облачным выпуском.
+- [x] **ORG-07–08 · B** — проверки, отчёт, review/CI и интеграция с картой A.
+  Публикация API/Hosting — отдельный шаг. Реализация PR #19 со сверкой реестров сохранена в #25;
+  не повторять готовую реализацию и не считать merge облачным выпуском.
 
 Общие frontend файлы разделены явно: A — city-map/** и ComplexList.tsx,
 B — company frontend, ComplexDetail.tsx, routes и shared types. Старые A-01–04 выполнены.
@@ -221,13 +228,14 @@ B по прямому запросу реализует весь модуль и
 Проверены 527 backend, 100 frontend, 18 native SDK, Chromium и CI функционального SHA.
 [Контракты](drone-api.md), [фактический отчёт](drone-inspection-report.md).
 Публикация и проверка реальной моделью — отдельно; при разработке платных вызовов нет.
-Чекбоксы интеграции закрываются после review/CI/merge.
+Review/CI/merge завершены в PR #25; локальный browser workflow также проверен.
+Настоящий Gemini и облачная загрузка в этом выпуске не проверялись.
 
 
-- [ ] **DRONE-01 · B** — Own private Storage/backend upload contract; B implements the requested frontend; original photos remain private.
-- [ ] **DRONE-02 · B** — Configurable visual checklist; exact normative criteria still pending organisers; Gemini classifies `visible / not_visible / uncertain`.
-- [ ] **DRONE-03 · B** — Show marked results and human review; no claim of confirmed noncompliance on one photograph.
-- [ ] **DRONE-04 · B** — Save separate inspection report/evidence trail; do not touch core advertising-law score.
+- [x] **DRONE-01 · B** — Own private Storage/backend upload contract; B implements the requested frontend; original photos remain private.
+- [x] **DRONE-02 · B** — Configurable visual checklist; exact normative criteria still pending organisers; Gemini classifies `visible / not_visible / uncertain`.
+- [x] **DRONE-03 · B** — Show marked results and human review; no claim of confirmed noncompliance on one photograph.
+- [x] **DRONE-04 · B** — Save separate inspection report/evidence trail; do not touch core advertising-law score.
 
 ## 6. Работа команды и Git
 
