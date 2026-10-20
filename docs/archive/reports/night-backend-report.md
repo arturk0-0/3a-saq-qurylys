@@ -153,7 +153,7 @@ gcloud run services update saq-qurylys-api --region=europe-west1 --image="$SAQ_I
 
 Сохраняет текущую модель/Secret Manager/identity/ресурсы. Hosting из этой backend
 ветки не публиковать поверх параллельного frontend. Логи, проверки и откат:
-[cloud-deployment.md, раздел 6](cloud-deployment.md#6-продолжение-существующего-deployment-после-review-ночной-ветки).
+[cloud-deployment.md, раздел 6](../../cloud-deployment.md#6-обновление-существующего-сайта-из-проверенного-main).
 
 Промежуточные коммиты, отправленные по ходу задачи: `19f6864` (handoff), `ca18739`
 (Gemini), `18632b7` (история), `0827507` (PDF/приватность). Финальный HEAD смотреть

@@ -94,7 +94,7 @@ SDK runner запускает локальный эмулятор; требуе�
 одобренного SHA**. Старый Cloud Shell каталог `saq-release-effb87f` не содержит
 этих правок. PR #7 также требует обновления Hosting; собственные изменения
 этой ветки затрагивают только API/PDF. Полная инструкция и сборка Hosting:
-[cloud-deployment.md](cloud-deployment.md).
+[cloud-deployment.md](../../cloud-deployment.md).
 
 Из корня нового checkout с согласованным `deploy/` и действующим Cloud Shell
 доступом владельца; заменить `APPROVED_SHA` на полный проверенный SHA:
