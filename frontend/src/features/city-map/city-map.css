@@ -1,0 +1,26 @@
+.city-map-feature { margin-top: 1.5rem; }
+.city-map-feature .city-map-content { padding: 0 1.5rem 1.5rem; }
+.city-map-feature .city-map-city { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; margin-bottom: 1rem; }
+.city-map-feature .city-map-city select { max-width: 100%; min-width: 0; }
+.city-map-feature .city-map-caption { font-size: .875rem; line-height: 1.5; margin: .75rem 0; overflow-wrap: anywhere; }
+.city-map-feature .city-map-canvas { height: 360px; width: 100%; background: #edf2f5; border: 1px solid #b5c6d2; border-radius: .75rem; isolation: isolate; }
+.city-map-feature .city-map-stage { position: relative; }
+.city-map-feature .city-map-placeholder { padding: 1rem; }
+.city-map-feature .city-map-status { position: absolute; top: 8px; left: 52px; right: 8px; z-index: 500; padding: .5rem; margin: 0; background: #fff; border: 1px solid #b5c6d2; border-radius: .5rem; font-size: .875rem; line-height: 1.5; }
+.city-map-feature .city-map-building { position: relative; width: 64px; height: 84px; filter: drop-shadow(2px 3px 2px #172f4555); }
+.city-map-feature .city-map-building svg { width: 64px; height: 84px; }
+.city-map-feature .city-map-count { position: absolute; top: 0; right: 0; min-width: 24px; padding: 2px 5px; text-align: center; border-radius: 12px; background: #163e60; color: white; font: 600 14px/20px sans-serif; }
+.city-map-feature .city-map-marker:focus-visible { outline: 3px solid #163e60; outline-offset: 3px; border-radius: 6px; }
+.city-map-feature .city-map-popup { font: 14px/1.5 sans-serif; overflow-wrap: anywhere; }
+.city-map-feature .city-map-popup section + section { border-top: 1px solid #b5c6d2; padding-top: .75rem; margin-top: .75rem; }
+.city-map-feature .city-map-popup p { margin: .5rem 0; }
+.city-map-feature .city-map-popup a { display: inline-block; padding: .5rem 0; text-decoration: underline; }
+.city-map-feature .leaflet-container { font-size: 14px; }
+.city-map-feature .leaflet-control-attribution { max-width: 100%; font-size: 12px; }
+@media (prefers-reduced-motion: reduce) {
+  .city-map-feature .leaflet-map-pane { transition: none !important; }
+}
+@media (max-width: 600px) {
+  .city-map-feature .city-map-content { padding: 0 .75rem .75rem; }
+  .city-map-feature .city-map-canvas { height: 320px; }
+}
