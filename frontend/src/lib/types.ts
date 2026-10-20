@@ -1,6 +1,7 @@
 export type FactorCode = 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6'
 export type VerificationStatus = 'unknown' | 'proposed' | 'confirmed' | 'rejected'
 export type RiskZone = 'GREEN' | 'YELLOW' | 'RED'
+export interface Priority { score: number | null; level: 'unknown' | 'low' | 'medium' | 'high'; reasons: string[] }
 export interface RiskFactor {
   code: FactorCode; status: VerificationStatus; evidenceIds: string[]
   reviewer: string | null; reviewedAt: string | null; notes: string
@@ -15,6 +16,7 @@ export interface LegalBasis {
   reference: string; source: string; checkedAt: string | null; reviewer: string | null; validUntil: string | null
 }
 export interface Complex {
+  reviewPriority?: Priority
   id: string; name: string; city: string; region: string; address: string; developerId: string
   aliases?: string[]
   stage: 'planning' | 'under_construction' | 'commissioned'

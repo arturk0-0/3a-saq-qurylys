@@ -53,7 +53,7 @@ export function CreateSignal() {
   if (complex_.loading) return <LoadingState />
   if (complex_.error) return <ErrorState message={complex_.error} retry={complex_.refresh} />
   return <><PageHeading eyebrow="Решение аналитика" title="Новый сигнал" description={complex_.data?.name || ''} action={complex_.data?.demo ? <DemoBadge /> : undefined} />
-    <section className="panel"><form className="editor-form" onSubmit={submit}><RiskBadge risk={complex_.data!.risk} />
+    <section className="panel"><form className="editor-form" onSubmit={submit}><RiskBadge confirmed risk={complex_.data!.risk} />
       <FormField label="Заголовок сигнала"><input name="title" required maxLength={500} value={title ?? `Проверка ${complex_.data?.name.replace(/^DEMO — /, '')}`} onChange={event => setTitle(event.target.value)} /></FormField>
       <FormField label="Основание для проверки"><textarea name="reason" rows={4} required maxLength={2000} value={reason} onChange={event => setReason(event.target.value)} /></FormField>
       <p className="inline-notice">Будет создан черновик со снимком текущих проверенных данных. Подтверждение сигнала — отдельное действие. В органы ничего не отправляется.</p>
@@ -69,7 +69,7 @@ export function SignalsPage() {
   return <><PageHeading eyebrow="Проверка и отчётность" title="Сигналы" description="Снимки проверенных данных и отдельные решения аналитиков." />
     <section className="panel"><div className="filter-bar"><select aria-label="Статус сигнала" value={status} onChange={(event) => { setStatus(event.target.value); setCursor('') }}><option value="">Все статусы</option>{Object.entries(labels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><Link className="detail-link" to="/complexes">Создать сигнал из карточки ЖК →</Link></div>
       {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={refresh} /> : !data?.items.length ? <EmptyState title="Сигналов пока нет"><p>Проверьте факторы в карточке ЖК и создайте черновик.</p></EmptyState>
-        : <ScrollableTable label="Сигналы"><table className="data-table"><thead><tr><th>Сигнал / объект</th><th>Статус</th><th>Снимок риска</th><th>Создан</th></tr></thead><tbody>{data.items.map((signal) => <tr key={signal.id}><td><Link className="detail-link" to={`/signals/${signal.id}`}>{signal.title}</Link><span>{signal.complexName}</span>{signal.demo && <DemoBadge />}</td><td>{labels[signal.status]}</td><td><RiskBadge risk={signal.risk} /></td><td>{formatDate(signal.createdAt)}</td></tr>)}</tbody></table></ScrollableTable>}
+        : <ScrollableTable label="Сигналы"><table className="data-table"><thead><tr><th>Сигнал / объект</th><th>Статус</th><th>Снимок риска</th><th>Создан</th></tr></thead><tbody>{data.items.map((signal) => <tr key={signal.id}><td><Link className="detail-link" to={`/signals/${signal.id}`}>{signal.title}</Link><span>{signal.complexName}</span>{signal.demo && <DemoBadge />}</td><td>{labels[signal.status]}</td><td><RiskBadge confirmed risk={signal.risk} /></td><td>{formatDate(signal.createdAt)}</td></tr>)}</tbody></table></ScrollableTable>}
       {(cursor || data?.nextCursor) && <div className="pagination"><Button variant="outline" onClick={() => setCursor('')}>В начало</Button>{data?.nextCursor && <Button variant="outline" onClick={() => setCursor(data.nextCursor!)}>Далее</Button>}</div>}</section></>
 }
 
@@ -115,7 +115,7 @@ export function SignalDetail() {
   const snapshot = signal.snapshot
   const stale = current.data && current.data.version !== snapshot.complex.version
   return <><Link to="/signals" className="back-link">← Все сигналы</Link><PageHeading eyebrow={`Сигнал · версия ${signal.version}`} title={signal.title} description={labels[signal.status]} action={snapshot.complex.demo ? <DemoBadge /> : undefined} />
-    <section className="panel content-pad"><div className="flex flex-wrap items-center justify-between gap-4"><div><h2>{snapshot.complex.name}</h2><Link className="detail-link" to={`/complexes/${signal.complexId}`}>Текущая карточка ЖК →</Link></div><RiskBadge risk={snapshot.risk} /></div>
+    <section className="panel content-pad"><div className="flex flex-wrap items-center justify-between gap-4"><div><h2>{snapshot.complex.name}</h2><Link className="detail-link" to={`/complexes/${signal.complexId}`}>Текущая карточка ЖК →</Link></div><RiskBadge confirmed risk={snapshot.risk} /></div>
       <p className="my-4">{signal.reason}</p><p className="form-hint">Снимок версии ЖК {snapshot.complex.version} от {formatDate(snapshot.capturedAt)}. Последующие изменения карточки не меняют этот документ.</p>
       {stale && <p className="inline-notice">Карточка ЖК изменена. Для подтверждения верните сигнал и повторно передайте на проверку: будет сохранён новый снимок.</p>}
       {current.error && <ErrorState message={`Не удалось проверить актуальность карточки ЖК. ${current.error}`} retry={current.refresh} />}

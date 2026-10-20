@@ -25,16 +25,15 @@ export function FindingDetail({ id, liveRegistry, changed }: { id: string; liveR
   const [notice, setNotice] = useState<string | null>(null)
   const item = query.data
   function refresh() { query.refresh(); history.refresh(); changed() }
-  async function operation(action: 'review' | 'analyze' | 'attach', event?: FormEvent) {
+  async function operation(action: 'review' | 'attach', event?: FormEvent) {
     event?.preventDefault()
     if (!item) return
     setBusy(true); setError(null); setNotice(null)
     try {
       const body = action === 'review' ? { expectedVersion: item.version, decision, notes }
-        : action === 'analyze' ? { expectedVersion: item.version, requestId: crypto.randomUUID() }
         : { expectedVersion: item.version, complexId, notes }
       await api('/api/v1/monitoring/items/' + id + '/' + action, { method: 'POST', body: JSON.stringify(body) })
-      setNotice(action === 'review' ? 'Решение по находке сохранено. Оценка R1–R6 не менялась.' : action === 'analyze' ? 'Попытка анализа завершена. Проверьте результат и статус ниже.' : 'Публикация передана в карточку ЖК. Факторы требуют отдельного подтверждения.')
+      setNotice(action === 'review' ? 'Решение по находке сохранено. Оценка R1–R6 не менялась.' : 'Публикация передана в карточку ЖК. Факторы требуют отдельного подтверждения.')
       refresh()
     } catch (failure) { setError(errorMessage(failure)) } finally { setBusy(false) }
   }
@@ -63,7 +62,7 @@ export function FindingDetail({ id, liveRegistry, changed }: { id: string; liveR
           {item.extraction.hypotheses.length === 0 && <p>AI не выделил R2/R3 в этом материале. Это не проверка законности.</p>}
           {item.extraction.hypotheses.map((h, i) => <article className="evidence-card" key={i}><h4>{h.code} · {factorLabels[h.code]}</h4><blockquote>{h.quote}</blockquote><p>{h.explanation}</p></article>)}
           <p>{item.extraction.uncertainty}</p></>}
-        {!item.advertisementId && <Button variant="outline" disabled={busy || item.aiStatus === 'running'} onClick={() => void operation('analyze')}>{busy ? 'Выполняем…' : 'Проанализировать с AI'}</Button>}
+        {!item.advertisementId && <Link className="detail-link" to="/advertising">Проверить материал в разделе «Реклама» →</Link>}
       </section>
       {item.reviewer && <p className="inline-notice">Решение: {findingLabels[item.status]}. {item.notes}<br />Эксперт: <ActorName uid={item.reviewer} /> · {formatDate(item.reviewedAt)}</p>}
       <form className="editor-form monitor-section" onSubmit={e => void operation('review', e)}>

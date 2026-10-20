@@ -1,0 +1,616 @@
+{
+  "material": {
+    "id": "m1",
+    "version": 1,
+    "title": "DEMO — предложение депозита",
+    "textPreview": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+    "reviewState": "needs_review",
+    "origins": [
+      "manual",
+      "automatic"
+    ],
+    "platforms": [
+      "Telegram",
+      "Instagram"
+    ],
+    "occurrenceCount": 3,
+    "firstSeenAt": "2026-10-20T10:00:00Z",
+    "lastSeenAt": "2026-10-20T10:00:00Z",
+    "complex": {
+      "id": "demo-complex-04",
+      "name": "DEMO — Горная мозаика"
+    },
+    "priority": {
+      "score": 82,
+      "level": "high",
+      "reasons": [
+        "Прямое предложение платежа — требуется проверка оригинала."
+      ]
+    },
+    "analysis": {
+      "status": "ready",
+      "errorCode": null,
+      "canRetry": false,
+      "updatedAt": "2026-10-20T10:00:00Z"
+    },
+    "text": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+    "revisionId": "revision-1",
+    "occurrences": [
+      {
+        "id": "o1",
+        "origin": "manual",
+        "platform": "Telegram",
+        "account": "fictional-account",
+        "originalUrl": "https://demo.invalid/ad/one",
+        "publishedAt": "2026-10-20T10:00:00Z",
+        "capturedAt": "2026-10-20T10:00:00Z",
+        "text": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+        "media": [],
+        "legacyKind": "advertisement",
+        "legacyId": "demo-ad-04"
+      },
+      {
+        "id": "o2",
+        "origin": "automatic",
+        "platform": "Instagram",
+        "account": "fictional-second",
+        "originalUrl": "https://demo.invalid/ad/two",
+        "publishedAt": "2026-10-20T10:00:00Z",
+        "capturedAt": "2026-10-20T10:00:00Z",
+        "text": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+        "media": [],
+        "legacyKind": "monitoring",
+        "legacyId": "qa-monitoring"
+      }
+    ],
+    "nextOccurrenceCursor": "occ-page-2",
+    "hypotheses": [
+      {
+        "id": "h2",
+        "code": "R2",
+        "quote": "внесите депозит 135 000 тенге",
+        "explanation": "Возможное предложение платежа. Требуется проверка контекста.",
+        "occurrenceId": "o1",
+        "decision": "pending"
+      },
+      {
+        "id": "h3",
+        "code": "R3",
+        "quote": "строящийся ЖК Горная мозаика",
+        "explanation": "Указано строящееся жильё. Проверьте привязку к объекту.",
+        "occurrenceId": "o1",
+        "decision": "pending"
+      }
+    ],
+    "complexCandidates": [
+      {
+        "id": "demo-complex-04",
+        "name": "DEMO — Горная мозаика",
+        "address": "Условная улица, 4"
+      }
+    ],
+    "confirmedRisk": {
+      "score": 10,
+      "zone": "GREEN",
+      "factors": [
+        {
+          "code": "R1",
+          "status": "unknown",
+          "weight": 35,
+          "points": 0,
+          "evidenceIds": []
+        },
+        {
+          "code": "R2",
+          "status": "unknown",
+          "weight": 25,
+          "points": 0,
+          "evidenceIds": []
+        },
+        {
+          "code": "R3",
+          "status": "confirmed",
+          "weight": 10,
+          "points": 10,
+          "evidenceIds": [
+            "demo-r3"
+          ]
+        },
+        {
+          "code": "R4",
+          "status": "unknown",
+          "weight": 15,
+          "points": 0,
+          "evidenceIds": []
+        },
+        {
+          "code": "R5",
+          "status": "unknown",
+          "weight": 10,
+          "points": 0,
+          "evidenceIds": []
+        },
+        {
+          "code": "R6",
+          "status": "unknown",
+          "weight": 5,
+          "points": 0,
+          "evidenceIds": []
+        }
+      ]
+    },
+    "review": null
+  },
+  "saved": {
+    "id": "m1",
+    "version": 2,
+    "title": "DEMO — предложение депозита",
+    "textPreview": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+    "reviewState": "reviewed",
+    "origins": [
+      "manual",
+      "automatic"
+    ],
+    "platforms": [
+      "Telegram",
+      "Instagram"
+    ],
+    "occurrenceCount": 3,
+    "firstSeenAt": "2026-10-20T10:00:00Z",
+    "lastSeenAt": "2026-10-20T10:00:00Z",
+    "complex": {
+      "id": "demo-complex-04",
+      "name": "DEMO — Горная мозаика"
+    },
+    "priority": {
+      "score": 82,
+      "level": "high",
+      "reasons": [
+        "Прямое предложение платежа — требуется проверка оригинала."
+      ]
+    },
+    "analysis": {
+      "status": "ready",
+      "errorCode": null,
+      "canRetry": false,
+      "updatedAt": "2026-10-20T10:00:00Z"
+    },
+    "text": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+    "revisionId": "revision-1",
+    "occurrences": [
+      {
+        "id": "o1",
+        "origin": "manual",
+        "platform": "Telegram",
+        "account": "fictional-account",
+        "originalUrl": "https://demo.invalid/ad/one",
+        "publishedAt": "2026-10-20T10:00:00Z",
+        "capturedAt": "2026-10-20T10:00:00Z",
+        "text": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+        "media": [],
+        "legacyKind": "advertisement",
+        "legacyId": "demo-ad-04"
+      },
+      {
+        "id": "o2",
+        "origin": "automatic",
+        "platform": "Instagram",
+        "account": "fictional-second",
+        "originalUrl": "https://demo.invalid/ad/two",
+        "publishedAt": "2026-10-20T10:00:00Z",
+        "capturedAt": "2026-10-20T10:00:00Z",
+        "text": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+        "media": [],
+        "legacyKind": "monitoring",
+        "legacyId": "qa-monitoring"
+      }
+    ],
+    "nextOccurrenceCursor": "occ-page-2",
+    "hypotheses": [
+      {
+        "id": "h2",
+        "code": "R2",
+        "quote": "внесите депозит 135 000 тенге",
+        "explanation": "Возможное предложение платежа. Требуется проверка контекста.",
+        "occurrenceId": "o1",
+        "decision": "confirmed"
+      },
+      {
+        "id": "h3",
+        "code": "R3",
+        "quote": "строящийся ЖК Горная мозаика",
+        "explanation": "Указано строящееся жильё. Проверьте привязку к объекту.",
+        "occurrenceId": "o1",
+        "decision": "insufficient"
+      }
+    ],
+    "complexCandidates": [
+      {
+        "id": "demo-complex-04",
+        "name": "DEMO — Горная мозаика",
+        "address": "Условная улица, 4"
+      }
+    ],
+    "confirmedRisk": {
+      "score": 35,
+      "zone": "YELLOW",
+      "factors": [
+        {
+          "code": "R1",
+          "status": "unknown",
+          "weight": 35,
+          "points": 0,
+          "evidenceIds": []
+        },
+        {
+          "code": "R2",
+          "status": "confirmed",
+          "weight": 25,
+          "points": 25,
+          "evidenceIds": [
+            "qa-payment"
+          ]
+        },
+        {
+          "code": "R3",
+          "status": "confirmed",
+          "weight": 10,
+          "points": 10,
+          "evidenceIds": [
+            "demo-r3"
+          ]
+        },
+        {
+          "code": "R4",
+          "status": "unknown",
+          "weight": 15,
+          "points": 0,
+          "evidenceIds": []
+        },
+        {
+          "code": "R5",
+          "status": "unknown",
+          "weight": 10,
+          "points": 0,
+          "evidenceIds": []
+        },
+        {
+          "code": "R6",
+          "status": "unknown",
+          "weight": 5,
+          "points": 0,
+          "evidenceIds": []
+        }
+      ]
+    },
+    "review": {
+      "notes": "QA — оригинал сверен",
+      "reviewedAt": "2026-10-20T10:00:00Z",
+      "reviewerDisplayName": "Учебный аналитик"
+    }
+  },
+  "complex": {
+    "id": "demo-complex-04",
+    "name": "DEMO — Горная мозаика",
+    "city": "Усть-Каменогорск",
+    "region": "ВКО",
+    "address": "Условная улица, 4",
+    "developerId": "demo-developer-04",
+    "stage": "under_construction",
+    "coordinates": null,
+    "progress": {
+      "claimedPercent": null,
+      "verifiedPercent": null,
+      "claimedAt": null,
+      "verifiedAt": null,
+      "claimedSource": "",
+      "verifiedSource": ""
+    },
+    "legalBasis": {
+      "type": "unknown",
+      "status": "unknown",
+      "reference": "",
+      "source": "",
+      "checkedAt": null,
+      "reviewer": null,
+      "validUntil": null
+    },
+    "factors": [],
+    "demo": true,
+    "scenario": null,
+    "version": 4,
+    "createdAt": "2026-10-20T10:00:00Z",
+    "updatedAt": "2026-10-20T10:00:00Z",
+    "risk": {
+      "score": 10,
+      "zone": "GREEN",
+      "factors": [
+        {
+          "code": "R1",
+          "status": "unknown",
+          "weight": 35,
+          "points": 0,
+          "evidenceIds": []
+        },
+        {
+          "code": "R2",
+          "status": "unknown",
+          "weight": 25,
+          "points": 0,
+          "evidenceIds": []
+        },
+        {
+          "code": "R3",
+          "status": "confirmed",
+          "weight": 10,
+          "points": 10,
+          "evidenceIds": [
+            "demo-r3"
+          ]
+        },
+        {
+          "code": "R4",
+          "status": "unknown",
+          "weight": 15,
+          "points": 0,
+          "evidenceIds": []
+        },
+        {
+          "code": "R5",
+          "status": "unknown",
+          "weight": 10,
+          "points": 0,
+          "evidenceIds": []
+        },
+        {
+          "code": "R6",
+          "status": "unknown",
+          "weight": 5,
+          "points": 0,
+          "evidenceIds": []
+        }
+      ]
+    }
+  },
+  "queued": {
+    "id": "queued",
+    "version": 1,
+    "title": "DEMO — ожидание анализа",
+    "textPreview": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+    "reviewState": "needs_review",
+    "origins": [
+      "manual",
+      "automatic"
+    ],
+    "platforms": [
+      "Telegram",
+      "Instagram"
+    ],
+    "occurrenceCount": 3,
+    "firstSeenAt": "2026-10-20T10:00:00Z",
+    "lastSeenAt": "2026-10-20T10:00:00Z",
+    "complex": null,
+    "priority": {
+      "score": null,
+      "level": "unknown",
+      "reasons": []
+    },
+    "analysis": {
+      "status": "queued",
+      "errorCode": "AI_DAILY_LIMIT",
+      "canRetry": false,
+      "updatedAt": "2026-10-20T10:00:00Z"
+    },
+    "text": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+    "revisionId": "revision-1",
+    "occurrences": [
+      {
+        "id": "o1",
+        "origin": "manual",
+        "platform": "Telegram",
+        "account": "fictional-account",
+        "originalUrl": "https://demo.invalid/ad/one",
+        "publishedAt": "2026-10-20T10:00:00Z",
+        "capturedAt": "2026-10-20T10:00:00Z",
+        "text": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+        "media": [],
+        "legacyKind": "advertisement",
+        "legacyId": "demo-ad-04"
+      },
+      {
+        "id": "o2",
+        "origin": "automatic",
+        "platform": "Instagram",
+        "account": "fictional-second",
+        "originalUrl": "https://demo.invalid/ad/two",
+        "publishedAt": "2026-10-20T10:00:00Z",
+        "capturedAt": "2026-10-20T10:00:00Z",
+        "text": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+        "media": [],
+        "legacyKind": "monitoring",
+        "legacyId": "qa-monitoring"
+      }
+    ],
+    "nextOccurrenceCursor": "occ-page-2",
+    "hypotheses": [],
+    "complexCandidates": [
+      {
+        "id": "demo-complex-04",
+        "name": "DEMO — Горная мозаика",
+        "address": "Условная улица, 4"
+      }
+    ],
+    "confirmedRisk": null,
+    "review": null
+  },
+  "failed": {
+    "id": "failed",
+    "version": 1,
+    "title": "DEMO — ошибка анализа",
+    "textPreview": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+    "reviewState": "needs_review",
+    "origins": [
+      "manual",
+      "automatic"
+    ],
+    "platforms": [
+      "Telegram",
+      "Instagram"
+    ],
+    "occurrenceCount": 3,
+    "firstSeenAt": "2026-10-20T10:00:00Z",
+    "lastSeenAt": "2026-10-20T10:00:00Z",
+    "complex": null,
+    "priority": {
+      "score": null,
+      "level": "unknown",
+      "reasons": []
+    },
+    "analysis": {
+      "status": "failed",
+      "errorCode": "AI_MODEL_UNAVAILABLE",
+      "canRetry": true,
+      "updatedAt": "2026-10-20T10:00:00Z"
+    },
+    "text": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+    "revisionId": "revision-1",
+    "occurrences": [
+      {
+        "id": "o1",
+        "origin": "manual",
+        "platform": "Telegram",
+        "account": "fictional-account",
+        "originalUrl": "https://demo.invalid/ad/one",
+        "publishedAt": "2026-10-20T10:00:00Z",
+        "capturedAt": "2026-10-20T10:00:00Z",
+        "text": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+        "media": [],
+        "legacyKind": "advertisement",
+        "legacyId": "demo-ad-04"
+      },
+      {
+        "id": "o2",
+        "origin": "automatic",
+        "platform": "Instagram",
+        "account": "fictional-second",
+        "originalUrl": "https://demo.invalid/ad/two",
+        "publishedAt": "2026-10-20T10:00:00Z",
+        "capturedAt": "2026-10-20T10:00:00Z",
+        "text": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+        "media": [],
+        "legacyKind": "monitoring",
+        "legacyId": "qa-monitoring"
+      }
+    ],
+    "nextOccurrenceCursor": "occ-page-2",
+    "hypotheses": [],
+    "complexCandidates": [
+      {
+        "id": "demo-complex-04",
+        "name": "DEMO — Горная мозаика",
+        "address": "Условная улица, 4"
+      }
+    ],
+    "confirmedRisk": null,
+    "review": null
+  },
+  "video": {
+    "id": "video",
+    "version": 1,
+    "title": "DEMO — неподдерживаемое видео",
+    "textPreview": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+    "reviewState": "needs_review",
+    "origins": [
+      "manual",
+      "automatic"
+    ],
+    "platforms": [
+      "Telegram",
+      "Instagram"
+    ],
+    "occurrenceCount": 3,
+    "firstSeenAt": "2026-10-20T10:00:00Z",
+    "lastSeenAt": "2026-10-20T10:00:00Z",
+    "complex": null,
+    "priority": {
+      "score": null,
+      "level": "unknown",
+      "reasons": []
+    },
+    "analysis": {
+      "status": "unsupported",
+      "errorCode": null,
+      "canRetry": false,
+      "updatedAt": "2026-10-20T10:00:00Z"
+    },
+    "text": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+    "revisionId": "revision-1",
+    "occurrences": [
+      {
+        "id": "o1",
+        "origin": "manual",
+        "platform": "Telegram",
+        "account": "fictional-account",
+        "originalUrl": "https://demo.invalid/ad/one",
+        "publishedAt": "2026-10-20T10:00:00Z",
+        "capturedAt": "2026-10-20T10:00:00Z",
+        "text": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+        "media": [
+          {
+            "id": "external-preview",
+            "kind": "thumbnail",
+            "url": "https://fixture.invalid/preview.jpg",
+            "availability": "external",
+            "analyzed": false
+          },
+          {
+            "id": "external-video",
+            "kind": "video",
+            "url": "javascript:alert(1)",
+            "availability": "unavailable",
+            "analyzed": false
+          }
+        ],
+        "legacyKind": "advertisement",
+        "legacyId": "demo-ad-04"
+      },
+      {
+        "id": "o2",
+        "origin": "automatic",
+        "platform": "Instagram",
+        "account": "fictional-second",
+        "originalUrl": "https://demo.invalid/ad/two",
+        "publishedAt": "2026-10-20T10:00:00Z",
+        "capturedAt": "2026-10-20T10:00:00Z",
+        "text": "DEMO: строящийся ЖК Горная мозаика. Для бронирования внесите депозит 135 000 тенге.",
+        "media": [],
+        "legacyKind": "monitoring",
+        "legacyId": "qa-monitoring"
+      }
+    ],
+    "nextOccurrenceCursor": "occ-page-2",
+    "hypotheses": [],
+    "complexCandidates": [
+      {
+        "id": "demo-complex-04",
+        "name": "DEMO — Горная мозаика",
+        "address": "Условная улица, 4"
+      }
+    ],
+    "confirmedRisk": null,
+    "review": null
+  },
+  "lastOccurrence": {
+    "id": "o3",
+    "origin": "automatic",
+    "platform": "Instagram",
+    "account": "fictional-second",
+    "originalUrl": null,
+    "publishedAt": null,
+    "capturedAt": "2026-10-20T10:00:00Z",
+    "text": "DEMO: третий сохранённый оригинал",
+    "media": [],
+    "legacyKind": "monitoring",
+    "legacyId": "qa-monitoring"
+  }
+}

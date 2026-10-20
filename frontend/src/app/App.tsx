@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { NavLink, Route, Routes, Link, useLocation } from 'react-router-dom'
-import { Building2, LayoutDashboard, LogOut, Megaphone, ShieldCheck, FileCheck2, MapPin, ScanSearch, Camera } from 'lucide-react'
+import { Building2, LayoutDashboard, LogOut, Megaphone, ShieldCheck, FileCheck2, MapPin, Camera } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfigurationNotice, useAuth } from '@/features/auth/AuthProvider'
 import { LoginPage } from '@/features/auth/LoginPage'
@@ -11,11 +11,12 @@ const DronePage = lazy(() => import('@/features/drone/DronePage').then(module =>
 const DroneDetail = lazy(() => import('@/features/drone/DroneDetail').then(module => ({ default: module.DroneDetail })))
 const CompaniesPage = lazy(() => import('@/features/companies/CompaniesPage').then(module => ({ default: module.CompaniesPage })))
 const CompanyDetail = lazy(() => import('@/features/companies/CompanyDetail').then(module => ({ default: module.CompanyDetail })))
-const MonitoringPage = lazy(() => import('@/features/monitoring/MonitoringPage').then(module => ({ default: module.MonitoringPage })))
+const AdvertisingPage = lazy(() => import('@/features/advertising/AdvertisingPage').then(module => ({ default: module.AdvertisingPage })))
+const MaterialReviewPage = lazy(() => import('@/features/advertising/MaterialReviewPage').then(module => ({ default: module.MaterialReviewPage })))
+const LegacyAdvertisingRedirect = lazy(() => import('@/features/advertising/LegacyAdvertising').then(module => ({ default: module.LegacyAdvertisingRedirect })))
+const LegacyAdvertising = lazy(() => import('@/features/advertising/LegacyAdvertising').then(module => ({ default: module.LegacyAdvertising })))
 const ComplexList = lazy(() => import('@/features/complexes/ComplexList').then(module => ({ default: module.ComplexList })))
 const ComplexDetail = lazy(() => import('@/features/complexes/ComplexDetail').then(module => ({ default: module.ComplexDetail })))
-const AdvertisementsPage = lazy(() => import('@/features/advertisements/AdvertisementsPage').then(module => ({ default: module.AdvertisementsPage })))
-const AdvertisementDetail = lazy(() => import('@/features/advertisements/AdvertisementsPage').then(module => ({ default: module.AdvertisementDetail })))
 const SignalsPage = lazy(() => import('@/features/signals/SignalsPage').then(module => ({ default: module.SignalsPage })))
 const CreateSignal = lazy(() => import('@/features/signals/SignalsPage').then(module => ({ default: module.CreateSignal })))
 const SignalDetail = lazy(() => import('@/features/signals/SignalsPage').then(module => ({ default: module.SignalDetail })))
@@ -23,11 +24,10 @@ const SignalDetail = lazy(() => import('@/features/signals/SignalsPage').then(mo
 
 const modules = [
   { path: '/', title: 'Обзор', icon: LayoutDashboard },
-  { path: '/monitoring', title: 'Мониторинг рекламы', icon: ScanSearch },
+  { path: '/advertising', title: 'Реклама', icon: Megaphone },
   { path: '/complexes', title: 'Реестр ЖК', icon: Building2 },
   { path: '/companies', title: 'Организации', icon: Building2 },
   { path: '/drone-inspections', title: 'Дрон-инспекция', icon: Camera },
-  { path: '/advertisements', title: 'Объявления', icon: Megaphone },
   { path: '/signals', title: 'Сигналы', icon: FileCheck2 },
 ]
 
@@ -83,15 +83,19 @@ export function App() {
         {logoutError && <p role="alert" className="inline-notice">{logoutError}</p>}
         <RouteBoundary key={pathname}><Suspense fallback={<LoadingState />}><Routes>
           <Route path="/" element={<ComplexList overview />} />
-          <Route path="/monitoring" element={<MonitoringPage />} />
+          <Route path="/advertising" element={<AdvertisingPage />} />
+          <Route path="/advertising/materials/:id" element={<MaterialReviewPage key={pathname} />} />
+          <Route path="/advertising/legacy/advertisement/:id" element={<LegacyAdvertising kind="advertisement" />} />
+          <Route path="/advertising/legacy/monitoring/:id" element={<LegacyAdvertising kind="monitoring" />} />
+          <Route path="/monitoring" element={<LegacyAdvertisingRedirect kind="monitoring" />} />
           <Route path="/complexes" element={<ComplexList />} />
           <Route path="/complexes/:id" element={<ComplexDetail />} />
           <Route path="/drone-inspections" element={<DronePage />} />
           <Route path="/drone-inspections/:id" element={<DroneDetail key={pathname} />} />
           <Route path="/companies" element={<CompaniesPage />} />
           <Route path="/companies/:id" element={<CompanyDetail key={pathname} />} />
-          <Route path="/advertisements" element={<AdvertisementsPage />} />
-          <Route path="/advertisements/:id" element={<AdvertisementDetail />} />
+          <Route path="/advertisements" element={<LegacyAdvertisingRedirect kind="advertisement" />} />
+          <Route path="/advertisements/:id" element={<LegacyAdvertisingRedirect kind="advertisement" />} />
           <Route path="/signals" element={<SignalsPage />} />
           <Route path="/signals/new" element={<CreateSignal />} />
           <Route path="/signals/:id" element={<SignalDetail />} />

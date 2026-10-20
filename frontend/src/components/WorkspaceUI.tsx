@@ -21,8 +21,9 @@ export function ErrorState({ message, retry }: { message: string; retry?: () => 
 export function EmptyState({ title, children }: { title: string; children?: ReactNode }) {
   return <div className="state-box flex-col"><h2 className="font-semibold">{title}</h2>{children}</div>
 }
-export function RiskBadge({ risk }: { risk: Pick<RiskResult, 'score' | 'zone'> }) {
-  const label = { GREEN: 'Низкий приоритет', YELLOW: 'Требует проверки', RED: 'Высокий приоритет' }[risk.zone]
+export function RiskBadge({ risk, confirmed = false }: { risk: Pick<RiskResult, 'score' | 'zone'>; confirmed?: boolean }) {
+  const label = confirmed ? { GREEN: 'Зелёная зона', YELLOW: 'Жёлтая зона', RED: 'Красная зона' }[risk.zone]
+    : { GREEN: 'Низкий приоритет', YELLOW: 'Требует проверки', RED: 'Высокий приоритет' }[risk.zone]
   return <span className={`risk-badge risk-${risk.zone.toLowerCase()}`}><span className="risk-dot" />{risk.score} · {label}</span>
 }
 export function StatusBadge({ status, label }: { status: VerificationStatus; label?: string }) {
