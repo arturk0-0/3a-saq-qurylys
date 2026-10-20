@@ -64,7 +64,7 @@ class LocalCollector:
             "Учебный материал локального деморежима, не реальная публикация."
         )
         item = Observation(
-            original_url="https://demo.invalid/monitor/" + source.id,
+            original_url="https://example.org/saq-local-demo/monitor/" + source.id,
             title="DEMO — учебная реклама жилья",
             text=text,
             account="DEMO — вымышленный источник",
@@ -77,7 +77,7 @@ class LocalCollector:
         )
         return FetchResult(
             items=[item],
-            discovery_url="https://demo.invalid/local-collection",
+            discovery_url="https://example.org/saq-local-demo/collection",
             response_sha256=hashlib.sha256(text.encode()).hexdigest(),
             limited=False,
         )

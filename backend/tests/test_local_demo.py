@@ -77,6 +77,8 @@ def test_demo_persistence_rollbacks_and_scoring(demo):
 
 def test_demo_analysis_collectors_companies_and_uploaded_file(demo):
     client, _, _ = demo
+    collected = client.get("/api/v1/monitoring/items").json()["items"]
+    assert len(collected) == 1 and "вымышленная" in collected[0]["text"]
     result = client.post(
         "/api/v1/advertisements/demo-ad-01/analyze",
         json={"requestId": str(uuid4()), "expectedVersion": 1},
