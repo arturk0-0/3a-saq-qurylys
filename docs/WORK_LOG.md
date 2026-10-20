@@ -597,3 +597,29 @@ PR #19 открыт и учитывается как отдельное прод
   совместный browser сценарий здание → ЖК → компания → источник; mock OSM tiles,
   main не менялся, исходники карты совпадают с A. Продолжение: CI/review →
   после зависимостей retarget main и выбрать общую версию; merge/выпуск отдельно.
+
+## Дрон-инспекция · 20 октября 2026 · PR #24
+
+Прямой запрос владельца: отдельная вкладка с фотографиями с дрона и ИИ-анализом.
+B реализовал backend и необходимый frontend в `feat/drone-photo-inspections`
+поверх сохранённого PR #23/#19. Карта A/ComplexList/общий CSS/общий runner не менялись.
+
+- `fd11e25`: приватный оригинал/SHA, настраиваемый visual checklist, строгий Gemini
+  response, существующие safe errors/квоты, Auth/scope, версии/UUID, stale recovery,
+  отдельные наблюдения/review/audit. Изменений рекламных факторов и риска нет.
+- `30c6aba`: вкладка и карточка инспекции, загрузка → явный анализ → решения с
+  разделителями и историей, приватный preview/download, mobile, отдельный QA.
+- Итоги: **527 backend, 100 frontend, 18 native SDK passed**, Ruff/format,
+  typecheck/build, 11 Chromium-групп. Независимое read-only review без blockers.
+  Функциональный SHA 30c6aba: все 8 push/PR CI checks passed, включая Compose.
+- Исправлены только сроки ожидания lazy registry в AuthProvider.test, production
+  Auth не менялась; до исправления локально 98 passed / 2 timeouts, после — 100.
+- Платных AI/SearchAPI вызовов, deployment, main merge и облачных записей 0.
+  Проверки реальной моделью настоящего дрон-фото/Storage не заявляются.
+- Утверждённый чек-лист строительных норм не получен; стартовые пункты — примеры
+  визуального осмотра из ТЗ. Не видно в кадре != отсутствует на площадке.
+
+[PR #24](https://github.com/arturk0-0/3a-saq-qurylys/pull/24),
+[API](drone-api.md), [отчёт/ограничения/следующий шаг](drone-inspection-report.md).
+После интеграции зависимостей и review/CI — отдельный выпуск API/Hosting/indexes
+и ручная приёмка реального кадра; автоматически ничего не публиковалось.

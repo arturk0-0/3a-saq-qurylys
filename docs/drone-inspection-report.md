@@ -29,17 +29,88 @@
   Неопределённый commit не удаляет потенциально сохранённый оригинал.
 - Рекламные доказательства/факторы/правовые основания не меняются.
 
-## Проверки, текущий checkpoint
+## Фактические проверки
 
-99 целевых backend-тестов (дрон + существующие image/text Gemini, диагностика
-и ошибки) passed. Первый запуск указал несуществующий test_gemini.py, тестов не
-выполнил; затем выполнен правильный набор test_analysis/test_gemini_errors/
-test_gemini_diagnostics/test_drone. Typecheck новой вкладки passed.
+| Проверка | Итог |
+| --- | --- |
+| Полный backend pytest | **527 passed**, 1 upstream Starlette/httpx warning |
+| Полный frontend Vitest | **100 passed**, 23 файла, один worker/vmThreads |
+| Native Firestore SDK на локальном эмуляторе | **18 passed**, включая workflow/пагинацию/атомарное review дрона |
+| Ruff / format | Passed, backend + отдельный drone QA |
+| TypeScript typecheck / Vite production build | Passed, вкладка и карточка отдельными lazy chunks |
+| Chromium, 1440 desktop / 390 mobile | **11 групп passed**, внешних запросов/page errors нет |
+| Независимое read-only review | Подтверждённых blockers нет; не human approval |
+| GitHub Actions, функциональный SHA 30c6aba | Все 8 push/PR checks passed: backend/frontend/SDK/Compose |
 
-Следующие проверки: unit UI, полный pytest/Vitest/build, native SDK на локальном
-эмуляторе, отдельный browser workflow и независимое read-only review.
-Фактические итоги будут дописаны до завершения PR.
+CI: [push run 39405799043](https://github.com/arturk0-0/3a-saq-qurylys/actions/runs/39405799043),
+[PR run 39405936325](https://github.com/arturk0-0/3a-saq-qurylys/actions/runs/39405936325).
+Новые SHA с итоговым отчётом и увеличенным ожиданием lazy page проходят ту же CI.
+Их актуальный статус — в [PR #24](https://github.com/arturk0-0/3a-saq-qurylys/pull/24).
 
-Платных Gemini/SearchAPI запросов и deployment — 0. Здесь локальные тесты
-используют явно внедрённые MockTransport/MemoryStore/тестовую identity; это не
-облачная проверка и не подтверждение качества модели на реальных дрон-снимках.
+Команды из корня:
+
+```bash
+backend/.venv/bin/ruff check backend frontend/qa/drone
+backend/.venv/bin/ruff format --check backend frontend/qa/drone
+backend/.venv/bin/pytest backend/tests -q
+npm test --prefix frontend -- --maxWorkers=1 --pool=vmThreads
+npm run build --prefix frontend
+python frontend/qa/drone/run.py
+python backend/qa/firestore/run.py
+```
+
+Локально native runner использовал уже установленный официальный firebase-tools
+15.34.0 напрямую вместо повторной npm-установки. Остались штатные конфигурация,
+изолированный demo-* project, localhost, AnonymousCredentials и очистка credentials.
+CI запускает штатный runner без локальной подстановки CLI. Эмулятор не подтверждает
+готовность облачных composite indexes.
+
+Browser проверил редактирование/добавление/удаление пунктов, создание инспекции,
+защищённую загрузку/скачивание исходных байтов, отсутствие автозапуска AI, три
+визуальных статуса, два экспертных решения с divider lines, новый анализ без
+наследования старого решения, reload, mobile и неизменный риск исходного ЖК.
+Артефакты — `/tmp/saq-drone-browser`, [runner](../frontend/qa/drone/README.md).
+
+Серверные регрессии отдельно проверяют поздний ответ старого анализа после
+восстановления, stale review/version, совпадение каждого ID чек-листа ровно раз,
+квоты, запрет доступа к другой workspace scope, SHA corruption, безопасную
+очистку проигравшего upload и сохранение оригинала после неопределённого commit.
+Общий Gemini-refactor проверен существующими text/image/диагностическими тестами.
+
+Первый локальный frontend прогон дал 98 passed / 2 таймаута ожидания lazy registry
+в AuthProvider.test. Добавлено только ожидание готовой страницы до тестирования
+auth-переходов (5s вместо 1s); все проверки отказа токена/скрытия защищённого UI
+сохранены. Повторный полный прогон — 100 passed. Production Auth не менялась.
+Первый ошибочный путь test_gemini.py не выполнил тестов; затем правильный набор
+analysis/gemini_errors/gemini_diagnostics/drone дал 99 passed, после двух новых
+race-проверок отдельный drone suite — 23 passed, полный backend — 527.
+
+## Ограничения и выпуск
+
+[PR #24](https://github.com/arturk0-0/3a-saq-qurylys/pull/24) — поверх PR #23,
+работа компаний и PR #19 сохранена. Сервер `fd11e25`, UI/QA `30c6aba`.
+Файлы карты A, общий CSS и общий browser runner не менялись. Main не объединялся.
+
+Платных Gemini/SearchAPI запросов, deployment и облачных записей — **0**.
+Локальные и CI проверки используют явно внедрённые MockTransport/MemoryStore/
+тестовую identity; SDK — локальный эмулятор. Синтетический PNG нарисован для QA,
+это не реальный дрон-снимок. Не заявляем проверку качества реальной модели или
+реального Firebase Storage.
+
+Утверждённый нормативный перечень организаторов не предоставлен. Базовые пункты
+основаны на визуальных примерах ТЗ, редактируются перед созданием. Ссылки —
+указанные пользователем источники критериев; документы не скачиваются и не
+проверяются автоматически. Фото не подтверждает соблюдение всех строительных
+норм, отсутствие объекта вне кадра, точные размеры или безопасность конструкций.
+
+Один снимок и 1–8 пунктов на инспекцию, до 20 попыток анализа/20 решений. Для
+другого снимка/набора критериев создаётся новая инспекция; оригинал старой
+сохраняется. Метаданные/чек-лист не заменяются после создания. История хранит
+версию промпта/модель/фото SHA и точный чек-лист каждого анализа.
+
+После review/CI и интеграции зависимостей — обычный отдельный выпуск API/Hosting
+и двух объявленных indexes, с ожиданием READY. [API/rollout](drone-api.md).
+Ручная облачная приёмка: действующий аналитик, доступ к новому private Storage
+prefix, реальная разрешённая к обработке фотография, модель из GEMINI_MODEL,
+все ID/статусы/ограничения, review/history после reload и неизменные R1–R6.
+До отдельного выпуска новая вкладка на опубликованном сайте не появляется.

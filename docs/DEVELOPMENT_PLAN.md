@@ -216,7 +216,9 @@ MON-IG-02 подтверждён коротким live trial и запуском
 ## 5. Дрон-инспекция · новый запрос владельца, 20 октября
 
 B по прямому запросу реализует весь модуль и его frontend; карту A не меняет.
-Код готовится в `feat/drone-photo-inspections` поверх сохранённого PR #23/#19.
+Код подготовлен в `feat/drone-photo-inspections`,
+[PR #24](https://github.com/arturk0-0/3a-saq-qurylys/pull/24) поверх сохранённого PR #23/#19.
+Проверены 527 backend, 100 frontend, 18 native SDK, Chromium и CI функционального SHA.
 [Контракты](drone-api.md), [фактический отчёт](drone-inspection-report.md).
 Публикация и проверка реальной моделью — отдельно; при разработке платных вызовов нет.
 Чекбоксы интеграции закрываются после review/CI/merge.
