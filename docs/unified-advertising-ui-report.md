@@ -12,13 +12,16 @@ material-workflow-contract. Проверены удалённые ветки/PR 
 
 Совместимость проверена с backend B, PR **#32**, точный SHA
 **f95c644065e3ea56025ec6480f5560a187fb52a0**, в отдельном чистом detached worktree.
+В конце повторена настоящая интеграция на новом HEAD B
+**2b5a0b4c2590f99a95190f7230ed8848dfebbe9c**: те же 5 групп PASS.
 Ни слияния B в эту ветку, ни изменения его исходников не было. Публиковать UI
 следует вместе с совместимым backend: endpoints materials, review, retry-analysis,
 точный occurrence и history; complex sort=priority. Это не утверждение об их
 наличии на опубликованном сайте.
 
 Проверенные продуктовые коммиты: `ed840ab`, `b1252b0`, `fae2055`, `f8b5398`.
-Следующий отдельный коммит содержит только QA, снимки и этот отчёт.
+Коммит `1410989` содержит QA, снимки и этот отчёт; последующее обновление
+фиксирует проверку нового HEAD B и состояние публикации.
 
 ## Что изменено
 
@@ -125,7 +128,8 @@ runCursor переносится отдельно. Новый поиск/фил�
 
 Артефакты финальных локальных прогонов:
 `/tmp/saq-unified-contract-pr32/results.json` (11),
-`/tmp/saq-unified-native-pr32/results.json` (5), логи/PDF рядом.
+`/tmp/saq-unified-native-pr32/results.json` (5),
+`/tmp/saq-unified-native-B-head/results.json` (повторные 5 на новом B), логи/PDF рядом.
 Временные артефакты привязаны к этой среде. Сохранённые подписанные снимки находятся
 в [frontend/qa/unified-advertising/screenshots](../frontend/qa/unified-advertising/screenshots),
 включая 1440/375/320 и источники на 320 px.
@@ -145,3 +149,17 @@ runCursor переносится отдельно. Новый поиск/фил�
 
 Доступов к облаку не запрашивали, живые данные/инфраструктуру не меняли,
 платные запросы, deployment и merge не выполняли.
+
+## Публикация ветки и PR
+
+Все проверенные коммиты отправлены в `origin/feat/A-unified-advertising-ui`.
+Рабочее дерево чистое; `origin/main` при финальной проверке остаётся `2751a32`.
+`gh pr create --base main --head feat/A-unified-advertising-ui` завершился
+`Post https://api.github.com/graphql: Forbidden`; запрос check-runs последнего
+коммита также Forbidden. Это ограничение GitHub API среды, не ошибка приложения
+и не успешный CI. PR автоматически создать не удалось.
+
+[Открыть PR из подготовленной ветки](https://github.com/arturk0-0/3a-saq-qurylys/compare/main...feat/A-unified-advertising-ui?expand=1).
+База main, заголовок `feat(advertising): unify materials and human review (#30)`,
+в описании указать зависимость от #32, результаты выше и отсутствие legacy resolver.
+После открытия проверить CI актуального SHA; merge и deploy остаются владельцу.

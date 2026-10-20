@@ -14,7 +14,7 @@ Playwright/Pillow и Chromium: установка описана в `../release/
 
 ```bash
 git fetch origin feat/B-materials-auto-priority
-git worktree add --detach /tmp/saq-materials-backend-review f95c644065e3ea56025ec6480f5560a187fb52a0
+git worktree add --detach /tmp/saq-materials-backend-review 2b5a0b4c2590f99a95190f7230ed8848dfebbe9c
 UV_PROJECT_ENVIRONMENT=/tmp/saq-a-backend-venv uv sync --project /tmp/saq-materials-backend-review/backend --frozen
 cd frontend
 npm ci
