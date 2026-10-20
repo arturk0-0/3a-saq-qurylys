@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 
 from app.api.dependencies import CurrentUser, get_runtime
 from app.core.firebase import FirebaseRuntime
@@ -45,7 +45,7 @@ def complexes(
     q: Annotated[str, Query(max_length=100)] = "",
     city: Annotated[str | None, Query(max_length=100)] = None,
     zone: RiskZone | None = None,
-    sort: Literal["risk", "name"] = "risk",
+    sort: Literal["risk", "name", "priority"] = "risk",
     cursor: Annotated[int, Query(ge=0, le=500)] = 0,
     limit: Limit = 50,
 ) -> dict:
@@ -108,9 +108,17 @@ def complex_advertisements(
 
 @router.post("/advertisements", response_model=Advertisement, status_code=201)
 def create_advertisement(
-    payload: AdvertisementCreate, user: CurrentUser, service: Workspace
+    payload: AdvertisementCreate,
+    user: CurrentUser,
+    service: Workspace,
+    background: BackgroundTasks,
+    request: Request,
 ) -> Advertisement:
-    return service.create_advertisement(payload, user)
+    result = service.create_advertisement(payload, user)
+    from app.api.materials import schedule_analysis
+
+    schedule_analysis(background, request, service)
+    return result
 
 
 @router.get("/advertisements/{record_id}", response_model=Advertisement)

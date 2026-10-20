@@ -14,6 +14,7 @@ from app.api.analysis import router as analysis_router
 from app.api.auth import router as auth_router
 from app.api.companies import router as companies_router
 from app.api.drone import router as drone_router
+from app.api.materials import router as materials_router
 from app.api.monitoring import router as monitoring_router
 from app.api.router import router
 from app.api.signals import router as signals_router
@@ -46,6 +47,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(drone_router)
     application.include_router(analysis_router)
     application.include_router(monitoring_router)
+    application.include_router(materials_router)
     application.include_router(signals_router)
 
     def error_response(request: Request, status: int, code: str, message: str) -> JSONResponse:

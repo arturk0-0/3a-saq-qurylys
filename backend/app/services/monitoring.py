@@ -353,6 +353,8 @@ class MonitoringService:
                 or current_source.lease_until < now
             ):
                 raise Conflict("Collection lease expired; refresh source")
+            from app.services.material_projection import monitor_occurrence, stage_occurrence
+
             if existing:
                 old = MonitorItem.model_validate(existing)
                 seen = old.model_copy(
@@ -361,8 +363,10 @@ class MonitoringService:
                         "source_ids": sorted(set([*old.source_ids, source.id]))[:20],
                     }
                 )
+                stage_occurrence(tx, monitor_occurrence(seen))
                 tx.set("monitorItems", key, serialize(seen))
                 return seen, False
+            stage_occurrence(tx, monitor_occurrence(item))
             tx.create("monitorItems", key, serialize(item))
             return item, True
 

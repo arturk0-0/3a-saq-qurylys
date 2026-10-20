@@ -36,6 +36,18 @@ def main() -> int:
         )
         while True:
             results = service.run_due(worker)
+            from app.services.files import FileService, FirebaseFileStorage
+            from app.services.material_analysis import MaterialProcessor
+            from app.services.materials import MaterialService
+
+            MaterialService(service.workspace).sync_legacy()
+            analysis = MaterialProcessor(
+                service.workspace,
+                service.client,
+                FileService(service.workspace, FirebaseFileStorage(runtime)),
+                settings,
+            )
+            results.extend(analysis.process(worker, limit=3))
             # IDs/counts/error codes only; no scraped texts, account names or keys.
             print(json.dumps(results), flush=True)
             if not args.watch:

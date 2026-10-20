@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 
@@ -96,6 +96,7 @@ def review(
 async def screenshot(
     record_id: Identifier,
     request: Request,
+    background: BackgroundTasks,
     user: CurrentUser,
     files: Files,
     expected_version: Annotated[int, Query(ge=1)],
@@ -106,7 +107,7 @@ async def screenshot(
         if len(data) + len(chunk) > MAX_UPLOAD:
             raise AppError(413, "FILE_SIZE", "Image exceeds 6 MiB")
         data.extend(chunk)
-    return await run_in_threadpool(
+    result = await run_in_threadpool(
         files.upload,
         record_id,
         expected_version,
@@ -114,6 +115,10 @@ async def screenshot(
         request.headers.get("content-type", ""),
         user,
     )
+    from app.api.materials import schedule_analysis
+
+    schedule_analysis(background, request, files.workspace, files)
+    return result
 
 
 @router.get("/evidence/{record_id}/file")

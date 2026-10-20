@@ -130,6 +130,9 @@ class FileService:
             event = audit_event(
                 user, "evidence", item.id, "screenshot.upload", complex_, {"sha256": item.sha256}
             )
+            from app.services.material_projection import ad_occurrence, stage_occurrence
+
+            stage_occurrence(tx, ad_occurrence(tx, current, {item.id: serialize(item)}))
             tx.create("evidence", item.id, serialize(item))
             tx.set("advertisements", ad_id, serialize(current))
             tx.create("auditLogs", event.id, serialize(event))
