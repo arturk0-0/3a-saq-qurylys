@@ -132,6 +132,7 @@ def create_local_app(root: Path | None = None):
             return JSONResponse({"code": "LOCAL_ONLY", "message": "Local demo only"}, 403)
         response = await call_next(request)
         response.headers["X-SAQ-Mode"] = "local-demo"
+        response.headers["Cache-Control"] = "no-store"
         return response
 
     @app.post("/api/local-demo/session")

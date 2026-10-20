@@ -48,8 +48,9 @@ docker compose -f compose.demo.yaml down
 docker compose -f compose.demo.yaml down -v
 ```
 
-Заняты 8000 или 5173? Остановите предыдущую копию SAQ или другое приложение на
-этих портах. Не запускайте `compose.yaml` и `compose.demo.yaml` одновременно.
+Занят 5173? Остановите предыдущую копию SAQ или другое приложение на этом порту.
+Демо-API доступен через frontend proxy; отдельный порт API наружу не публикуется.
+Не запускайте `compose.yaml` и `compose.demo.yaml` одновременно.
 
 Автоматическая проверка (необязательно; нужен Python 3.12+ на хосте):
 
