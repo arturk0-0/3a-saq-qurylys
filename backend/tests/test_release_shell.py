@@ -22,7 +22,12 @@ elif tool=='gcloud':
     elif 'json(status.traffic)' in args:
         print(json.dumps({'status':{'traffic':[{'revisionName':'old-revision','percent':100}]}}))
     elif 'value(status.url)' in args:print('https://demo-test.run.app')
-    elif 'latestReadyRevisionName' in args:print('new-revision')
+    elif 'latestCreatedRevisionName' in args:print('new-revision')
+    elif 'latestReadyRevisionName' in args:print('old-revision')
+    elif 'revisions describe' in args:
+        print(json.dumps({'status':{'conditions':[
+            {'type':'Ready','status':os.environ['SAQ_FAKE_READY'],'reason':'Retired'},
+            {'type':'Active','status':'False','reason':'Retired'}]}}))
     elif 'indexes composite list' in args:
         rows=json.loads(Path('firestore.indexes.json').read_text())['indexes']
         values=[]
@@ -44,8 +49,13 @@ elif tool=='node' and '--input-type' in args:sys.stdin.read()
 """
 
 
-@pytest.mark.parametrize("auth_result", ["401", "200", "transport"])
-def test_release_promotes_exact_revision_and_rolls_back_failed_auth_smoke(tmp_path, auth_result):
+@pytest.mark.parametrize(
+    ("auth_result", "ready"),
+    [("401", "True"), ("200", "True"), ("transport", "True"), ("401", "False")],
+)
+def test_release_promotes_exact_revision_and_rolls_back_failed_auth_smoke(
+    tmp_path, auth_result, ready
+):
     binary = tmp_path / "bin"
     binary.mkdir()
     log = tmp_path / "commands.txt"
@@ -54,7 +64,7 @@ def test_release_promotes_exact_revision_and_rolls_back_failed_auth_smoke(tmp_pa
         file.write_text(f"#!{sys.executable}\n" + STAND_IN)
         file.chmod(0o755)
     env = {**os.environ, "PATH": str(binary) + os.pathsep + os.environ["PATH"]}
-    env.update(SAQ_FAKE_AUTH=auth_result, SAQ_FAKE_LOG=str(log))
+    env.update(SAQ_FAKE_AUTH=auth_result, SAQ_FAKE_READY=ready, SAQ_FAKE_LOG=str(log))
     result = subprocess.run(
         ["bash", str(ROOT / "deploy/publish-reviewed-release.sh"), SHA],
         env=env,
@@ -63,6 +73,14 @@ def test_release_promotes_exact_revision_and_rolls_back_failed_auth_smoke(tmp_pa
         timeout=90,
     )
     commands = log.read_text()
+    assert "latestReadyRevisionName" not in commands
+    if ready != "True":
+        assert result.returncode != 0
+        assert "not Ready" in result.stderr
+        assert "update-traffic" not in commands
+        assert "deploy --only hosting" not in commands
+        return
+    assert "revisions describe new-revision" in commands
     assert "--to-revisions=new-revision=100" in commands
     if auth_result == "401":
         assert result.returncode == 0, result.stderr

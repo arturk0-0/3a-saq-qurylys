@@ -59,12 +59,20 @@ fi
 gcloud builds submit . --project="$SAQ_RELEASE_PROJECT" --config=deploy/cloudbuild.yaml --substitutions="_IMAGE=$SAQ_RELEASE_IMAGE"
 
 # Change only the image and release label. Preserve secrets, model, identity and limits.
-gcloud run services update "$SAQ_RELEASE_SERVICE" --project="$SAQ_RELEASE_PROJECT" --region="$SAQ_RELEASE_REGION" --image="$SAQ_RELEASE_IMAGE" --update-labels="saq-git-sha=$SAQ_RELEASE_SHA" --no-traffic
-SAQ_RELEASE_NEW_REVISION=$(gcloud run services describe "$SAQ_RELEASE_SERVICE" --project="$SAQ_RELEASE_PROJECT" --region="$SAQ_RELEASE_REGION" --format='value(status.latestReadyRevisionName)')
+# latestReadyRevisionName can remain on the serving revision when the new one
+# has no traffic (Ready=True, reason=Retired). Read the update's created revision.
+SAQ_RELEASE_NEW_REVISION=$(gcloud run services update "$SAQ_RELEASE_SERVICE" --project="$SAQ_RELEASE_PROJECT" --region="$SAQ_RELEASE_REGION" --image="$SAQ_RELEASE_IMAGE" --update-labels="saq-git-sha=$SAQ_RELEASE_SHA" --no-traffic --format='value(status.latestCreatedRevisionName)')
 if [[ -z "$SAQ_RELEASE_NEW_REVISION" || "$SAQ_RELEASE_NEW_REVISION" == "$SAQ_RELEASE_OLD_REVISION" ]]; then
   echo 'New API revision was not identified. Traffic has not been changed.' >&2
   exit 1
 fi
+gcloud run revisions describe "$SAQ_RELEASE_NEW_REVISION" --project="$SAQ_RELEASE_PROJECT" --region="$SAQ_RELEASE_REGION" --format='json(status.conditions)' > "$SAQ_RELEASE_TEMP/revision.json"
+python3 - "$SAQ_RELEASE_TEMP/revision.json" <<'PYREADY'
+import json,sys
+conditions=json.load(open(sys.argv[1])).get('status',{}).get('conditions',[])
+if not any(c.get('type') == 'Ready' and c.get('status') == 'True' for c in conditions):
+    sys.exit('New API revision is not Ready. Traffic has not been changed.')
+PYREADY
 if ! gcloud run services update-traffic "$SAQ_RELEASE_SERVICE" --project="$SAQ_RELEASE_PROJECT" --region="$SAQ_RELEASE_REGION" --to-revisions="$SAQ_RELEASE_NEW_REVISION=100"; then
   gcloud run services update-traffic "$SAQ_RELEASE_SERVICE" --project="$SAQ_RELEASE_PROJECT" --region="$SAQ_RELEASE_REGION" --to-revisions="$SAQ_RELEASE_OLD_REVISION=100"
   echo 'Traffic promotion failed: attempted restoration of the previous revision.' >&2
