@@ -9,7 +9,7 @@ export interface Analysis {
 export interface MaterialSummary {
   id: string; version: number; title: string; textPreview: string; reviewState: ReviewState
   origins: ('automatic' | 'manual')[]; platforms: string[]; occurrenceCount: number
-  firstSeenAt: string; lastSeenAt: string; complex: { id: string; name: string } | null
+  firstSeenAt: string; lastSeenAt: string; complex: { id: string; name: string; version?: number } | null
   priority: Priority; analysis: Analysis
 }
 export interface Media {

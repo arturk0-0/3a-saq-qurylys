@@ -16,6 +16,9 @@ export function Originals({ detail, requestedId, onRecords }: {
   const [selected, setSelected] = useState(detail.occurrences[0]?.id || '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [originalError, setOriginalError] = useState<string | null>(null)
+  const [originalBusy, setOriginalBusy] = useState(false)
+  const [originalAttempt, setOriginalAttempt] = useState(0)
   const controller = useRef<AbortController | null>(null)
   const original = useRef<HTMLElement>(null)
   useEffect(() => () => controller.current?.abort(), [])
@@ -25,6 +28,17 @@ export function Originals({ detail, requestedId, onRecords }: {
       setSelected(requestedId); original.current?.focus({ preventScroll: true }); original.current?.scrollIntoView?.({ block: 'nearest' })
     }
   }, [requestedId, records])
+  useEffect(() => {
+    setOriginalError(null)
+    if (!requestedId || records.some(record => record.id === requestedId)) { setOriginalBusy(false); return }
+    const request = new AbortController()
+    setOriginalBusy(true); setOriginalError(null)
+    void api<Occurrence>(`/api/v1/materials/${encodeURIComponent(detail.id)}/occurrences/${encodeURIComponent(requestedId)}`, { signal: request.signal })
+      .then(record => { if (!request.signal.aborted) setRecords(previous => previous.some(item => item.id === record.id) ? previous : [...previous, record]) })
+      .catch(failure => { if (!request.signal.aborted) setOriginalError(errorMessage(failure)) })
+      .finally(() => { if (!request.signal.aborted) setOriginalBusy(false) })
+    return () => request.abort()
+  }, [api, detail.id, requestedId, records, originalAttempt])
   async function more() {
     if (!cursor || busy) return
     const request = new AbortController(); controller.current = request
@@ -42,7 +56,9 @@ export function Originals({ detail, requestedId, onRecords }: {
     <h2>Оригиналы и публикации</h2>
     <p>Зарегистрировано публикаций: {detail.occurrenceCount}. Здесь загружено: {records.length}.</p>
     <FormField label="Публикация"><select value={current?.id || ''} onChange={event => setSelected(event.target.value)}>{records.map(record => <option key={record.id} value={record.id}>{record.platform} · {record.account} · {formatDate(record.publishedAt)}</option>)}</select></FormField>
-    {requestedId && !records.some(record => record.id === requestedId) && <p role="status">Оригинал этой цитаты ещё не загружен. Откройте следующие публикации; подтверждать без проверки оригинала нельзя.</p>}
+    {originalBusy && <p role="status">Загружаем оригинал выбранной цитаты…</p>}
+    {originalError && <ErrorState message={originalError} retry={() => setOriginalAttempt(value => value + 1)} />}
+    {requestedId && !records.some(record => record.id === requestedId) && <p role="status">Оригинал этой цитаты ещё не загружен. Подтверждать без проверки оригинала нельзя.</p>}
     {!current ? <p>Оригиналы пока недоступны. Это не подтверждение фактов.</p> : <>
       <div className="ad-meta"><span>{current.platform}</span><span>{current.account}</span><span>{current.origin === 'manual' ? 'Добавлено вручную' : 'Получено автоматически'}</span></div>
       <p className="form-hint">Опубликовано: {formatDate(current.publishedAt)} · Зафиксировано: {formatDate(current.capturedAt)}</p>

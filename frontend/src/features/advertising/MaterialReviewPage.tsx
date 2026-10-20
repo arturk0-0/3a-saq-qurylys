@@ -13,6 +13,7 @@ import { ComplexPicker } from './ComplexPicker'
 import { Originals } from './Originals'
 import { useResource } from './useResource'
 import { ScreenshotUpload } from './ScreenshotUpload'
+import { MaterialHistory } from './MaterialHistory'
 import type { Decision, MaterialDetail, Occurrence, ReviewBody } from './types'
 import './advertising.css'
 
@@ -163,6 +164,7 @@ function ReviewEditor({ detail, materialLoading, refresh, apply }: {
         {detail.confirmedRisk ? <><RiskBadge confirmed risk={detail.confirmedRisk} /><ul>{detail.confirmedRisk.factors.map(factor => <li key={factor.code}>{factor.code} · {factorLabels[factor.code]}: {statusLabels[factor.status]} · {factor.points} баллов</li>)}</ul></> : <p>Подтверждённая оценка для материала пока недоступна. Это не нулевой риск.</p>}
         {detail.complex && complexId === detail.complex.id && <Link className="detail-link" to={`/signals/new?complex=${encodeURIComponent(detail.complex.id)}`}>Создать сигнал по проверенным данным ЖК →</Link>}
       </section>
+      <MaterialHistory id={detail.id} version={detail.version} />
     </div></div>
   </div>
 }

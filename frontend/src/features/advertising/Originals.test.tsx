@@ -40,6 +40,16 @@ it('loads private images through the authorized file client and releases their b
   view.unmount(); expect(revoke).toHaveBeenCalledWith('blob:test-private')
 })
 
+it('opens the exact quote original beyond the first page directly, without paging or losing the other originals', async () => {
+  const api = vi.fn(async () => fixtures.lastOccurrence)
+  render(<AuthContext.Provider value={{ status: 'authenticated', profile: null, error: null, api: api as never, signIn: vi.fn(), logout: vi.fn() }}><Originals detail={fixtures.material as MaterialDetail} requestedId="o3" onRecords={vi.fn()} /></AuthContext.Provider>)
+  await screen.findByText('DEMO: третий сохранённый оригинал')
+  expect(api).toHaveBeenCalledWith('/api/v1/materials/m1/occurrences/o3', expect.anything())
+  expect(screen.getByLabelText('Публикация')).toHaveValue('o3')
+  expect(screen.getAllByRole('option')).toHaveLength(3)
+  expect(screen.queryByText('Загружаем оригинал выбранной цитаты…')).not.toBeInTheDocument()
+})
+
 it('rejects an invalid upload locally and preserves a valid file through a stale advertisement version and retry', async () => {
   let version = 1
   let posts = 0
