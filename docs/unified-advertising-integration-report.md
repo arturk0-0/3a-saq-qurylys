@@ -2,7 +2,7 @@
 
 20 октября 2026. Backend B объединён через [PR #32](https://github.com/arturk0-0/3a-saq-qurylys/pull/32),
 коммит main `c3ac492`. Frontend A (`af81ff9`) сохранён целиком; совместная ветка
-и исправления B проходят [PR #33](https://github.com/arturk0-0/3a-saq-qurylys/pull/33).
+и исправления B объединены через [PR #33](https://github.com/arturk0-0/3a-saq-qurylys/pull/33).
 Это отчёт реализации и локальных проверок, не публикации на облачный сайт.
 
 ## Итоговый путь
@@ -43,8 +43,8 @@
   Старый ID тоже проходит реальный resolver. Нет подмены materials/скоринга;
   Auth, MemoryStore, файлы и внешние providers — изолированные тестовые адаптеры.
 - Backend #32 до объединения: **558 unit tests**, **19 native Firestore SDK
-  integration tests**, Ruff/format и все пять CI jobs passed. В PR #33 повторяется
-  полный CI на совместном дереве; точный SHA и итог фиксируются комментарием PR.
+  integration tests**, Ruff/format и все пять CI jobs passed. Совместное дерево объединено в main (`71ec160`);
+  [все пять CI jobs прошли](https://github.com/arturk0-0/3a-saq-qurylys/actions/runs/39475456531).
 - **Настоящий persistent local-demo + новый UI — passed**: login, intake,
   автоматический локальный анализ, одно review → 35, reload с сохранённым
   комментарием/историей, 1440/375/320; нет external requests/page errors.

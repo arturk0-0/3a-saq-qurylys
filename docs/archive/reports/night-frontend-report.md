@@ -92,7 +92,7 @@ POST, skip link и route focus. Необработанных page errors нет;
 - Browser print PDF с тестовыми данными содержит DEMO и все R1–R6, без редактора
   и кнопок сохранения (проверено извлечением текста). Это печать UI с адаптером,
   не облачный WeasyPrint report.
-- Снимки для review включены в [frontend/qa](../frontend/qa/README.md). На снимках
+- Снимки для review включены в [frontend/qa](../../../frontend/qa/README.md). На снимках
   тестовые API-данные, не фактическая Google/Firebase интеграция.
 - Backend/deploy/индексы/rules/API schemas/зависимости/lockfile не изменялись
   относительно ac11efc. Никаких новых runtime функций, клиентского скоринга,

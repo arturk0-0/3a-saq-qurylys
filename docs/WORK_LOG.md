@@ -221,7 +221,7 @@ frontend/QA друга `8dce105`, без изменения main или исхо
 Gemini/Auth/Storage в этих QA-проверках явно тестовые; WeasyPrint PDF настоящий.
 Эмулятор не проверяет production indexes/IAM и не включается в обычный runtime.
 Независимое review, облачная приёмка, второй Windows-компьютер и публикация
-остаются отдельными gates. Подробности: `docs/release-candidate-report.md`.
+остаются отдельными gates. Подробности: `docs/archive/reports/release-candidate-report.md`.
 
 ## Читаемость frontend · 16 октября 2026
 
@@ -233,7 +233,7 @@ Gemini/Auth/Storage в этих QA-проверках явно тестовые;
 анимации с reduced-motion/native-select fallback. Серверные контракты и баллы
 не менялись. 61 Vitest, TS/build и 15 Chromium-групп (500 локальных запросов)
 прошли; Firebase/Gemini в QA явно тестовые. Подробности и ограничения:
-`docs/frontend-readability-report.md`. Работа требует review и публикации Hosting;
+`docs/archive/reports/frontend-readability-report.md`. Работа требует review и публикации Hosting;
 наличие правок в ветке не означает обновление работающего сайта.
 
 ## P1 «Рекламный след» · 16 октября 2026
@@ -280,7 +280,7 @@ Ruff (84 файла), настоящий WeasyPrint PDF с кириллицей/
 Историческая причина AI_INVALID_RESPONSE не установлена; новые логи помогут
 только после публикации. Платных AI-вызовов, deployment, merge main не было.
 Публичные контракты, веса и auth/rules не менялись. Подробные факты, ограничения
-и команды публикации: [backend-followup-report.md](backend-followup-report.md).
+и команды публикации: [backend-followup-report.md](archive/reports/backend-followup-report.md).
 B-03/B-04 целиком не закрыты: реальные AI-измерения и проверки облачных прав
 остаются отдельными шагами, локальные адаптеры их не заменяют.
 
@@ -461,8 +461,8 @@ TLS. Контейнеры остановлены. Gitleaks 8.30.1 провере
 план и командная очередь; 73 относительные ссылки проверены. AI evaluation CLI
 только перечислил семь входов, без `--run`. SEC-01 локальная, DOC-01 и материалы
 PITCH-01 закрыты с ограничениями; PITCH-02 (репетиция) выделен отдельно.
-Подробный итог/команды/следующий шаг: `docs/integration-readiness-report.md`
-и `docs/security-release-check.md`.
+Подробный итог/команды/следующий шаг: `docs/archive/reports/integration-readiness-report.md`
+и `docs/archive/reports/security-release-check.md`.
 
 Реальных SearchAPI/Gemini-запросов — 0, последний известный баланс — 98/100.
 Main, живой сайт, IAM, индексы, расписание, реальные данные и публичность не менялись.
@@ -499,7 +499,7 @@ API timeout — 300 секунд. README и план различают main mer
 passed; 1366/375/320, без page errors/внешних browser-запросов. Ruff QA и diff-check
 passed. Явные тестовые адаптеры и настоящий WeasyPrint; live AI/поисков 0.
 Read-only review: исправлен gap маркировки учебных сигналов, оставшихся blockers
-нет; это не human approval. Команды/границы: docs/analyst-ui-report.md.
+нет; это не human approval. Команды/границы: docs/archive/reports/analyst-ui-report.md.
 Для показа на сайте нужна только Hosting-публикация из проверенного SHA;
 в среде Codex deployment credentials отсутствуют, backend redeploy не требуется.
 
@@ -742,3 +742,21 @@ auto intake/review35/reload/history/1440/375/320 passed, external requests и
 page errors отсутствуют. Полный совместный CI и точный SHA фиксируются в PR #33.
 План A/B/интеграции закрыт; MAT-DEPLOY остаётся отдельно, сайт не публиковался.
 Подробности: `unified-advertising-integration-report.md`.
+
+
+### 20 октября — оформление публичного репозитория для проверяющих
+
+README обновлён под объединённый интерфейс: назначение проекта ALEteam,
+настоящий скриншот локального приложения, запуск одной командой Docker Compose
+без ключей и ссылки на маршрут проверки за пять минут. Добавлены навигация
+по документации и отдельные инструкции разработчика. Актуализированы Windows,
+локальный запуск, сценарии и отчёт о проверках. Облачная публикация отделена
+от состояния исходного кода.
+
+11 промежуточных отчётов перенесены в архив с сохранением содержимого;
+сохранены также четыре прежние версии инструкций. Ссылки обновлены.
+Код приложения, конфигурация, данные и история Git не изменялись.
+Проверены локальные Markdown-ссылки и якоря, Compose config, git diff --check;
+проведён независимый read-only review документации. Результат CI и PR
+фиксируется в GitHub. Настройки About/topics недоступны интеграции (HTTP 403);
+это не затрагивает оформление файлов репозитория. Деплой не выполнялся.

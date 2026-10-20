@@ -56,7 +56,7 @@ missing code. Do not reimplement these modules from scratch.
 | Hosted demo: Hosting + Cloud Run | Published `main` / `effb87f`, API revision `00003-sxb` | Owner confirmed hosting/API, indexes and manual workflow; new PRs are not deployed automatically |
 | Backend error handling, SDK/contention and private uploads | PR #1, #3, #4 included via merged PR #5 (`effb87f`) | Published; do not merge historical stacked PRs separately |
 | Review UX and release browser/organiser package | PR #2 + `8dce105`, included via merged PR #5 | Published; owner reports manual checks completed |
-| Unified candidate + real SDK local integration | [PR #5](https://github.com/arturk0-0/3a-saq-qurylys/pull/5), merged `effb87f`; see `docs/release-candidate-report.md` | Main CI passed; owner published. Local emulator remains QA only |
+| Unified candidate + real SDK local integration | [PR #5](https://github.com/arturk0-0/3a-saq-qurylys/pull/5), merged `effb87f`; see `docs/archive/reports/release-candidate-report.md` | Main CI passed; owner published. Local emulator remains QA only |
 | LINK-01–05 | [PR #7](https://github.com/arturk0-0/3a-saq-qurylys/pull/7), merged `15ba913` после дизайна #6 / `cc8be36` | Review и локальный browser/SDK CI пройдены; публикация новой версии и её облачная приёмка впереди |
 | DRONE tasks, release/publication | Не начаты | Опциональные drone-критерии уточнить; release/publicity — отдельные действия владельца |
 

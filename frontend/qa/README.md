@@ -13,4 +13,4 @@ Firebase/Gemini не вызывались, ответы и ошибка сохр
 
 Также проверены 1024×768, 768×1024 и 320×700, фокус/cancel, keyboard scroll таблиц,
 skip link, отсутствие лишнего POST и сохранение комментария сигнала после refresh
-и скачивания тестового Blob. Подробный результат: [отчёт](../../docs/night-frontend-report.md).
+и скачивания тестового Blob. Подробный результат: [отчёт](../../docs/archive/reports/night-frontend-report.md).

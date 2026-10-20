@@ -43,7 +43,7 @@ CI нового main проверяется отдельно. Сайт/расп�
 создание PR в его среде было запрещено. B совместил их с MON/Instagram в
 `release/integrated-monitoring-readiness`, сохранив обе стороны конфликтов.
 Это интеграция в отдельной ветке, не merge main/deployment.
-[Handoff A](../frontend-handoff.md), [проверки общей версии](../integration-readiness-report.md).
+[Handoff A](../frontend-handoff.md), [проверки общей версии](reports/integration-readiness-report.md).
 Очередь A ниже — завершённая история, повторно её не запускать. Следующая полезная
 работа A после публикации: фактическая мобильная проверка MON и репетиция материалов;
 не создавать новую функцию только для заполнения времени.

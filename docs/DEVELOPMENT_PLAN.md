@@ -9,7 +9,7 @@ B — backend/контракты/интеграция**. Исторически�
 ## Приоритетная очередь · 20 октября: единая реклама
 
 Backend B объединён через [PR #32](https://github.com/arturk0-0/3a-saq-qurylys/pull/32).
-Frontend A и совместные исправления подготовлены в [PR #33](https://github.com/arturk0-0/3a-saq-qurylys/pull/33).
+Frontend A и совместные исправления объединены через [PR #33](https://github.com/arturk0-0/3a-saq-qurylys/pull/33).
 Отдельно остаётся облачная публикация, она не выполняется автоматически от merge.
 [План и границы двух Кодексов](tasks/unified-advertising-split.md),
 [целевой API v1](material-workflow-contract.md).
@@ -31,7 +31,7 @@ Issues: [B #29](https://github.com/arturk0-0/3a-saq-qurylys/issues/29),
 Не менять подтверждённую формулу R1–R6; не выдавать ИИ/дубли за проверенные факты.
 Готовность/проценты обратно не добавлять. В разработке без платных запросов/деплоя.
 
-**Текущее состояние, 20 октября:** общий выпуск объединён в main
+**Предыдущий выпуск, до единой «Рекламы»:** общий выпуск объединён в main
 `107798f` через [PR #25](https://github.com/arturk0-0/3a-saq-qurylys/pull/25).
 Включены сверка оснований (#19), план (#22), компании (#23), дрон (#24), карта A
 и отдельный локальный режим без облачных ключей. Все пять CI jobs release HEAD
@@ -43,7 +43,7 @@ Issues: [B #29](https://github.com/arturk0-0/3a-saq-qurylys/issues/29),
 b043809 (API 00007-qgr, 100% трафика, Hosting SHA совпал; образ worker обновлён).
 Main `11fd48c` дополнительно содержит исправление helper #27 и UI-отступы/удаление
 готовности #28; облачная публикация #28 пока владельцем не подтверждена.
-Это не означает реализации новой MAT-очереди.
+Новая MAT-очередь реализована позднее через #32/#33; её публикация остаётся MAT-DEPLOY.
 Job/Scheduler ранее подтвердили heartbeat и успешное выполнение; повторный сбор
 источника после истечения интервала остаётся отдельной облачной проверкой.
 
@@ -153,7 +153,7 @@ MON-IG-02 подтверждён коротким live trial и запуском
 
 - [x] **UX-01 · B, прямое поручение владельца 18 октября** — Упростить ежедневный UI,
   убрать общий DEMO и надписи о стоимости, перенести Instagram/config из очереди,
-  скрыть UID авторов. [Проверки и границы](analyst-ui-report.md); реализация в своей
+  скрыть UID авторов. [Проверки и границы](archive/reports/analyst-ui-report.md); реализация в своей
   ветке, публикация Hosting отдельно. Локальные учебные пометки сохранены.
 
 
@@ -162,7 +162,7 @@ MON-IG-02 подтверждён коротким live trial и запуском
 **Интеграция 17 октября:** очередь друга A-01–04 завершена и совмещена с MON
 в `release/integrated-monitoring-readiness`; main и живой сайт пока не обновлены.
 Сохранены его исправления черновиков/скриншотов, lazy-loading и материалы показа.
-[Отчёт интеграции и следующий шаг](integration-readiness-report.md),
+[Отчёт интеграции и следующий шаг](archive/reports/integration-readiness-report.md),
 [исходный handoff A](frontend-handoff.md). Реализацию этих задач не повторять.
 
 - [ ] **PM-01 · B** — Confirm organisers' exact submission time, judge test procedure, expected drone criteria and any permitted public data sources.
@@ -170,7 +170,7 @@ MON-IG-02 подтверждён коротким live trial и запуском
 - [ ] **AI-06 · B** — Test Kazakh text, low-quality screenshot and harmless ad to identify false positives; record results.
 - [ ] **AI-08 · B** — Describe model/prompt/version, limits and measured behavior on unseen inputs in docs.
 - [ ] **QA-04 · B** — Fresh Git clone on a second device/account with Internet; prove `.env`/Firebase/Gemini configuration and local startup.
-- [x] **SEC-01 · B, локальная проверка** — Gitleaks 8.30.1 по всем доступным refs/full history не нашёл секретов; исторические пути credentials проверены, `.gitignore` закрывает локальные файлы. [Область проверки](security-release-check.md). Это не проверка cloud IAM или гарантия отсутствия персональных данных; BE-13 остаётся открыт.
+- [x] **SEC-01 · B, локальная проверка** — Gitleaks 8.30.1 по всем доступным refs/full history не нашёл секретов; исторические пути credentials проверены, `.gitignore` закрывает локальные файлы. [Область проверки](archive/reports/security-release-check.md). Это не проверка cloud IAM или гарантия отсутствия персональных данных; BE-13 остаётся открыт.
 - [x] **DOC-01 · B, интеграционная ветка** — Материалы A включены, README указывает проверяемый кандидат, границы источников и актуальные инструкции; показ дополнен отдельным маршрутом MON. Облачная публикация отдельно.
 - [ ] **RELEASE-01 · B** — Approve green CI, correct README URLs; record immutable commit SHA; create submission tag.
 - [ ] **RELEASE-02 · B** — Switch repo from private to public **before** deadline; verify access without login; submit URL/commit as required.
@@ -187,8 +187,8 @@ MON-IG-02 подтверждён коротким live trial и запуском
 [#6](https://github.com/arturk0-0/3a-saq-qurylys/pull/6),
 [#7](https://github.com/arturk0-0/3a-saq-qurylys/pull/7),
 [#11](https://github.com/arturk0-0/3a-saq-qurylys/pull/11), CI и отчёты
-[baseline](release-candidate-report.md), [UI](frontend-readability-report.md),
-[LINK](advertising-trace.md), [backend](backend-followup-report.md).
+[baseline](archive/reports/release-candidate-report.md), [UI](archive/reports/frontend-readability-report.md),
+[LINK](advertising-trace.md), [backend](archive/reports/backend-followup-report.md).
 Прежняя ручная облачная приёмка подтверждена владельцем. Закрытие реализации
 не закрывает оставшиеся измерения AI/проверку нового deployment/чистого устройства.
 
