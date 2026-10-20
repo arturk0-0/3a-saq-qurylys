@@ -134,6 +134,10 @@ with sync_playwright() as p:
             "exact duplicate on another platform → one real material/two originals; one provider extraction for that text"
         )
 
+        page.goto(BASE + f"/advertisements/{duplicate['id']}?source=legacy-qa")
+        expect(page).to_have_url(
+            re.compile(r"/advertising/materials/[^?]+\?source=legacy-qa")
+        )
         page.get_by_label(re.compile("Решение по гипотезе.*R2")).select_option(
             "confirmed"
         )

@@ -16,6 +16,7 @@ function setup(initial = fixtures.material as MaterialDetail, review?: (body: Re
   const api = vi.fn(async (path: string, init?: RequestInit) => {
     if (path.endsWith('/review')) {
       const body = JSON.parse(String(init?.body)) as ReviewBody; writes.push(body)
+      if (body.disposition === 'reviewed' && body.decisions.some(d => d.decision === 'insufficient')) throw new ApiError(422, 'REVIEW_INCOMPLETE', 'Проверка не завершена')
       const saved = review ? await review(body, writes.length) : structuredClone(fixtures.saved) as MaterialDetail
       detail = saved; return saved
     }
@@ -46,7 +47,7 @@ it('sends one atomic review with versions and only selected decisions, keeping p
   await screen.findByText('35 · Жёлтая зона')
   expect(state.writes).toHaveLength(1)
   expect(state.writes[0]).toMatchObject({ expectedVersion: 1, revisionId: 'revision-1', complexId: 'demo-complex-04', expectedComplexVersion: 4,
-    decisions: [{ hypothesisId: 'h2', decision: 'confirmed' }, { hypothesisId: 'h3', decision: 'insufficient' }], notes: 'QA — оригинал сверен', disposition: 'reviewed' })
+    decisions: [{ hypothesisId: 'h2', decision: 'confirmed' }, { hypothesisId: 'h3', decision: 'insufficient' }], notes: 'QA — оригинал сверен', disposition: 'needs_review' })
   expect(state.writes[0].requestId).toMatch(/^[a-f0-9-]{36}$/)
   expect(state.api.mock.calls.some(([path]) => /\/factors\/|\/decision$|\/analyze$/.test(path))).toBe(false)
   expect(screen.queryByRole('button', { name: /Анализировать|Проанализировать/ })).not.toBeInTheDocument()
@@ -172,4 +173,27 @@ it('recovers an invalidated server cursor by starting over with the same filters
   const params = new URL(api.mock.calls.at(-1)![0], 'https://test.invalid').searchParams
   expect(params.get('q')).toBe('депозит'); expect(params.get('origin')).toBe('manual')
   expect(params.has('cursor')).toBe(false)
+})
+
+it('opens the same quote original again after selecting another publication', async () => {
+  setup()
+  await screen.findByLabelText('Решение по гипотезе 1 (R2)')
+  const show = screen.getAllByRole('button', { name: 'Показать оригинал цитаты' })[0]
+  fireEvent.click(show)
+  await waitFor(() => expect(screen.getByLabelText('Публикация')).toHaveValue('o1'))
+  fireEvent.change(screen.getByLabelText('Публикация'), { target: { value: 'o2' } })
+  expect(screen.getByLabelText('Публикация')).toHaveValue('o2')
+  fireEvent.click(show)
+  await waitFor(() => expect(screen.getByLabelText('Публикация')).toHaveValue('o1'))
+})
+
+
+it('keeps insufficient findings in review and prevents sending them as a completed review', async () => {
+  const state = setup()
+  await choose()
+  expect(screen.getByLabelText('Итог проверки')).toHaveValue('needs_review')
+  fireEvent.change(screen.getByLabelText('Итог проверки'), { target: { value: 'reviewed' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Сохранить проверку' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('недостаточно данных')
+  expect(state.writes).toHaveLength(0)
 })

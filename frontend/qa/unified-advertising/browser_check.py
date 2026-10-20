@@ -1,6 +1,6 @@
 """UI-only contract QA, using explicit local Auth/API and materials transport.
 
-Materials review responses are golden fixtures until B implements the facade.
+Materials responses are explicit golden fixtures; native integration is separate.
 Old file/source/signal/company/drone routes use the real local QA API/services.
 """
 
@@ -14,6 +14,9 @@ from pathlib import Path
 from PIL import Image
 from playwright.sync_api import expect, sync_playwright
 from transport import FIXTURES, MaterialsTransport
+
+# Allow the cold Vite lazy route/auth transition on a shared CI machine.
+expect.set_options(timeout=15000)
 
 BASE = "http://127.0.0.1:5181"
 OUT = Path(os.environ.get("SAQ_QA_ARTIFACTS", "/tmp/saq-unified-advertising"))
@@ -373,16 +376,17 @@ with sync_playwright() as p:
         )
 
         page.goto(BASE + f"/advertisements/{ad['id']}?source=qa-origin")
-        expect(page).to_have_url(
-            BASE + f"/advertising/legacy/advertisement/{ad['id']}?source=qa-origin"
-        )
-        expect(page.locator(".ad-text")).to_have_text(FIXTURES["material"]["text"])
+        expect(page).to_have_url(BASE + "/advertising/materials/m1?source=qa-origin")
+        expect(
+            page.get_by_role("heading", name="Оригиналы и публикации", exact=True)
+        ).to_be_visible()
         findings = api(page, "GET", "/api/v1/monitoring/items?limit=20")["items"]
         assert findings
+        transport.aliases[findings[0]["id"]] = "m1"
         page.goto(BASE + f"/monitoring?item={findings[0]['id']}&status=new")
-        expect(page).to_have_url(re.compile("/advertising/legacy/monitoring/"))
+        expect(page).to_have_url(re.compile("/advertising/materials/m1"))
         expect(
-            page.get_by_role("heading", name="Оригинал и прежняя история", exact=True)
+            page.get_by_role("heading", name="Оригиналы и публикации", exact=True)
         ).to_be_visible()
         page.goto(BASE + "/monitoring?view=runs")
         expect(page).to_have_url(re.compile("view=sources"))
@@ -390,7 +394,7 @@ with sync_playwright() as p:
             page.get_by_role("heading", name="Сбор завершён", exact=True)
         ).to_be_visible()
         checkpoint(
-            "legacy advertisement/finding IDs and query retained; old runs open inside Sources, without guessing material IDs"
+            "legacy IDs resolved by server to exact material; query retained; old runs open inside Sources"
         )
 
         page.goto(BASE + "/complexes")

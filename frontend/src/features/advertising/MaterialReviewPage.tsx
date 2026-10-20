@@ -25,8 +25,9 @@ function ReviewEditor({ detail, materialLoading, refresh, apply }: {
   const complex = useResource<Complex>(complexId ? `/api/v1/complexes/${encodeURIComponent(complexId)}` : null)
   const [decisions, setDecisions] = useState<Record<string, Decision | 'pending'>>({})
   const [notes, setNotes] = useState(detail.review?.notes || '')
-  const [disposition, setDisposition] = useState<ReviewBody['disposition']>('reviewed')
+  const [disposition, setDisposition] = useState<ReviewBody['disposition']>(detail.hypotheses.some(h => h.decision === 'insufficient') ? 'needs_review' : 'reviewed')
   const [requested, setRequested] = useState<string | null>(null)
+  const [requestSequence, setRequestSequence] = useState(0)
   const [records, setRecords] = useState<Occurrence[]>(detail.occurrences)
   const [busy, setBusy] = useState(false)
   const [dirty, setDirty] = useState(false)
@@ -73,6 +74,7 @@ function ReviewEditor({ detail, materialLoading, refresh, apply }: {
       const decision = decisions[hypothesis.id] || hypothesis.decision
       return decision === 'pending' ? [] : [{ hypothesisId: hypothesis.id, decision }]
     })
+    if (disposition === 'reviewed' && selected.some(item => item.decision === 'insufficient')) { setError('Для части гипотез недостаточно данных. Выберите «Оставить для проверки» или уточните решения.'); return }
     const confirming = selected.filter(item => item.decision === 'confirmed')
     if (confirming.length && (!complexId || !complex.data || complex.data.id !== complexId)) { setError('Для подтверждения выберите ЖК и дождитесь его загрузки.'); return }
     if (complexId && (!complex.data || complex.data.id !== complexId || complex.error)) { setError('Не удалось проверить актуальную версию выбранного ЖК. Обновите данные.'); return }
@@ -115,7 +117,7 @@ function ReviewEditor({ detail, materialLoading, refresh, apply }: {
       {detail.review && <p className="form-hint">Предыдущая проверка: {formatDate(detail.review.reviewedAt)} · {detail.review.reviewerDisplayName || 'Аналитик'}. Сохранённые решения остаются в истории.</p>}
     </section>
     <div className="ad-grid"><div className="ad-stack">
-      <Originals key={`${detail.id}:${detail.revisionId}:${detail.version}`} detail={detail} requestedId={requested} onRecords={setRecords} />
+      <Originals key={`${detail.id}:${detail.revisionId}:${detail.version}`} detail={detail} requestedId={requested} requestSequence={requestSequence} onRecords={setRecords} />
       {detail.occurrences.some(record => record.legacyKind === 'advertisement') && <details className="panel content-pad ad-panel" onToggle={event => setUploadOpen(event.currentTarget.open)}><summary>Добавить изображение к исходному материалу</summary>
         {uploadOpen && <ScreenshotUpload adId={detail.occurrences.find(record => record.legacyKind === 'advertisement')!.legacyId} disabled={dirty || busy} changed={refreshAll} onBusy={setBusy} />}
       </details>}
@@ -143,8 +145,8 @@ function ReviewEditor({ detail, materialLoading, refresh, apply }: {
           {detail.hypotheses.map((hypothesis, index) => <section className="ad-hypothesis" key={hypothesis.id}>
             <h3>{hypothesis.code} · {factorLabels[hypothesis.code]}</h3><p>Гипотеза для проверки, не установленное нарушение.</p>
             <blockquote>{hypothesis.quote}</blockquote><p>{hypothesis.explanation}</p>
-            <Button type="button" variant="outline" onClick={() => setRequested(hypothesis.occurrenceId)}>Показать оригинал цитаты</Button>
-            <FormField label={`Решение по гипотезе ${index + 1} (${hypothesis.code})`}><select value={decisions[hypothesis.id] || hypothesis.decision} disabled={busy} onChange={event => { setDecisions(previous => ({ ...previous, [hypothesis.id]: event.target.value as Decision | 'pending' })); changed() }}>
+            <Button type="button" variant="outline" onClick={() => { setRequested(hypothesis.occurrenceId); setRequestSequence(value => value + 1) }}>Показать оригинал цитаты</Button>
+            <FormField label={`Решение по гипотезе ${index + 1} (${hypothesis.code})`}><select value={decisions[hypothesis.id] || hypothesis.decision} disabled={busy} onChange={event => { setDecisions(previous => ({ ...previous, [hypothesis.id]: event.target.value as Decision | 'pending' })); if (event.target.value === 'insufficient') setDisposition('needs_review'); changed() }}>
               <option value="pending">Не выбрано</option><option value="confirmed">Подтверждаю</option><option value="rejected">Отклоняю</option><option value="insufficient">Недостаточно данных</option>
             </select></FormField>
           </section>)}

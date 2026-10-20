@@ -15,6 +15,7 @@ FIXTURES = json.loads((Path(__file__).parent / "fixtures.json").read_text())
 class MaterialsTransport:
     def __init__(self, ad_id, image_id):
         self.details = {}
+        self.aliases = {ad_id: "m1"}
         for name in ["material", "queued", "failed", "video"]:
             item = copy.deepcopy(FIXTURES[name])
             item["occurrences"][0]["legacyId"] = ad_id
@@ -105,7 +106,11 @@ class MaterialsTransport:
             )
             return
         parts = path.split("/")
-        item = self.details.get(parts[4]) if len(parts) > 4 else None
+        item = (
+            self.details.get(self.aliases.get(parts[4], parts[4]))
+            if len(parts) > 4
+            else None
+        )
         if item is None:
             route.fulfill(status=404, json={"code": "NOT_FOUND"})
             return
@@ -130,6 +135,11 @@ class MaterialsTransport:
         body = request.post_data_json
         if path.endswith("/review"):
             self.reviews.append(copy.deepcopy(body))
+            if body["disposition"] == "reviewed" and any(
+                decision["decision"] == "insufficient" for decision in body["decisions"]
+            ):
+                route.fulfill(status=422, json={"code": "REVIEW_INCOMPLETE"})
+                return
             cached = self.cache.get(body["requestId"])
             if cached:
                 route.fulfill(json=cached)

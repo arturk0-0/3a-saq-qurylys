@@ -7,8 +7,8 @@ import { errorMessage, formatDate } from '@/lib/labels'
 import { safeExternal } from './presentation'
 import type { MaterialDetail, MaterialPage, Occurrence } from './types'
 
-export function Originals({ detail, requestedId, onRecords }: {
-  detail: MaterialDetail; requestedId: string | null; onRecords: (records: Occurrence[]) => void
+export function Originals({ detail, requestedId, requestSequence = 0, onRecords }: {
+  detail: MaterialDetail; requestedId: string | null; requestSequence?: number; onRecords: (records: Occurrence[]) => void
 }) {
   const { api } = useAuth()
   const [records, setRecords] = useState(detail.occurrences)
@@ -27,7 +27,7 @@ export function Originals({ detail, requestedId, onRecords }: {
     if (requestedId && records.some(record => record.id === requestedId)) {
       setSelected(requestedId); original.current?.focus({ preventScroll: true }); original.current?.scrollIntoView?.({ block: 'nearest' })
     }
-  }, [requestedId, records])
+  }, [requestedId, records, requestSequence])
   useEffect(() => {
     setOriginalError(null)
     if (!requestedId || records.some(record => record.id === requestedId)) { setOriginalBusy(false); return }
