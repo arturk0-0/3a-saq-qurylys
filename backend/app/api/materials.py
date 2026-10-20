@@ -2,6 +2,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 
+from app.api.analysis import Files
 from app.api.dependencies import CurrentUser
 from app.api.workspace import Workspace
 from app.models.common import Identifier
@@ -14,8 +15,8 @@ from app.services.materials import MaterialService
 router = APIRouter(prefix="/api/v1/materials", tags=["materials"])
 
 
-def material_service(workspace: Workspace):
-    return MaterialService(workspace)
+def material_service(workspace: Workspace, files: Files):
+    return MaterialService(workspace, files)
 
 
 Materials = Annotated[MaterialService, Depends(material_service)]
@@ -106,3 +107,21 @@ def retry(
     result = service.retry(record_id, payload, user)
     schedule_analysis(background, request, service.workspace)
     return result
+
+
+@router.get("/{record_id}/occurrences/{occurrence_id}")
+def occurrence(
+    record_id: Identifier, occurrence_id: Identifier, user: CurrentUser, service: Materials
+):
+    return service.occurrence(record_id, occurrence_id)
+
+
+@router.get("/{record_id}/history")
+def history(
+    record_id: Identifier,
+    user: CurrentUser,
+    service: Materials,
+    cursor: MaterialCursor = None,
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+):
+    return service.history(record_id, cursor, limit)

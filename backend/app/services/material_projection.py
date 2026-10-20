@@ -114,7 +114,7 @@ def monitor_occurrence(item):
         "legacyKind": "monitoring",
         "legacyId": row["id"],
         "origin": "automatic",
-        "workspaceScope": "live",
+        "workspaceScope": "public",
         "platform": {"instagram_ad": "Instagram", "telegram_post": "Telegram"}.get(
             row["contentKind"], "Web"
         ),
@@ -158,11 +158,13 @@ def stage_occurrence(tx, occurrence):
     mid = link["materialId"] if link else digest(f"material:{scope}:{content}")
     group = tx.get("materials", mid)
     # A generic identical caption is insufficient to merge two explicitly different ЖК.
-    if (
-        group
-        and group.get("complexId")
-        and occurrence.get("complexId")
-        and group["complexId"] != occurrence["complexId"]
+    if group and (
+        group["workspaceScope"] != scope
+        or (
+            group.get("complexId")
+            and occurrence.get("complexId")
+            and group["complexId"] != occurrence["complexId"]
+        )
     ):
         mid = digest(f"material:{scope}:{content}:{occurrence['complexId']}")
         group = tx.get("materials", mid)
@@ -192,9 +194,9 @@ def stage_occurrence(tx, occurrence):
     occurrence = {**occurrence, "id": oid, "materialId": mid, "contentKey": content}
     same_content = bool(group and group["contentKey"] == content)
     inputs = list(group.get("inputIds", [])) if same_content else []
-    additions = [(digest(f"{scope}:{digest(text)}:text"), None)]
+    additions = [(digest(f"{mid}:{scope}:{digest(text)}:text"), None)]
     additions += [
-        (digest(f"{scope}:{digest(text)}:image:{m['sha256']}"), m["id"])
+        (digest(f"{mid}:{scope}:{digest(text)}:image:{m['sha256']}"), m["id"])
         for m in occurrence["media"]
         if m.get("sha256")
     ]

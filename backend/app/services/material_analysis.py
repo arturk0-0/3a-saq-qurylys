@@ -4,7 +4,6 @@ from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from app.core.errors import AppError
-from app.models.analysis import Extraction
 from app.models.common import utc_now
 from app.services.gemini import PROMPT_VERSION
 from app.services.material_projection import all_rows, digest
@@ -38,11 +37,7 @@ class MaterialProcessor:
         jobs = list(all_rows(self.store, "materialJobs", [("status", "in", ["queued", "running"])]))
         jobs.sort(key=lambda r: (r["createdAt"], r["id"]))
         for candidate in jobs:
-            if (
-                self.workspace.demo_only
-                and candidate["workspaceScope"] == "live"
-                and not candidate.get("hasPublicLead")
-            ):
+            if self.workspace.demo_only and candidate["workspaceScope"] == "live":
                 continue
             if len(outcomes) >= limit:
                 break
@@ -65,34 +60,11 @@ class MaterialProcessor:
                 outcomes.append({"jobId": candidate["id"], "errorCode": error.code})
                 continue
             attempt = str(uuid4())
-            keys = [f"global-{now:%Y%m%d}", f"user-{digest(user.uid)}-{now:%Y%m%d}"]
 
-            def claim(tx, candidate=candidate, keys=keys, now=now, attempt=attempt):
+            def claim(tx, candidate=candidate, now=now, attempt=attempt):
                 current = tx.get("materialJobs", candidate["id"])
-                counters = [tx.get("usageLimits", key) or {"id": key, "count": 0} for key in keys]
                 if not current or current["status"] != "queued":
                     return None
-                if any(
-                    c["count"] >= cap
-                    for c, cap in zip(
-                        counters,
-                        [self.settings.ai_daily_global_limit, self.settings.ai_daily_user_limit],
-                        strict=True,
-                    )
-                ):
-                    tomorrow = (now + timedelta(days=1)).date()
-                    tx.set(
-                        "materialJobs",
-                        current["id"],
-                        {
-                            **current,
-                            "errorCode": "AI_DAILY_LIMIT",
-                            "nextAttemptAt": datetime.combine(
-                                tomorrow, datetime.min.time(), UTC
-                            ).isoformat(),
-                        },
-                    )
-                    return "quota"
                 run = {
                     **current,
                     "status": "running",
@@ -103,30 +75,65 @@ class MaterialProcessor:
                     "promptVersion": PROMPT_VERSION,
                 }
                 tx.set("materialJobs", run["id"], run)
-                for c in counters:
-                    tx.set("usageLimits", c["id"], {**c, "count": c["count"] + 1})
                 return run
 
             job = self.store.atomic(claim)
             if job is None:
                 continue
-            if job == "quota":
-                outcomes.append({"jobId": candidate["id"], "errorCode": "AI_DAILY_LIMIT"})
-                break
             try:
                 image = (
                     self.files.download(job["screenshotId"]) if job.get("screenshotId") else None
                 )
-                result = Extraction.model_validate(self.client.extract(job["text"], image))
+                from app.services.material_provider import cached_extract
+
+                result = cached_extract(
+                    self.workspace,
+                    self.settings,
+                    self.client,
+                    job["text"],
+                    image,
+                    user,
+                    job["workspaceScope"],
+                )
                 if not image and any(h.quote not in job["text"] for h in result.hypotheses):
                     raise AppError(502, "AI_INVALID_RESPONSE", "Unanchored text quote")
                 self._finish(job, result.model_dump(mode="json", by_alias=True), None)
                 outcomes.append({"jobId": job["id"], "status": "ready"})
             except Exception as error:
                 code = error.code if isinstance(error, AppError) else "ANALYSIS_FAILED"
-                self._finish(job, None, code)
+                if code == "AI_DAILY_LIMIT":
+                    self._defer(job, code)
+                elif code == "AI_BUSY":
+                    self._defer(job, code, minutes=1)
+                else:
+                    self._finish(job, None, code)
                 outcomes.append({"jobId": job["id"], "errorCode": code})
         return outcomes
+
+    def _defer(self, job, code, minutes=None):
+        now = utc_now()
+        until = (
+            now + timedelta(minutes=minutes)
+            if minutes
+            else datetime.combine((now + timedelta(days=1)).date(), datetime.min.time(), UTC)
+        )
+
+        def save(tx):
+            current = tx.get("materialJobs", job["id"])
+            if current and current.get("attemptToken") == job.get("attemptToken"):
+                tx.set(
+                    "materialJobs",
+                    job["id"],
+                    {
+                        **current,
+                        "status": "queued",
+                        "errorCode": code,
+                        "nextAttemptAt": until.isoformat(),
+                        "leaseUntil": None,
+                    },
+                )
+
+        self.store.atomic(save)
 
     def _unavailable(self, job, code):
         def save(tx):

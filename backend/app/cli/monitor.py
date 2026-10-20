@@ -40,18 +40,20 @@ def main() -> int:
             from app.services.material_analysis import MaterialProcessor
             from app.services.materials import MaterialService
 
-            MaterialService(service.workspace).sync_legacy()
+            files = FileService(service.workspace, FirebaseFileStorage(runtime))
+            MaterialService(service.workspace, files).sync_legacy()
             analysis = MaterialProcessor(
                 service.workspace,
                 service.client,
-                FileService(service.workspace, FirebaseFileStorage(runtime)),
+                files,
                 settings,
             )
-            results.extend(analysis.process(worker, limit=3))
+            collection_failed = any("errorCode" in row for row in results)
+            analysis_results = analysis.process(worker, limit=3)
             # IDs/counts/error codes only; no scraped texts, account names or keys.
-            print(json.dumps(results), flush=True)
+            print(json.dumps({"collection": results, "analysis": analysis_results}), flush=True)
             if not args.watch:
-                return int(any("errorCode" in row for row in results))
+                return int(collection_failed)
             time.sleep(60)
     except KeyboardInterrupt:
         return 0

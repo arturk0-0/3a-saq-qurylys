@@ -598,14 +598,14 @@ class MonitoringService:
 
     def analyze(self, item_id: str, payload: ItemAnalyze, user: Principal):
         self.client.check_config()
+        from app.services.materials import MaterialService
+
+        MaterialService(self.workspace).sync_legacy()
         now, request_id = utc_now(), str(payload.request_id)
-        day = f"{now:%Y%m%d}"
-        quota_ids = [f"global-{day}", f"user-{sha(user.uid)}-{day}"]
 
         def reserve(tx):
             item = self.item(item_id, tx)
             existing = tx.get("monitorAiRuns", request_id)
-            counters = [tx.get("usageLimits", key) or {"id": key, "count": 0} for key in quota_ids]
             if existing:
                 if existing["itemId"] != item_id or existing["actorUid"] != user.uid:
                     raise Conflict("Request ID already used")
@@ -614,13 +614,6 @@ class MonitoringService:
                 raise Conflict()
             if item.advertisement_id:
                 raise Conflict("Analyze the linked advertisement instead")
-            for counter, limit in zip(
-                counters,
-                [self.settings.ai_daily_global_limit, self.settings.ai_daily_user_limit],
-                strict=True,
-            ):
-                if counter["count"] >= limit:
-                    raise AppError(429, "AI_DAILY_LIMIT", "Daily analysis limit reached")
             updated = item.model_copy(
                 update={
                     "ai_status": "running",
@@ -643,8 +636,6 @@ class MonitoringService:
                     "status": "running",
                 },
             )
-            for counter in counters:
-                tx.set("usageLimits", counter["id"], {**counter, "count": counter["count"] + 1})
             return updated, True
 
         item, reserved = self.store.atomic(reserve)
@@ -652,7 +643,11 @@ class MonitoringService:
             return item
         result, error = None, None
         try:
-            result = self.client.extract(item.text)
+            from app.services.material_provider import cached_extract
+
+            result = cached_extract(
+                self.workspace, self.settings, self.client, item.text, None, user, "public"
+            )
         except Exception as failure:
             error = failure.code if isinstance(failure, AppError) else "AI_ANALYSIS_FAILED"
 
@@ -694,7 +689,10 @@ class MonitoringService:
             tx.create("monitorEvents", event["id"], event)
             return updated
 
-        return self.store.atomic(finish)
+        updated = self.store.atomic(finish)
+        if error == "AI_DAILY_LIMIT":
+            raise AppError(429, "AI_DAILY_LIMIT", "Daily analysis limit reached")
+        return updated
 
     def attach(self, item_id: str, payload: ItemAttach, user: Principal):
         if self.workspace.demo_only:

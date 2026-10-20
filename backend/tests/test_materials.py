@@ -347,3 +347,206 @@ def test_routes_auto_analyze_and_role_auth_preserved(services):
         reviewed = client.post("/api/v1/materials/" + item["id"] + "/review", json=decision)
         assert reviewed.status_code == 200, reviewed.text
         assert reviewed.json()["confirmedRisk"]["score"] == 35
+
+
+@pytest.mark.parametrize("factor_status", ["unknown", "rejected"])
+def test_rejecting_new_hypothesis_never_resurrects_old_rejected_factor(services, factor_status):
+    w, m, processor, _, _ = services
+    ad(w)
+    processor.process(USER)
+    item = detail(m)
+    m.review(item["id"], review_payload(item), USER)
+    # The pre-existing explicit factor decision retains its references for audit.
+    factors = w.store.documents["complexes"][CID]["factors"]
+    for f in factors:
+        if f["code"] == "R2":
+            f["status"] = factor_status
+    second = ad(w, text=TEXT + " Новые условия.")
+    processor.process(USER)
+    fresh = m.detail(second.id)
+    m.review(fresh["id"], review_payload(fresh, decision="rejected"), USER)
+    assert w.complex_detail(CID)["risk"]["score"] == 10
+    assert next(f for f in w.complex(CID).factors if f.code == "R2").status == factor_status
+
+
+def test_public_duplicate_cannot_promote_private_live_material_into_demo_visibility(services):
+    demo, _, _, _, _ = services
+    store = demo.store
+    store.documents["complexes"][CID]["demo"] = False
+    live = WorkspaceService(store, demo_only=False)
+    ad(live)
+    public = {
+        "id": "public-lead",
+        "text": TEXT,
+        "title": "Открытая реклама",
+        "originalUrl": "https://example.org/public",
+        "account": "Public",
+        "createdAt": utc_now().isoformat(),
+        "lastSeenAt": utc_now().isoformat(),
+        "publishedAt": None,
+        "contentKind": "telegram_post",
+    }
+    store.atomic(lambda tx: stage_occurrence(tx, monitor_occurrence(public)))
+    view = MaterialService(demo)
+    rows = view.items()["items"]
+    assert len(rows) == 1 and rows[0]["complex"] is None
+    sources = view.occurrences(rows[0]["id"])["items"]
+    assert len(sources) == 1 and sources[0]["account"] == "Public"
+    assert sources[0]["legacyKind"] == "monitoring"
+
+
+def test_automatic_and_legacy_entry_points_share_one_paid_input_claim(services):
+    from app.models.analysis import AnalysisRequest
+    from app.services.analysis import AnalysisService
+
+    w, m, processor, provider, files = services
+    original = ad(w)
+    processor.process(USER)
+    legacy = AnalysisService(w, provider, files, processor.settings)
+    run = legacy.analyze(original.id, AnalysisRequest(request_id=uuid4(), expected_version=1), USER)
+    assert run["status"] == "succeeded" and len(provider.calls) == 1
+    assert all(c["count"] == 1 for c in w.store.documents["usageLimits"].values())
+
+
+def test_old_successful_screenshot_is_reused_without_reanalyzing_image(services):
+    from app.models.analysis import AnalysisRequest
+    from app.services.analysis import AnalysisService
+
+    w, _, processor, provider, files = services
+    original = ad(w)
+    upload = files.upload(original.id, original.version, png(), "image/png", USER)
+    legacy = AnalysisService(w, provider, files, processor.settings)
+    legacy.analyze(
+        original.id,
+        AnalysisRequest(request_id=uuid4(), expected_version=2, screenshot_id=upload.id),
+        USER,
+    )
+    assert len(provider.calls) == 1 and provider.calls[0][1]
+    # Reproduce a deployment over old data: no material projection/cache existed then.
+    for key in [
+        "materials",
+        "materialJobs",
+        "materialLinks",
+        "materialOccurrences",
+        "materialProviderCalls",
+    ]:
+        w.store.documents.pop(key, None)
+    m = MaterialService(w, files)
+    result = detail(m)
+    image_jobs = [j for j in w.store.documents["materialJobs"].values() if j.get("screenshotId")]
+    assert image_jobs[0]["status"] == "ready"
+    processor.process(USER)
+    assert sum(bool(image) for _, image in provider.calls) == 1
+    assert result["occurrences"][0]["media"][0]["analyzed"]
+
+
+def test_changed_revision_during_paid_request_cannot_receive_old_results(services):
+    w, m, processor, provider, _ = services
+    original = ad(w)
+    started, finish = Event(), Event()
+    provider.on_call = lambda: (started.set(), finish.wait(5))
+    with ThreadPoolExecutor() as pool:
+        future = pool.submit(processor.process, USER, 1)
+        assert started.wait(3)
+        w.store.documents["advertisements"][original.id]["text"] = (
+            "Новая версия без предложения оплаты."
+        )
+        new_revision = detail(m)["revisionId"]
+        finish.set()
+        future.result()
+    current = detail(m)
+    assert current["revisionId"] == new_revision and current["hypotheses"] == []
+    assert current["priority"]["score"] is None
+
+
+def test_identical_caption_different_complexes_own_jobs_share_provider(services):
+    w, m, processor, provider, _ = services
+    first = ad(w)
+    second = ad(w, cid="demo-complex-05")
+    a, b = m.detail(first.id), m.detail(second.id)
+    assert a["id"] != b["id"]
+    processor.process(USER, 10)
+    updated = [m.detail(i["id"]) for i in [a, b]]
+    assert all(i["version"] > old["version"] for i, old in zip(updated, [a, b], strict=True))
+    assert len(provider.calls) == 1
+    assert {h["id"] for h in updated[0]["hypotheses"]}.isdisjoint(
+        h["id"] for h in updated[1]["hypotheses"]
+    )
+    assert len(w.store.documents["materialProviderAttempts"]) == 1
+
+
+def test_review_rejects_imported_legacy_proof_without_leaving_its_score(services):
+    from app.models.analysis import AnalysisRequest
+    from app.services.analysis import AnalysisService
+
+    w, m, processor, provider, files = services
+    original = ad(w)
+    AnalysisService(w, provider, files, processor.settings).analyze(
+        original.id, AnalysisRequest(request_id=uuid4(), expected_version=1), USER
+    )
+    item = detail(m)
+    m.review(item["id"], review_payload(item), USER)
+    assert w.complex_detail(CID)["risk"]["score"] == 35
+    # Historical evidence uses unrelated IDs, unlike the new deterministic IDs.
+    for factor in w.store.documents["complexes"][CID]["factors"]:
+        replacements = []
+        for eid in factor["evidenceIds"]:
+            legacy_id = "legacy-" + uuid4().hex
+            record = w.store.documents["evidence"].pop(eid)
+            w.store.documents["evidence"][legacy_id] = {**record, "id": legacy_id}
+            replacements.append(legacy_id)
+        factor["evidenceIds"] = replacements
+    # Only the legacy evidence/factors and successful analysisRuns existed before migration.
+    for key in [
+        "materials",
+        "materialJobs",
+        "materialLinks",
+        "materialOccurrences",
+        "materialProviderCalls",
+    ]:
+        w.store.documents.pop(key, None)
+    imported = detail(m)
+    assert all(h["decision"] == "confirmed" for h in imported["hypotheses"])
+    assert detail(m)["version"] == imported["version"]
+    result = m.review(imported["id"], review_payload(imported, decision="rejected"), USER)
+    assert result["confirmedRisk"]["score"] == 0
+    assert all(h["decision"] == "rejected" for h in result["hypotheses"])
+    assert len(provider.calls) == 1
+
+
+def test_history_and_direct_original_preserve_audit_without_uid(services):
+    w, m, processor, _, _ = services
+    original = ad(w)
+    processor.process(USER)
+    item = detail(m)
+    m.review(item["id"], review_payload(item), USER)
+    source = m.occurrence(item["id"], item["hypotheses"][0]["occurrenceId"])
+    assert source["legacyId"] == original.id
+    events = m.history(item["id"])["items"]
+    assert len(events) == 1 and events[0]["reviewerDisplayName"] == USER.display_name
+    assert USER.uid not in str(events)
+    with pytest.raises(AppError):
+        m.occurrence(item["id"], "not-this-original")
+
+
+def test_concurrent_legacy_and_auto_share_provider_claim(services):
+    from app.models.analysis import AnalysisRequest
+    from app.services.analysis import AnalysisService
+
+    w, m, processor, provider, files = services
+    original = ad(w)
+    started, finish = Event(), Event()
+    provider.on_call = lambda: (started.set(), finish.wait(5))
+    with ThreadPoolExecutor() as pool:
+        future = pool.submit(processor.process, USER, 1)
+        assert started.wait(3)
+        with pytest.raises(AppError) as error:
+            AnalysisService(w, provider, files, processor.settings).analyze(
+                original.id, AnalysisRequest(request_id=uuid4(), expected_version=1), USER
+            )
+        assert error.value.code == "AI_BUSY"
+        finish.set()
+        future.result()
+    assert len(provider.calls) == 1
+    assert all(c["count"] == 1 for c in w.store.documents["usageLimits"].values())
+    assert detail(m)["analysis"]["status"] == "ready"

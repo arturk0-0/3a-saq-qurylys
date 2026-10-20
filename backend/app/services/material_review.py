@@ -179,7 +179,21 @@ def review_material(self, mid, payload, user):
             touched = {known[hid]["code"] for hid in selected}
             for code in touched:
                 previous = factors.get(code, RiskFactor(code=code))
-                ids = [eid for eid in previous.evidence_ids if eid not in evidence_changes]
+                superseded = {
+                    eid
+                    for hid in selected
+                    if known[hid]["code"] == code
+                    for eid in group.get("legacyEvidence", {}).get(hid, [])
+                }
+                ids = (
+                    [
+                        eid
+                        for eid in previous.evidence_ids
+                        if eid not in evidence_changes and eid not in superseded
+                    ]
+                    if previous.status == "confirmed"
+                    else []
+                )
                 ids += [
                     e.id
                     for e in evidence_changes.values()
@@ -198,6 +212,15 @@ def review_material(self, mid, payload, user):
                         validate_factor_evidence(code, complex_, refs)
                     except ValueError as error:
                         raise AppError(422, "FACTOR_NOT_SUPPORTED", str(error)) from None
+                if (
+                    not ids
+                    and previous.status != "confirmed"
+                    and not any(
+                        selected[hid] == "confirmed" and known[hid]["code"] == code
+                        for hid in selected
+                    )
+                ):
+                    continue
                 factors[code] = RiskFactor(
                     code=code,
                     status="confirmed" if ids else "unknown",
@@ -233,6 +256,7 @@ def review_material(self, mid, payload, user):
             "complexId": cid,
             "demo": group["workspaceScope"] == "demo",
             "actorUid": user.uid,
+            "reviewerDisplayName": user.display_name,
             "createdAt": now.isoformat(),
             "action": "material.review",
             "details": {

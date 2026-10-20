@@ -4,6 +4,7 @@ import base64
 import json
 
 from app.core.errors import AppError, Conflict, NotFound
+from app.models.common import utc_now
 from app.services.material_analysis import hypotheses
 from app.services.material_priority import review_priority
 from app.services.material_projection import (
@@ -19,15 +20,16 @@ from app.services.workspace import serialize
 
 
 class MaterialService:
-    def __init__(self, workspace):
+    def __init__(self, workspace, files=None):
         self.workspace, self.store = workspace, workspace.store
         self._catalog = {}
+        self.files = files
 
     def visible(self, row):
         return row and (
             not self.workspace.demo_only
             or row["workspaceScope"] == "demo"
-            or row.get("hasPublicLead")
+            or (row["workspaceScope"] == "public" and not row.get("complexId"))
         )
 
     def require(self, mid, tx=None):
@@ -75,7 +77,7 @@ class MaterialService:
             self.store.atomic(project)
         from app.services.material_legacy import import_legacy_results
 
-        import_legacy_results(self.workspace)
+        import_legacy_results(self.workspace, self.files)
 
     @staticmethod
     def state(group, reader):
@@ -210,12 +212,16 @@ class MaterialService:
         group = self.require(mid)
         rows = list(all_rows(self.store, "materialOccurrences", [("materialId", "==", mid)]))
         rows.sort(key=lambda r: (r["capturedAt"], r["id"]), reverse=True)
+        output = self.format_occurrences(mid, rows)
+        return self.page(output, cursor, limit, {"material": mid, "version": group["version"]})
+
+    def format_occurrences(self, mid, rows):
         output = []
         for row in rows:
             media = []
             for m in row["media"]:
                 jid = digest(
-                    f"{row['workspaceScope']}:{digest(row['text'])}:image:{m.get('sha256')}"
+                    f"{mid}:{row['workspaceScope']}:{digest(row['text'])}:image:{m.get('sha256')}"
                 )
                 job = self.store.get("materialJobs", jid) if m.get("sha256") else None
                 media.append(
@@ -246,7 +252,31 @@ class MaterialService:
                 }
                 | {"media": media}
             )
-        return self.page(output, cursor, limit, {"material": mid, "version": group["version"]})
+        return output
+
+    def occurrence(self, mid, oid):
+        self.require(mid)
+        row = self.store.get("materialOccurrences", oid)
+        if not row or row["materialId"] != mid:
+            raise NotFound()
+        return self.format_occurrences(mid, [row])[0]
+
+    def history(self, mid, cursor=None, limit=20):
+        self.require(mid)
+        events = list(all_rows(self.store, "auditLogs", [("entityId", "==", mid)]))
+        events.sort(key=lambda r: (r["createdAt"], r["id"]), reverse=True)
+        rows = [
+            {
+                "id": r["id"],
+                "action": r["action"],
+                "reviewerDisplayName": r.get("reviewerDisplayName"),
+                "createdAt": r["createdAt"],
+                "details": r["details"],
+            }
+            for r in events
+            if r["entityType"] == "material"
+        ]
+        return self.page(rows, cursor, limit, {"material": mid, "kind": "history"})
 
     def detail(self, mid):
         # Legacy IDs are resolved without scanning a client-side first page.
@@ -341,6 +371,27 @@ class MaterialService:
             failed = [j for j in jobs if j["status"] == "failed"]
             if not failed:
                 raise Conflict("Only failed analysis may be retried")
+            from app.services.material_provider import input_call_key
+
+            cached = {}
+            for j in failed:
+                from types import SimpleNamespace
+
+                settings = SimpleNamespace(gemini_model=j.get("model", ""))
+                key = input_call_key(
+                    j["workspaceScope"], j["text"], j.get("screenshotSha") or "", settings
+                )
+                call = tx.get("materialProviderCalls", key)
+                if (
+                    call
+                    and call["status"] == "running"
+                    and call.get("leaseUntil", "") > utc_now().isoformat()
+                ):
+                    raise Conflict("The paid request may still be running; wait for its lease")
+                if call and call["status"] in {"failed", "running"}:
+                    cached[key] = call
+            for key, call in cached.items():
+                tx.set("materialProviderCalls", key, {**call, "status": "retry_authorized"})
             for j in failed:
                 tx.set(
                     "materialJobs",

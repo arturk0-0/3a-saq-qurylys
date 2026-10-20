@@ -158,11 +158,18 @@ def test_limits_and_request_ownership(services):
     with pytest.raises(AppError) as error:
         service.analyze("demo-ad-01", payload, Principal(uid="other", role="analyst"))
     assert error.value.status_code == 409
+    # An identical input is reused and does not consume another quota unit.
     service.analyze("demo-ad-01", AnalysisRequest(request_id=uuid4(), expected_version=1), USER)
+    assert all(c["count"] == 1 for c in store.documents["usageLimits"].values())
+    quote = store.get("advertisements", "demo-ad-02")["text"]
+    service.client = GeminiClient(
+        settings(), httpx.MockTransport(lambda _: mock_response(extraction(quote)))
+    )
+    service.analyze("demo-ad-02", AnalysisRequest(request_id=uuid4(), expected_version=1), USER)
     with pytest.raises(AppError) as error:
-        service.analyze("demo-ad-01", AnalysisRequest(request_id=uuid4(), expected_version=1), USER)
+        service.analyze("demo-ad-03", AnalysisRequest(request_id=uuid4(), expected_version=1), USER)
     assert error.value.status_code == 429
-    assert len(store.documents["analysisRuns"]) == 2
+    assert all(c["count"] == 2 for c in store.documents["usageLimits"].values())
 
 
 def png():
