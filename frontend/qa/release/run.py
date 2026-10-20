@@ -12,6 +12,14 @@ from pathlib import Path
 
 here = Path(__file__).resolve().parent
 repo = here.parents[2]
+browser_script = Path(
+    os.environ.get("SAQ_QA_BROWSER_SCRIPT", str(here / "browser_check.py"))
+).resolve()
+if (
+    not browser_script.is_relative_to(repo / "frontend/qa")
+    or not browser_script.is_file()
+):
+    sys.exit("QA browser script must be an existing file inside frontend/qa.")
 out = Path(os.environ.get("SAQ_QA_ARTIFACTS", "/tmp/saq-release-browser"))
 out.mkdir(parents=True, exist_ok=True)
 for port in [8011, 5181]:
@@ -31,7 +39,17 @@ env = {
     if not key.startswith(("FIREBASE_", "GEMINI_", "VITE_", "SEARCHAPI_"))
     and key != "GOOGLE_APPLICATION_CREDENTIALS"
 }
-env["PYTHONPATH"] = os.pathsep.join([str(here), str(repo / "backend")])
+backend_root = Path(
+    os.environ.get("SAQ_QA_BACKEND_ROOT", str(repo / "backend"))
+).resolve()
+if not (backend_root / "app/main.py").is_file():
+    sys.exit("QA backend root must contain app/main.py.")
+api_module = os.environ.get("SAQ_QA_API_MODULE", "local_api:app")
+if api_module not in {"local_api:app", "integration_api:app"}:
+    sys.exit("Only explicit local QA API adapters may be started.")
+env["PYTHONPATH"] = os.pathsep.join(
+    [str(here), str(browser_script.parent), str(backend_root)]
+)
 env["SAQ_QA_ARTIFACTS"] = str(out)
 backend_python = os.environ.get(
     "SAQ_BACKEND_PYTHON", str(repo / "backend/.venv/bin/python")
@@ -49,7 +67,7 @@ try:
                 backend_python,
                 "-m",
                 "uvicorn",
-                "local_api:app",
+                api_module,
                 "--host",
                 "127.0.0.1",
                 "--port",
@@ -96,7 +114,7 @@ try:
                 sys.exit(f"QA server not ready. See logs in {out}")
             time.sleep(0.1)
     result = subprocess.run(
-        [sys.executable, str(here / "browser_check.py")], cwd=repo / "frontend", env=env
+        [sys.executable, str(browser_script)], cwd=repo / "frontend", env=env
     )
     raise SystemExit(result.returncode)
 finally:
