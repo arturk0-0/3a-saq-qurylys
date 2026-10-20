@@ -40,7 +40,12 @@ function ReviewEditor({ detail, materialLoading, refresh, apply }: {
   const analysisRequest = useRef<{ version: number; id: string } | null>(null)
   const token = `${detail.version}:${detail.revisionId}`
   const stale = acknowledged !== token
-  useEffect(() => { if (!dirty && !conflict) setAcknowledged(token) }, [token, dirty, conflict])
+  useEffect(() => {
+    if (!dirty && !conflict) {
+      setAcknowledged(token); setComplexId(detail.complex?.id || '')
+      setNotes(detail.review?.notes || ''); setDecisions({})
+    }
+  }, [token, dirty, conflict, detail.complex?.id, detail.review?.notes])
   useEffect(() => { setRecords(detail.occurrences) }, [detail.version, detail.revisionId, detail.occurrences])
   useEffect(() => {
     if (dirty || busy || !['queued', 'running'].includes(detail.analysis.status)) return
@@ -123,7 +128,7 @@ function ReviewEditor({ detail, materialLoading, refresh, apply }: {
           <p>{complex.data.legalBasis.reference || 'Реквизиты не указаны'}</p><p>{complex.data.legalBasis.source || 'Источник проверки не указан'}</p>
           <Link className="detail-link" to={`/complexes/${encodeURIComponent(complexId)}?tab=documents`}>Документы и источники ЖК →</Link>
           <Link className="detail-link" to={`/complexes/${encodeURIComponent(complexId)}?tab=history`}>История решений ЖК →</Link>
-          <PublicSources complexId={complexId} demo={complex.data.demo} />
+          <details><summary>Справочные источники для проверки документов</summary><PublicSources complexId={complexId} demo={complex.data.demo} /></details>
         </>}
       </section>
       {records.some(record => record.legacyKind === 'advertisement') && <details className="panel content-pad ad-panel" onToggle={event => setTraceOpen(event.currentTarget.open)}><summary>Рекламный след и файлы исходных объявлений</summary>

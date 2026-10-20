@@ -38,7 +38,8 @@ function Materials() {
       <Button variant="outline" onClick={() => { setCreating(value => !value); setSaved(false) }}>{creating ? 'Закрыть добавление' : 'Добавить материал'}</Button></div></section>
     {creating && <section className="panel content-pad ad-panel"><AdvertisementForm onCancel={() => setCreating(false)} onSaved={() => { setCreating(false); setSaved(true); change('cursor', ''); result.refresh() }} /></section>}
     {saved && <p className="inline-notice" role="status">Оригинал сохранён. Поддерживаемый материал поступит в очередь автоматического анализа; подтвердить выводы сможет только человек.</p>}
-    {result.loading ? <LoadingState /> : result.error ? <ErrorState message={result.error} retry={result.refresh} /> : !result.data?.items.length ? <EmptyState title="Материалов пока нет"><p>Измените фильтры, добавьте публикацию или проверьте источники и расписание.</p></EmptyState>
+    {result.loading ? <LoadingState /> : result.error ? <div className="ad-stack"><ErrorState message={result.error} retry={result.refresh} />
+      {params.get('cursor') && <div><p>Выборка могла измениться. Начните список заново, сохранив фильтры.</p><Button variant="outline" onClick={() => change('cursor', '')}>Обновить список сначала</Button></div>}</div> : !result.data?.items.length ? <EmptyState title="Материалов пока нет"><p>Измените фильтры, добавьте публикацию или проверьте источники и расписание.</p></EmptyState>
       : result.data.items.map(item => <article className="panel content-pad ad-panel ad-stack" key={item.id}>
         <div className="ad-meta"><span>{reviewLabels[item.reviewState]}</span><span>{item.platforms.join(' · ') || 'Платформа не указана'}</span><span>Публикаций: {item.occurrenceCount}</span><span>{item.origins.map(origin => origin === 'manual' ? 'Вручную' : 'Автосбор').join(' · ')}</span></div>
         <h2>{item.title || 'Рекламный материал'}</h2><p className="ad-original">{item.textPreview}</p>

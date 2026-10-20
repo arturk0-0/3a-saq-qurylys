@@ -20,7 +20,7 @@ export function AnalysisPanel({ adId }: { adId: string }) {
   const [cursor, setCursor] = useState('')
   const hypotheses = useApiQuery<Page<Hypothesis>>(`/api/v1/advertisements/${adId}/hypotheses?limit=50${cursor ? `&cursor=${cursor}` : ''}`)
   const runs = useApiQuery<Page<AnalysisRun>>(`/api/v1/advertisements/${adId}/analysis?limit=100`)
-  const [activity, setActivity] = useState<'analysis' | 'upload' | 'review' | null>(null)
+  const [activity, setActivity] = useState<'upload' | 'review' | null>(null)
   const busy = activity !== null
   const [error, setError] = useState<string | null>(null)
   const [imageId, setImageId] = useState('')
@@ -55,18 +55,18 @@ export function AnalysisPanel({ adId }: { adId: string }) {
     <p className="form-hint">AI предлагает цитаты для проверки. Он не устанавливает отсутствие разрешений и не подтверждает факторы риска.</p>
     {ad.loading ? <LoadingState /> : ad.error ? <ErrorState message={ad.error} retry={ad.refresh} /> : <>
       <div className="analysis-step">
-        <div className="step-heading"><span className="step-number">1</span><div><h4>Выберите материал</h4><p>Текст публикации или один загруженный скриншот.</p></div></div>
-        <FormField label="Источник анализа"><select value={imageId} disabled={busy} onChange={(event) => setImageId(event.target.value)}><option value="">Текст объявления</option>{ad.data?.attachmentIds.map((id, index) => <option value={id} key={id}>Скриншот {index + 1}</option>)}</select></FormField>
+        <div className="step-heading"><span className="step-number">1</span><div><h4>Сохранённые оригиналы</h4><p>Выберите текст или скриншот для просмотра.</p></div></div>
+        <FormField label="Сохранённый материал"><select value={imageId} disabled={busy} onChange={(event) => setImageId(event.target.value)}><option value="">Текст объявления</option>{ad.data?.attachmentIds.map((id, index) => <option value={id} key={id}>Скриншот {index + 1}</option>)}</select></FormField>
         <form className="screenshot-upload" onSubmit={upload}>
           <FormField label="Добавить скриншот" hint="JPEG, PNG или WebP, до 6 МБ. После загрузки скриншот выбирается автоматически."><input name="image" type="file" accept="image/jpeg,image/png,image/webp" required disabled={busy} /></FormField>
           <Button variant="outline" disabled={busy}>{activity === 'upload' ? 'Загружаем…' : 'Загрузить'}</Button>
         </form>
-        {uploadedName && <p className="upload-success" role="status">Загружен файл «{uploadedName}». Для анализа выбран {imageId ? 'скриншот' : 'текст объявления'}.</p>}
+        {uploadedName && <p className="upload-success" role="status">Загружен файл «{uploadedName}». Выбран для просмотра {imageId ? 'скриншот' : 'текст объявления'}.</p>}
         {imageId && <EvidenceFile key={imageId} id={imageId} />}
       </div>
       <div className="analysis-step analysis-launch">
         <div className="step-heading"><span className="step-number">2</span><div><h4>Автоматический анализ</h4><p>Поддерживаемые новые материалы поступают в очередь. Проверка выбранных гипотез сохраняется в разделе «Реклама».</p></div></div>
-        <p className="selected-source">Будет проанализирован: <strong>{imageId ? `Скриншот ${Math.max(0, ad.data?.attachmentIds.indexOf(imageId) ?? -1) + 1}` : 'Текст объявления'}</strong></p>
+        <p className="selected-source">Просматриваемый оригинал: <strong>{imageId ? `Скриншот ${Math.max(0, ad.data?.attachmentIds.indexOf(imageId) ?? -1) + 1}` : 'Текст объявления'}</strong></p>
         <Link className="detail-link" to={`/advertising?complexId=${encodeURIComponent(ad.data?.complexId || '')}`}>Перейти к единой проверке →</Link>
       </div>
     </>}

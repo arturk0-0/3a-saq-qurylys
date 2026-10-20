@@ -146,3 +146,30 @@ it('keeps all materials server-paginated, resets cursors on filters and opens th
   const card = screen.getByRole('heading', { name: fixtures.material.title }).closest('article')!
   expect(within(card).getByRole('link', { name: /Проверить материал/ })).toHaveAttribute('href', expect.stringContaining('origin=manual'))
 })
+
+it('refreshes untouched notes and decisions from another reviewer without submitting them', async () => {
+  const state = setup()
+  await screen.findByLabelText('Общий комментарий')
+  const fresh = structuredClone(fixtures.saved) as MaterialDetail
+  fresh.review!.notes = 'Новая проверенная запись другого аналитика'
+  state.update(fresh)
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Обновить материал и ЖК' })).not.toBeDisabled())
+  fireEvent.click(screen.getByRole('button', { name: 'Обновить материал и ЖК' }))
+  await waitFor(() => expect(screen.getByLabelText('Общий комментарий')).toHaveValue(fresh.review!.notes))
+  expect(screen.getByLabelText('Решение по гипотезе 1 (R2)')).toHaveValue('confirmed')
+  expect(state.writes).toHaveLength(0)
+})
+
+it('recovers an invalidated server cursor by starting over with the same filters', async () => {
+  const api = vi.fn(async (path: string) => {
+    if (path.includes('cursor=')) throw new ApiError(409, 'CONFLICT', 'Выборка изменилась')
+    return { items: [fixtures.material], nextCursor: null }
+  })
+  render(<AuthContext.Provider value={{ status: 'authenticated', profile: null, error: null, api: api as never, signIn: vi.fn(), logout: vi.fn() }}><MemoryRouter initialEntries={['/advertising?q=депозит&origin=manual&cursor=stale']}><AdvertisingPage /></MemoryRouter></AuthContext.Provider>)
+  await screen.findByRole('alert')
+  fireEvent.click(screen.getByRole('button', { name: 'Обновить список сначала' }))
+  await screen.findByRole('heading', { name: fixtures.material.title })
+  const params = new URL(api.mock.calls.at(-1)![0], 'https://test.invalid').searchParams
+  expect(params.get('q')).toBe('депозит'); expect(params.get('origin')).toBe('manual')
+  expect(params.has('cursor')).toBe(false)
+})

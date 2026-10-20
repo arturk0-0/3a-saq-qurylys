@@ -15,7 +15,7 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
   const search = urlParams.get('q') || ''
   const city = urlParams.get('city') || ''
   const zone = urlParams.get('zone') || ''
-  const sort = urlParams.get('sort') || 'risk'
+  const sort = urlParams.get('sort') || 'priority'
   const cursor = urlParams.get('cursor') || '0'
   const [query, setQuery] = useState(search)
   useEffect(() => { setQuery(search) }, [search])
@@ -56,7 +56,7 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
         <select aria-label="Подтверждённые риски" value={zone} onChange={(event) => updateFilter('zone', event.target.value)}>
           <option value="">Все подтверждённые риски</option><option value="RED">Красная зона</option><option value="YELLOW">Жёлтая зона</option><option value="GREEN">Зелёная зона</option>
         </select>
-        <select aria-label="Сортировка" value={sort} onChange={(event) => updateFilter('sort', event.target.value)}><option value="risk">По баллу риска</option><option value="name">По названию</option></select>
+        <select aria-label="Сортировка" value={sort} onChange={(event) => updateFilter('sort', event.target.value)}><option value="priority">По приоритету проверки</option><option value="risk">По подтверждённым рискам</option><option value="name">По названию</option></select>
         <Button type="submit" variant="outline"><Filter size={15} className="mr-2" />Найти</Button>
       </form>
       {overview && showMap && !loading && !error && <div id="complex-map"><ComplexMap complexes={visible} /></div>}

@@ -7,20 +7,21 @@ import { formatDate } from '@/lib/labels'
 import { SourceManager } from '@/features/monitoring/SourceManager'
 import { safeMonitorError, type MonitorStatus, type Source, type Run, type Page } from '@/features/monitoring/types'
 import '@/features/monitoring/monitoring.css'
+import { useResource } from './useResource'
 
 export function SourcesSchedule() {
   const [params, setParams] = useSearchParams()
   const [historyOpen, setHistoryOpen] = useState(params.get('runs') === '1')
-  const status = useApiQuery<MonitorStatus>('/api/v1/monitoring/status')
-  const sources = useApiQuery<{ items: Source[] }>('/api/v1/monitoring/sources')
+  const status = useResource<MonitorStatus>('/api/v1/monitoring/status')
+  const sources = useResource<{ items: Source[] }>('/api/v1/monitoring/sources')
   const cursor = params.get('runCursor') || ''
   const runs = useApiQuery<Page<Run>>(historyOpen ? '/api/v1/monitoring/runs?limit=20' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '') : null)
-  function refresh() { status.refresh(); sources.refresh(); if (historyOpen) runs.refresh() }
+  function refresh() { void status.refresh().catch(() => {}); void sources.refresh().catch(() => {}); if (historyOpen) runs.refresh() }
   return <div className="monitoring ad-stack">
     <section className="panel"><h2>Источники и расписание</h2>
       <p>{status.data?.workerLastTickAt ? 'Последняя проверка источников: ' + formatDate(status.data.workerLastTickAt) : 'Регулярный запуск ещё не подтверждён. Проверьте состояние источников.'}</p>
       <Button variant="outline" onClick={refresh}>Обновить источники</Button>
-      {status.error && <ErrorState message={status.error} retry={status.refresh} />}
+      {status.error && <ErrorState message={status.error} retry={() => void status.refresh().catch(() => {})} />}
       <details><summary>Покрытие и ограничения</summary>
         <p>Instagram через Meta Ad Library/SearchAPI, фрагменты интернет-поиска и публичные тексты Telegram. Полный охват не гарантируется. Внешние файлы и Stories автоматически не скачиваются.</p>
         <p>{status.data?.instagramTargetedAds === 'configured' ? 'Источник Instagram настроен.' : 'Источник Instagram пока не подключён.'}</p>
@@ -31,8 +32,9 @@ export function SourcesSchedule() {
         {status.data && <p>Запросы к источникам сегодня, UTC: {status.data.dailyFetchUsed} / {status.data.dailyFetchLimit}.</p>}
       </details>
     </section>
-    {sources.loading ? <LoadingState /> : sources.error ? <ErrorState message={sources.error} retry={sources.refresh} />
-      : <SourceManager sources={sources.data?.items || []} provider={status.data} changed={refresh} />}
+    {sources.loading && <LoadingState />}
+    {sources.error && <ErrorState message={sources.error} retry={() => void sources.refresh().catch(() => {})} />}
+    <SourceManager sources={sources.data?.items || []} provider={status.data} changed={refresh} unifiedMaterials />
     <details className="panel" open={historyOpen} onToggle={event => setHistoryOpen(event.currentTarget.open)}>
       <summary>История запусков</summary>
       {historyOpen && <div className="ad-stack">
