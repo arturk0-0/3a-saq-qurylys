@@ -56,7 +56,9 @@
       {"fieldPath": "entityId", "order": "ASCENDING"},
       {"fieldPath": "createdAt", "order": "DESCENDING"},
       {"fieldPath": "__name__", "order": "ASCENDING"}
-    ]}
+    ]},
+    {"collectionGroup": "droneInspections", "queryScope": "COLLECTION", "fields": [{"fieldPath": "workspaceScope", "order": "ASCENDING"}, {"fieldPath": "createdAt", "order": "DESCENDING"}, {"fieldPath": "__name__", "order": "ASCENDING"}]},
+    {"collectionGroup": "droneRuns", "queryScope": "COLLECTION", "fields": [{"fieldPath": "inspectionId", "order": "ASCENDING"}, {"fieldPath": "createdAt", "order": "DESCENDING"}, {"fieldPath": "__name__", "order": "ASCENDING"}]}
   ],
   "fieldOverrides": []
 }

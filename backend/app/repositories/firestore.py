@@ -22,6 +22,8 @@ COLLECTIONS = frozenset(
         "developers",
         "companies",
         "companyProjects",
+        "droneInspections",
+        "droneRuns",
         "complexes",
         "advertisements",
         "adLinks",

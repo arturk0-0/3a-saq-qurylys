@@ -82,7 +82,7 @@ class _InvalidResponse(Exception):
         )
 
 
-def parse_extraction(response: httpx.Response, text: str, *, image: bool) -> Extraction:
+def generated_text(response: httpx.Response) -> tuple[str, str]:
     """Fail closed with bounded diagnostic labels; never repair or log model/source text."""
     try:
         payload = response.json()
@@ -128,6 +128,11 @@ def parse_extraction(response: httpx.Response, text: str, *, image: bool) -> Ext
     result_text = "".join(chunks)
     if not result_text.strip():
         raise _InvalidResponse(ResponseFailure.NO_TEXT, finish)
+    return result_text, finish
+
+
+def parse_extraction(response: httpx.Response, text: str, *, image: bool) -> Extraction:
+    result_text, finish = generated_text(response)
     try:
         result = Extraction.model_validate_json(result_text)
     except ValidationError as error:
@@ -210,6 +215,25 @@ class GeminiClient:
                 "responseJsonSchema": Extraction.model_json_schema(by_alias=True),
             },
         }
+        response = self.generate(body)
+        try:
+            return parse_extraction(response, text, image=image is not None)
+        except _InvalidResponse as failure:
+            logger.warning(
+                "Gemini request failed: code=AI_INVALID_RESPONSE request_id=%s "
+                "stage=response_validation reason=%s finish_reason=%s input=%s",
+                request_id_context.get(),
+                failure.reason.value,
+                failure.finish_reason,
+                "image" if image is not None else "text",
+            )
+            raise AppError(
+                502, "AI_INVALID_RESPONSE", "Gemini returned an invalid or unsupported extraction"
+            ) from None
+
+    def generate(self, body: dict) -> httpx.Response:
+        """Shared bounded request/error handling; callers own their strict output schema."""
+        self.check_config()
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.settings.gemini_model}:generateContent"
         with httpx.Client(timeout=httpx.Timeout(30, connect=5), transport=self.transport) as client:
             # One retry only for explicit temporary server errors; no retry of ambiguous timeouts.
@@ -238,17 +262,4 @@ class GeminiClient:
                 break
         if not response.is_success:
             raise provider_error(response)
-        try:
-            return parse_extraction(response, text, image=image is not None)
-        except _InvalidResponse as failure:
-            logger.warning(
-                "Gemini request failed: code=AI_INVALID_RESPONSE request_id=%s "
-                "stage=response_validation reason=%s finish_reason=%s input=%s",
-                request_id_context.get(),
-                failure.reason.value,
-                failure.finish_reason,
-                "image" if image is not None else "text",
-            )
-            raise AppError(
-                502, "AI_INVALID_RESPONSE", "Gemini returned an invalid or unsupported extraction"
-            ) from None
+        return response
