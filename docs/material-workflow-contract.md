@@ -17,8 +17,10 @@ A — TypeScript клиент. Детали совместимых дополн�
 
 Список: `q`, `review=all|needs_review|reviewed|dismissed`,
 `origin=all|automatic|manual`, `platform` (необязательная строка), `complexId`,
-`sort=priority|recent`, `cursor`, `limit` 1–50. По умолчанию review=needs_review,
-sort=priority. Ответ `{items: MaterialSummary[], nextCursor: string|null}`.
+`sort=priority|recent`, `cursor`, `limit` 1–50. По умолчанию review=all,
+sort=priority: сначала needs_review, затем по серверному score (null после
+рассчитанных), lastSeenAt и стабильному id. Проверенные материалы не скрываются
+неявным фильтром «Все материалы». Ответ `{items: MaterialSummary[], nextCursor: string|null}`.
 Неподходящий фильтрам cursor не использовать. Никаких client-side total/полноты
 по первой странице; нужны стабильный tie-break и непропадающие элементы.
 
