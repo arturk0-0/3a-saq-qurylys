@@ -254,6 +254,9 @@ details[open] > :not(summary) { animation: surface-enter 180ms ease-out; }
 
 /* Keep an action and its explanation together; separate neighbouring actions. */
 .history-entry { margin: 0; padding: 16px 0; overflow-wrap: anywhere; }
+.topbar { flex-wrap: wrap; }
+.user-menu { min-width: 0; max-width: 100%; margin-left: auto; }
+.user-menu > span:not(.avatar) { min-width: 0; overflow-wrap: anywhere; }
 .history-entry + .history-entry { border-top: 1px solid #cbd8d6; }
 .timeline .history-entry { padding: 16px 0; }
 .timeline .history-entry::before { top: 22px; }

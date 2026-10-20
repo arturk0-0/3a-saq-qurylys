@@ -8,6 +8,7 @@ import { useApiQuery } from '@/lib/useApiQuery'
 import type { Complex, Page } from '@/lib/types'
 import { ComplexMap } from './ComplexMap'
 import { CityMapSection } from '@/features/city-map/CityMapSection'
+import { PriorityView } from '@/features/advertising/presentation'
 
 export function ComplexList({ overview = false }: { overview?: boolean }) {
   const [urlParams, setUrlParams] = useSearchParams()
@@ -35,13 +36,13 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
   const visible = data?.items || []
   const stats = [
     { title: 'Объектов в выборке', value: data?.total ?? '—', icon: Building2, tone: 'neutral' },
-    { title: 'Высокий приоритет', value: visible.filter((row) => row.risk.zone === 'RED').length, icon: ShieldAlert, tone: 'red' },
-    { title: 'Требуют проверки', value: visible.filter((row) => row.risk.zone === 'YELLOW').length, icon: ClipboardCheck, tone: 'amber' },
-    { title: 'Низкий приоритет', value: visible.filter((row) => row.risk.zone === 'GREEN').length, icon: ShieldCheck, tone: 'green' },
+    { title: 'Подтверждённый высокий риск', value: visible.filter((row) => row.risk.zone === 'RED').length, icon: ShieldAlert, tone: 'red' },
+    { title: 'Подтверждённая жёлтая зона', value: visible.filter((row) => row.risk.zone === 'YELLOW').length, icon: ClipboardCheck, tone: 'amber' },
+    { title: 'Подтверждённая зелёная зона', value: visible.filter((row) => row.risk.zone === 'GREEN').length, icon: ShieldCheck, tone: 'green' },
   ]
   return <>
     <PageHeading eyebrow="Мониторинг строительства · ВКО" title={overview ? 'Обзор рисков' : 'Реестр жилых комплексов'}
-      description="Приоритет проверки по подтверждённым фактам. Каждое решение остаётся за аналитиком." />
+      description="Приоритет очереди и подтверждённые риски показаны отдельно. Каждое решение остаётся за аналитиком." />
     {overview && <div className="stats-grid">{stats.map(({ title, value, icon: Icon, tone }) =>
       <div className={`stat-card stat-${tone}`} key={title}><Icon size={21} /><span>{title}</span>
         <strong>{loading ? '—' : value}</strong><small>{title === 'Объектов в выборке' ? 'По текущему фильтру' : 'На текущей странице'}</small></div>)}</div>}
@@ -52,8 +53,8 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
         <select aria-label="Город" value={city} onChange={(event) => updateFilter('city', event.target.value)}>
           <option value="">Все города</option>{cities.map((name) => <option key={name}>{name}</option>)}
         </select>
-        <select aria-label="Приоритет" value={zone} onChange={(event) => updateFilter('zone', event.target.value)}>
-          <option value="">Все приоритеты</option><option value="RED">Высокий</option><option value="YELLOW">Требует проверки</option><option value="GREEN">Низкий</option>
+        <select aria-label="Подтверждённые риски" value={zone} onChange={(event) => updateFilter('zone', event.target.value)}>
+          <option value="">Все подтверждённые риски</option><option value="RED">Красная зона</option><option value="YELLOW">Жёлтая зона</option><option value="GREEN">Зелёная зона</option>
         </select>
         <select aria-label="Сортировка" value={sort} onChange={(event) => updateFilter('sort', event.target.value)}><option value="risk">По баллу риска</option><option value="name">По названию</option></select>
         <Button type="submit" variant="outline"><Filter size={15} className="mr-2" />Найти</Button>
@@ -61,11 +62,11 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
       {overview && showMap && !loading && !error && <div id="complex-map"><ComplexMap complexes={visible} /></div>}
       {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={refresh} />
         : !visible.length ? <EmptyState title="ЖК не найдены"><p>Измените фильтры или добавьте объекты в реестр.</p></EmptyState>
-        : <ScrollableTable label="Жилые комплексы"><table className="data-table"><thead><tr><th>Жилой комплекс</th><th>Город / этап</th><th>Приоритет проверки</th><th><span className="sr-only">Карточка</span></th></tr></thead>
+        : <ScrollableTable label="Жилые комплексы"><table className="data-table"><thead><tr><th>Жилой комплекс</th><th>Город / этап</th><th>Приоритет проверки</th><th>Подтверждённые риски</th><th><span className="sr-only">Карточка</span></th></tr></thead>
           <tbody>{visible.map((complex_) => <tr key={complex_.id}>
             <td><strong>{complex_.name.replace(/^DEMO — /, '')}</strong><span>{complex_.address}</span>{complex_.demo && <DemoBadge />}</td>
             <td><strong>{complex_.city}</strong><span>{stageLabels[complex_.stage]}</span></td>
-            <td><RiskBadge risk={complex_.risk} /></td><td><DetailLink to={`/complexes/${complex_.id}`}>Карточка</DetailLink></td>
+            <td><PriorityView value={complex_.reviewPriority} /></td><td><RiskBadge confirmed risk={complex_.risk} /></td><td><DetailLink to={`/complexes/${complex_.id}`}>Карточка</DetailLink></td>
           </tr>)}</tbody></table></ScrollableTable>}
       {data?.catalogLimited && <p className="inline-notice">Поиск ограничен первыми 500 записями. Уточните город; полный поиск требует расширения индекса.</p>}
       {(cursor !== '0' || data?.nextCursor) && <div className="pagination"><Button variant="outline" onClick={() => updateFilter('cursor', '0')}>В начало</Button>

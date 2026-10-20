@@ -21,8 +21,9 @@ function ComplexAdvertisements({ id }: { id: string }) {
   const { data, loading, error, refresh } = useApiQuery<Page<Advertisement>>(`/api/v1/complexes/${id}/advertisements?limit=50${cursor ? `&cursor=${cursor}` : ''}`)
   return <><div className="panel-heading"><h2>Объявления по объекту</h2><Button variant="outline" onClick={() => setCreating(true)}>Добавить</Button></div>
     {creating && <AdvertisementForm complexId={id} onCancel={() => setCreating(false)} onSaved={() => { setCreating(false); setCursor(''); refresh() }} />}
+    <div className="content-pad"><Link className="detail-link" to={`/advertising?complexId=${encodeURIComponent(id)}`}>Реклама ЖК · единая проверка материалов →</Link></div>
     {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={refresh} /> : !data?.items.length ? <EmptyState title="Объявлений пока нет" />
-      : data.items.map((ad) => <AdvertisementCard key={ad.id} ad={ad} />)}
+      : <details className="content-pad"><summary>Сохранённые оригиналы и прежняя история</summary>{data.items.map((ad) => <AdvertisementCard key={ad.id} ad={ad} />)}</details>}
     {(cursor || data?.nextCursor) && <div className="pagination"><Button variant="outline" onClick={() => setCursor('')}>В начало</Button>{data?.nextCursor && <Button variant="outline" onClick={() => setCursor(data.nextCursor!)}>Далее</Button>}</div>}
   </>
 }

@@ -17,7 +17,7 @@ it('restores the exact registry search and filters after opening a card and goin
   </AuthContext.Provider>)
   await screen.findByText('Объект')
   fireEvent.change(screen.getByLabelText('Город'), { target: { value: 'Риддер' } })
-  fireEvent.change(screen.getByLabelText('Приоритет'), { target: { value: 'YELLOW' } })
+  fireEvent.change(screen.getByLabelText('Подтверждённые риски'), { target: { value: 'YELLOW' } })
   fireEvent.change(screen.getByLabelText('Поиск ЖК'), { target: { value: 'Объект' } })
   fireEvent.click(screen.getByRole('button', { name: 'Найти' }))
   await waitFor(() => expect(api).toHaveBeenLastCalledWith(expect.stringContaining('q='), expect.anything()))
@@ -26,7 +26,7 @@ it('restores the exact registry search and filters after opening a card and goin
   await screen.findByText('Объект')
   expect(screen.getByLabelText('Поиск ЖК')).toHaveValue('Объект')
   expect(screen.getByLabelText('Город')).toHaveValue('Риддер')
-  expect(screen.getByLabelText('Приоритет')).toHaveValue('YELLOW')
+  expect(screen.getByLabelText('Подтверждённые риски')).toHaveValue('YELLOW')
   const params = new URL(api.mock.calls.at(-1)![0], 'https://test.invalid').searchParams
   expect(Object.fromEntries(params)).toMatchObject({ q: 'Объект', city: 'Риддер', zone: 'YELLOW' })
 })

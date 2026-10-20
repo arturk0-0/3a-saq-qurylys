@@ -63,7 +63,7 @@ export function FindingDetail({ id, liveRegistry, changed }: { id: string; liveR
           {item.extraction.hypotheses.length === 0 && <p>AI не выделил R2/R3 в этом материале. Это не проверка законности.</p>}
           {item.extraction.hypotheses.map((h, i) => <article className="evidence-card" key={i}><h4>{h.code} · {factorLabels[h.code]}</h4><blockquote>{h.quote}</blockquote><p>{h.explanation}</p></article>)}
           <p>{item.extraction.uncertainty}</p></>}
-        {!item.advertisementId && <Button variant="outline" disabled={busy || item.aiStatus === 'running'} onClick={() => void operation('analyze')}>{busy ? 'Выполняем…' : 'Проанализировать с AI'}</Button>}
+        {!item.advertisementId && <Link className="detail-link" to="/advertising">Проверить материал в разделе «Реклама» →</Link>}
       </section>
       {item.reviewer && <p className="inline-notice">Решение: {findingLabels[item.status]}. {item.notes}<br />Эксперт: <ActorName uid={item.reviewer} /> · {formatDate(item.reviewedAt)}</p>}
       <form className="editor-form monitor-section" onSubmit={e => void operation('review', e)}>

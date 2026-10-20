@@ -31,7 +31,7 @@ it('focuses factor review and preserves notes and selected proof across a failed
   expect(await screen.findByRole('alert')).toHaveTextContent('Временная ошибка сохранения')
   expect(screen.getByLabelText('Обоснование')).toHaveValue('Оригинал и цитата сверены')
   expect(proof).toBeChecked()
-  expect(screen.getByText('10 · Низкий приоритет')).toBeInTheDocument()
+  expect(screen.getByText('10 · Зелёная зона')).toBeInTheDocument()
   expect(changed).not.toHaveBeenCalled()
   fireEvent.click(screen.getByRole('button', { name: 'Сохранить решение' }))
   await waitFor(() => expect(changed).toHaveBeenCalledOnce())
@@ -39,7 +39,7 @@ it('focuses factor review and preserves notes and selected proof across a failed
   expect(writes).toHaveLength(2)
   expect(JSON.parse(String(writes[1][1]?.body))).toEqual({ code: 'R2', decision: 'confirmed', evidenceIds: ['proof'], notes: 'Оригинал и цитата сверены', expectedVersion: 4 })
   // The frontend does not add 25 locally: it waits for the refreshed server result.
-  expect(screen.getByText('10 · Низкий приоритет')).toBeInTheDocument()
+  expect(screen.getByText('10 · Зелёная зона')).toBeInTheDocument()
 })
 
 it('returns keyboard focus to the factor trigger after cancelling review', () => {

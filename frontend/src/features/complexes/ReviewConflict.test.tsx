@@ -69,7 +69,7 @@ it('refreshes a conflicted factor and its server risk without submitting or disc
   fireEvent.click(screen.getByRole('button', { name: 'Сохранить решение' }))
   await screen.findByRole('alert')
   fireEvent.click(screen.getByRole('button', { name: 'Обновить данные ЖК' }))
-  await screen.findByText('35 · Требует проверки')
+  await screen.findByText('35 · Жёлтая зона')
   expect(screen.getByLabelText('Обоснование')).toHaveValue('Черновик решения по R2')
   expect(await screen.findByLabelText('Депозит 100 000 тенге')).toBeChecked()
   expect(writes).toBe(1)

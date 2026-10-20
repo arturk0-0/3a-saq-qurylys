@@ -29,14 +29,6 @@ export function AnalysisPanel({ adId }: { adId: string }) {
   const [reviewNotes, setReviewNotes] = useState('')
   const [reviewDecision, setReviewDecision] = useState('accepted')
   const latestRun = runs.data?.items.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
-  async function analyze() {
-    if (!ad.data) return
-    setActivity('analysis'); setError(null)
-    try {
-      await api(`/api/v1/advertisements/${adId}/analyze`, { method: 'POST', body: JSON.stringify({ requestId: crypto.randomUUID(), expectedVersion: ad.data.version, screenshotId: imageId || null }) })
-      setCursor(''); hypotheses.refresh(); runs.refresh()
-    } catch (error) { setError(errorMessage(error)); runs.refresh() } finally { setActivity(null) }
-  }
   async function upload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!ad.data) return
@@ -73,9 +65,9 @@ export function AnalysisPanel({ adId }: { adId: string }) {
         {imageId && <EvidenceFile key={imageId} id={imageId} />}
       </div>
       <div className="analysis-step analysis-launch">
-        <div className="step-heading"><span className="step-number">2</span><div><h4>Запустите анализ</h4><p>AI предложит гипотезы. Баллы до решения аналитика не изменятся.</p></div></div>
+        <div className="step-heading"><span className="step-number">2</span><div><h4>Автоматический анализ</h4><p>Поддерживаемые новые материалы поступают в очередь. Проверка выбранных гипотез сохраняется в разделе «Реклама».</p></div></div>
         <p className="selected-source">Будет проанализирован: <strong>{imageId ? `Скриншот ${Math.max(0, ad.data?.attachmentIds.indexOf(imageId) ?? -1) + 1}` : 'Текст объявления'}</strong></p>
-        <Button disabled={busy} onClick={analyze}>{activity === 'analysis' ? 'Выполняется…' : 'Анализировать выбранный источник'}</Button>
+        <Link className="detail-link" to={`/advertising?complexId=${encodeURIComponent(ad.data?.complexId || '')}`}>Перейти к единой проверке →</Link>
       </div>
     </>}
     {error && <ErrorState message={error} />}
@@ -91,7 +83,7 @@ export function AnalysisPanel({ adId }: { adId: string }) {
     <div className="results-heading"><div className="step-heading"><span className="step-number">3</span><div><h4>Рассмотрите гипотезы</h4><p>В списке — результаты разных запусков. Проверяйте цитату по оригиналу.</p></div></div>
     <Button size="sm" variant="outline" disabled={busy} onClick={() => { setError(null); runs.refresh(); hypotheses.refresh(); ad.refresh() }}>Обновить результаты</Button></div>
     <details className="review-help"><summary>Как гипотеза влияет на оценку?</summary><ReviewGuide /></details>
-    {!hypotheses.loading && !hypotheses.error && !hypotheses.data?.items.length && <p className="inline-notice">Гипотез пока нет. Выберите материал и запустите анализ выше.</p>}
+    {!hypotheses.loading && !hypotheses.error && !hypotheses.data?.items.length && <p className="inline-notice">Гипотез пока нет. Статус автоматического анализа доступен в разделе «Реклама».</p>}
     {hypotheses.loading ? <LoadingState /> : hypotheses.error ? <ErrorState message={hypotheses.error} retry={hypotheses.refresh} /> : hypotheses.data?.items.map((item) => <article className={`evidence-card hypothesis-card hypothesis-${item.status}`} key={item.id}>
       <h4 className="hypothesis-title">{item.code} · {factorLabels[item.code]}</h4><p className={`hypothesis-status hypothesis-status-${item.status}`}>{{ proposed: 'AI-гипотеза — не подтверждено', accepted: 'Принято для проверки доказательства', rejected: 'Гипотеза отклонена' }[item.status]}</p>
       <blockquote>{item.quote}</blockquote><p>{item.explanation}</p><details className="model-details"><summary>Сведения об AI-анализе</summary><p className="form-hint">Модель: {item.model}. {item.confidence !== null && `Самооценка модели: ${Math.round(item.confidence * 100)}% (не вероятность нарушения).`}</p></details>
