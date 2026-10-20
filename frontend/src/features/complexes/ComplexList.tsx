@@ -7,6 +7,7 @@ import { cities, stageLabels } from '@/lib/labels'
 import { useApiQuery } from '@/lib/useApiQuery'
 import type { Complex, Page } from '@/lib/types'
 import { ComplexMap } from './ComplexMap'
+import { CityMapSection } from '@/features/city-map/CityMapSection'
 
 export function ComplexList({ overview = false }: { overview?: boolean }) {
   const [urlParams, setUrlParams] = useSearchParams()
@@ -45,7 +46,7 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
       <div className={`stat-card stat-${tone}`} key={title}><Icon size={21} /><span>{title}</span>
         <strong>{loading ? '—' : value}</strong><small>{title === 'Объектов в выборке' ? 'По текущему фильтру' : 'На текущей странице'}</small></div>)}</div>}
     <section className="panel">
-      <div className="panel-heading"><div><h2>Жилые комплексы</h2><p>Каталог объектов ВКО</p></div><div className="flex items-center gap-3"><Button variant="outline" aria-expanded={showMap} aria-controls="complex-map" onClick={() => setShowMap(!showMap)}>{showMap ? 'Скрыть карту' : 'Показать карту'}</Button></div></div>
+      <div className="panel-heading"><div><h2>Жилые комплексы</h2><p>Каталог объектов ВКО</p></div>{overview && <div className="flex items-center gap-3"><Button variant="outline" aria-expanded={showMap} aria-controls="complex-map" onClick={() => setShowMap(!showMap)}>{showMap ? 'Скрыть карту' : 'Показать карту'}</Button></div>}</div>
       <form className="filter-bar" onSubmit={(event) => { event.preventDefault(); updateFilter('q', query) }}>
         <label className="search-input"><Search size={17} /><input aria-label="Поиск ЖК" placeholder="Название, город или адрес" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
         <select aria-label="Город" value={city} onChange={(event) => updateFilter('city', event.target.value)}>
@@ -57,7 +58,7 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
         <select aria-label="Сортировка" value={sort} onChange={(event) => updateFilter('sort', event.target.value)}><option value="risk">По баллу риска</option><option value="name">По названию</option></select>
         <Button type="submit" variant="outline"><Filter size={15} className="mr-2" />Найти</Button>
       </form>
-      {showMap && !loading && !error && <div id="complex-map"><ComplexMap complexes={visible} /></div>}
+      {overview && showMap && !loading && !error && <div id="complex-map"><ComplexMap complexes={visible} /></div>}
       {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={refresh} />
         : !visible.length ? <EmptyState title="ЖК не найдены"><p>Измените фильтры или добавьте объекты в реестр.</p></EmptyState>
         : <ScrollableTable label="Жилые комплексы"><table className="data-table"><thead><tr><th>Жилой комплекс</th><th>Город / этап</th><th>Готовность</th><th>Приоритет проверки</th><th><span className="sr-only">Карточка</span></th></tr></thead>
@@ -71,6 +72,7 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
       {(cursor !== '0' || data?.nextCursor) && <div className="pagination"><Button variant="outline" onClick={() => updateFilter('cursor', '0')}>В начало</Button>
         {data?.nextCursor && <Button variant="outline" onClick={() => updateFilter('cursor', data.nextCursor!)}>Следующая страница</Button>}</div>}
     </section>
+    {!overview && <CityMapSection complexes={visible} loading={loading} failed={Boolean(error)} catalogLimited={data?.catalogLimited} />}
     <p className="page-footnote">Высокий балл — основание для проверки, а не вывод о незаконности. Гипотезы AI не влияют на балл до подтверждения.</p>
   </>
 }

@@ -16,7 +16,8 @@ export function createApiClient(getToken: () => Promise<string>): ApiClient {
     headers.set('Authorization', `Bearer ${await getToken()}`)
     if (init.body && !(init.body instanceof FormData) && !(init.body instanceof Blob)) headers.set('Content-Type', 'application/json')
     const sourceRun = path.startsWith('/api/v1/monitoring/sources/') && path.endsWith('/run')
-    const timeout = AbortSignal.timeout(sourceRun ? 280000 : path.endsWith('/analyze') ? 90000 : 40000)
+    const companySource = path.startsWith('/api/v1/company-projects/') || (path.startsWith('/api/v1/companies/') && path.endsWith('/refresh'))
+    const timeout = AbortSignal.timeout(companySource ? 90000 : sourceRun ? 280000 : path.endsWith('/analyze') ? 90000 : 40000)
     const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout
     let response: Response
     try {
@@ -33,6 +34,27 @@ export function createApiClient(getToken: () => Promise<string>): ApiClient {
       const code = typeof error.code === 'string' && /^[A-Z][A-Z0-9_]{0,63}$/.test(error.code) ? error.code : 'REQUEST_FAILED'
       const knownMessages: Record<string, string> = {
         ...monitorErrors,
+        DRONE_INVALID_RESPONSE: 'Ответ ИИ не прошёл проверку чек-листа. Снимок сохранён; наблюдения не подтверждены.',
+        DRONE_PHOTO_REQUIRED: 'Сначала загрузите фотографию.',
+        DRONE_BUSY: 'Анализ этого снимка уже выполняется. Обновите результаты перед повтором.',
+        DRONE_LIMIT: 'Достигнут предел анализов или решений этой инспекции. Создайте новую запись для нового осмотра.',
+        DRONE_REVIEW_UNAVAILABLE: 'Откройте завершённый актуальный анализ для рассмотрения.',
+        DRONE_INTERRUPTED: 'Предыдущий анализ был прерван. Оригинал сохранён.',
+        COMPANY_SOURCE_INVALID: 'Карточки источника недостаточно для определения участников. Проверьте оригинал.',
+        COMPANY_LIVE_REGISTRY_REQUIRED: 'Добавление реальных ЖК в этом режиме недоступно. Участников можно сохранить отдельно.',
+        COMPANY_PROJECT_INCOMPLETE: 'В источнике не установлен застройщик или этап строительства. Можно сохранить участников без добавления ЖК.',
+        COMPANY_RECORD_LIMIT: 'Достигнут предел сохранённых сведений организации. Прежние записи сохранены.',
+
+        REGISTRY_UNAVAILABLE: 'Реестр сейчас недоступен. Сохранённые данные доступны; отсутствие ответа не означает отсутствие разрешения.',
+        REGISTRY_RESPONSE_INVALID: 'Формат ответа реестра изменился. Проверьте документ на сайте источника.',
+        REGISTRY_RECORD_UNVERIFIABLE: 'Карточки недостаточно для подтверждения. Проверьте регион, реквизиты и оригинал документа.',
+        REGISTRY_QUERY_INVALID: 'Введите название ЖК или адрес: от 3 до 100 символов.',
+        REGISTRY_RECORD_INVALID: 'Выберите карточку объекта из результатов Homeportal.',
+        REGISTRY_LIMIT: 'Достигнут дневной лимит проверок реестров. Продолжите на сайтах источников или завтра.',
+        REGISTRY_DATE_MISMATCH: 'Проверьте дату оригинальной рекламы: она должна совпадать с известной датой публикации и быть не позже получения.',
+        REGISTRY_DOCUMENT_CHANGED: 'Реквизиты документа изменились после просмотра. Откройте документ заново и повторите сверку.',
+        REGISTRY_DOCUMENT_TOO_RECENT: 'Документ выдан после даты рекламы. Он не подтверждает основание на дату публикации.',
+
         MONITOR_NOT_DUE: 'Интервал источника ещё не истёк. Следующее время сбора указано в карточке.',
         MONITOR_BUSY: 'Источник уже обрабатывается. Обновите историю запусков.',
         MONITOR_PAUSED: 'Источник на паузе. Возобновите его перед сбором.',

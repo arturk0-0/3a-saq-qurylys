@@ -1,3 +1,4 @@
+import { RegistryPanel } from './RegistryPanel'
 import { ActorName } from '@/components/ActorName'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
@@ -53,6 +54,7 @@ export function FindingDetail({ id, liveRegistry, changed }: { id: string; liveR
       <div className="monitor-reasons"><div><strong>Слова о регионе</strong><p>{item.regionMatches.join(', ')}</p></div><div><strong>Слова о жилье</strong><p>{item.housingMatches.join(', ')}</p></div><div><strong>Слова об оплате</strong><p>{item.paymentMatches.join(', ') || 'В тексте не найдены'}</p></div></div>
       </details>
       <details><summary>Происхождение и контрольные суммы</summary><p>Ссылка обнаружения: {item.discoveryUrl}</p><p>Текст: {item.textSha256}</p><p>Ответ источника: {item.responseSha256}</p><p>Группа ревизий: {item.revisionKey}</p><p>Последнее обнаружение: {formatDate(item.lastSeenAt)} · источников: {item.sourceIds.length}</p></details>
+      <RegistryPanel item={item} disabled={busy} saved={() => { setNotice('Правовое основание сохранено. Находка убрана из активной очереди; документ и история доступны в «Все находки». Баллы R1–R6 не менялись.'); refresh() }} />
       <section className="monitor-section"><h3>AI-гипотезы</h3>
         {item.aiStatus === 'not_requested' && <p>Выделите возможные признаки риска в тексте объявления.</p>}
         {item.aiStatus === 'running' && <p role="status">Gemini обрабатывает материал. Обновите результат перед повторной попыткой.</p>}
@@ -81,7 +83,7 @@ export function FindingDetail({ id, liveRegistry, changed }: { id: string; liveR
             <Button variant="outline" disabled={busy || !complexId || !notes.trim() || item.aiStatus === 'running'} onClick={() => void operation('attach')}>Передать в карточку ЖК с обоснованием выше</Button></>}
       </section>
       <details className="monitor-section"><summary>История решений по находке</summary>
-        {history.loading ? <LoadingState /> : history.error ? <ErrorState message={history.error} retry={history.refresh} /> : history.data?.items.length ? history.data.items.map(e => <p key={e.id} className="history-entry">{formatDate(e.createdAt)} · <ActorName uid={e.actorUid} /> · {e.action === 'item.review' ? 'Решение эксперта' : 'Попытка AI-анализа'}<br />{e.details.notes}</p>) : <p>Решений пока нет.</p>}
+        {history.loading ? <LoadingState /> : history.error ? <ErrorState message={history.error} retry={history.refresh} /> : history.data?.items.length ? history.data.items.map(e => <p key={e.id} className="history-entry">{formatDate(e.createdAt)} · <ActorName uid={e.actorUid} /> · {e.action === 'item.basis.confirm' ? 'Проверено правовое основание' : e.action === 'item.review' ? 'Решение эксперта' : e.action === 'item.attach' ? 'Передано в карточку ЖК' : 'Попытка AI-анализа'}<br />{e.details.notes}</p>) : <p>Решений пока нет.</p>}
         {(historyCursor || history.data?.nextCursor) && <div className="form-actions"><Button variant="outline" onClick={() => setHistoryCursor('')}>Начало истории</Button>{history.data?.nextCursor && <Button variant="outline" onClick={() => setHistoryCursor(history.data!.nextCursor!)}>Далее по истории</Button>}</div>}
       </details>
     </>}

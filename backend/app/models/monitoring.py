@@ -1,5 +1,6 @@
 """Public-source observations are leads, never verified legal evidence."""
 
+from datetime import date
 from typing import Literal
 from uuid import UUID
 
@@ -55,6 +56,46 @@ class Observation(DomainModel):
     media: list[MediaReference] = Field(default_factory=list, max_length=12)
 
 
+class RegistryDocument(DomainModel):
+    provider: Literal["homeportal"]
+    record_id: str = Field(pattern=r"^[0-9]{1,15}$")
+    kind: Literal["regional_permit", "guarantee"]
+    name: ShortText
+    address: ShortText
+    developer: ShortText
+    developer_bin: str = Field(pattern=r"^[0-9]{12}$")
+    holder: ShortText
+    holder_bin: str = Field(pattern=r"^[0-9]{12}$")
+    reference: ShortText
+    issued_on: date
+    source_url: str
+    response_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    document_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    checked_at: AwareDatetime
+
+
+class BasisReview(DomainModel):
+    document: RegistryDocument
+    advertisement_date: date
+    reviewer: str
+    reviewed_at: AwareDatetime
+    notes: str
+
+
+class ItemBasisReview(DomainModel):
+    expected_document_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    expected_version: int = Field(ge=1)
+    record_id: str = Field(pattern=r"^[0-9]{1,15}$")
+    advertisement_date: date
+    object_matches: Literal[True]
+    phase_matches: Literal[True]
+    holder_matches: Literal[True]
+    document_validity_checked: Literal[True]
+    advertisement_date_checked: Literal[True]
+    other_risks_reviewed: Literal[True]
+    notes: str = Field(min_length=1, max_length=2000, pattern=r"\S")
+
+
 class MonitorItem(Observation):
     id: Identifier
     source_id: Identifier
@@ -82,6 +123,7 @@ class MonitorItem(Observation):
     ai_completed_at: AwareDatetime | None = None
     extraction: Extraction | None = None
     advertisement_id: Identifier | None = None
+    basis_review: BasisReview | None = None
 
 
 class ItemReview(DomainModel):

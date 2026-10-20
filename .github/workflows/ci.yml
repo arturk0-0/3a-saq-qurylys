@@ -67,3 +67,16 @@ jobs:
           curl --fail http://127.0.0.1:5173/api/v1/health
       - if: always()
         run: docker compose logs && docker compose down
+  local-demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose -f compose.demo.yaml up --build --wait --wait-timeout 180
+      - run: python3 scripts/check-local-demo.py
+      - run: |
+          docker compose -f compose.demo.yaml restart
+          docker compose -f compose.demo.yaml up --wait --wait-timeout 120
+          python3 scripts/check-local-demo.py
+      - if: always()
+        run: docker compose -f compose.demo.yaml logs && docker compose -f compose.demo.yaml down -v

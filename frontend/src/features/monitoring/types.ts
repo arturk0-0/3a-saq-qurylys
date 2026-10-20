@@ -26,6 +26,7 @@ export interface Finding {
   extraction: { hypotheses: { code: 'R2' | 'R3'; quote: string; explanation: string }[];
     uncertainty: string; paymentTerms: string[] } | null;
   advertisementId: string | null;
+  basisReview?: BasisReview | null;
 }
 export interface Run {
   id: string; sourceId: string; status: string; createdAt: string; completedAt: string | null;
@@ -62,4 +63,24 @@ export const monitorErrors: Record<string, string> = {
 export function safeMonitorError(code: string | null) { return code ? monitorErrors[code] || 'Операция не завершена. Код: ' + code : '' }
 export function contentLabel(kind: Finding['contentKind']) {
   return kind === 'instagram_ad' ? 'Instagram · Meta Ad Library' : kind === 'telegram_post' ? 'Telegram' : 'Фрагмент поиска'
+}
+
+export interface RegistryDocument {
+  provider: 'homeportal'; recordId: string; kind: 'regional_permit' | 'guarantee';
+  name: string; address: string; developer: string; developerBin: string;
+  holder: string; holderBin: string; reference: string; issuedOn: string;
+  sourceUrl: string; responseSha256: string; documentSha256: string; checkedAt: string;
+}
+export interface BasisReview {
+  document: RegistryDocument; advertisementDate: string;
+  reviewer: string; reviewedAt: string; notes: string;
+}
+export interface RegistryCandidate {
+  provider: string; recordId: string; name: string; address: string;
+  developer: string; developerBin: string; holder: string; holderBin: string;
+  basisLabel: string; reference: string; sourceUrl: string; dataAsOf: string | null;
+}
+export interface RegistrySearch {
+  checkedAt: string; sources: { provider: string; status: 'ok' | 'unavailable';
+    candidates: RegistryCandidate[]; limited: boolean; errorCode?: string }[];
 }

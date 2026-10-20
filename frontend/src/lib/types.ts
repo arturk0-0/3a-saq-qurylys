@@ -23,6 +23,11 @@ export interface Complex {
     verifiedAt: string | null; claimedSource: string; verifiedSource: string }
   legalBasis: LegalBasis; factors: RiskFactor[]; demo: boolean; scenario: 'A' | 'B' | 'C' | null
   version: number; createdAt: string; updatedAt: string; risk: RiskResult
+  authorizedCompany?: { id: string; name: string; bin: string; demo: boolean } | null
+  partySnapshots?: { companyId: string; name: string; bin: string; role: 'developer' | 'authorized_company'; source: import('@/features/companies/types').Citation }[]
+  participantSource?: import('@/features/companies/types').Citation | null
+  coordinateSource?: import('@/features/companies/types').Citation | null
+  coordinateStatus?: string | null
   developer?: { id: string; name: string; bin: string; demo: boolean }
 }
 export interface Advertisement {

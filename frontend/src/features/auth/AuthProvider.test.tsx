@@ -24,7 +24,8 @@ async function signedInApp() {
   vi.stubGlobal('fetch', fetcher)
   render(<MemoryRouter initialEntries={['/complexes']}><AuthProvider><App /></AuthProvider></MemoryRouter>)
   await act(async () => { await auth.listener?.(auth.currentUser) })
-  await screen.findByText('ЖК не найдены')
+  // Load the lazy workspace before exercising token rejection; keep auth assertions below.
+  await screen.findByText('ЖК не найдены', {}, { timeout: 5_000 })
   return fetcher
 }
 

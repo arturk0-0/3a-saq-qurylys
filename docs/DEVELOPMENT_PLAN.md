@@ -1,15 +1,46 @@
 # План SAQ QURYLYS
 
-Актуализирован **17 октября 2026** по поручению владельца. Регион — ВКО.
+Актуализирован **19 октября 2026** по поручению владельца. Регион — ВКО.
 Команда: **A — друг, frontend/материалы; B — владелец, backend/AI/выпуск**.
 Для MON-задачи владелец отдельно разрешил B одновременно реализовать необходимый
 frontend, не ожидая A. Это ограниченное исключение, а не передача всего frontend.
 
 
-**18 октября:** [PR #15](https://github.com/arturk0-0/3a-saq-qurylys/pull/15) слит в `main`,
-SHA `34eab8aaa9ce9bccf85a3c7244a1d6f4500c1895`. CI исходного PR зелёный;
-CI нового main проверяется отдельно. Сайт/расписание ещё не обновлены.
+**Текущее состояние, 19 октября:** main `6cd5db0` содержит мониторинг и улучшения
+интерфейса. Владелец опубликовал API `release-34eab8a`, Hosting и индексы,
+проверил Instagram → AI → решение/историю. Job/Scheduler созданы; подтверждены
+heartbeat worker и успешное выполнение по Scheduler. Фактический повторный сбор
+источника после истечения интервала ещё требуется проверить. Новая сверка
+разрешений разрабатывается в `feat/registry-basis-screening`; это ещё не live-релиз.
 
+
+## Новая очередь: карта и участники ЖК · 19 октября
+
+B подготовил реализацию ORG-01–06/GEO-01 в [PR #23](https://github.com/arturk0-0/3a-saq-qurylys/pull/23) поверх #19; это не merge и не облачный выпуск.
+[Отчёт и проверки B](company-profiles-report.md), [контракты](company-api.md).
+Чекбоксы интеграции остаются открыты до merge и совместной проверки с картой A.
+[Разделение и промпты](tasks/map-company-split.md).
+A работает без облачных кабинетов/ключей; B делает всю сложную интеграцию и frontend компаний.
+
+- [ ] **MAP-01–06 · A** — [#20](https://github.com/arturk0-0/3a-saq-qurylys/issues/20):
+  вторичный сворачиваемый блок в реестре ЖК, Leaflet/OSM, одинаковые объёмные здания
+  на известных координатах, адрес/переход к ЖК. Без процентов готовности. Lazy loading,
+  mobile/keyboard/empty/error, тесты и handoff; backend/компании A не меняет.
+- [ ] **ORG-01–05 · B** — [#21](https://github.com/arturk0-0/3a-saq-qurylys/issues/21):
+  исследование открытых источников, идентификация по БИН, отдельные роли юридического
+  застройщика/уполномоченной компании, provenance каждого факта, ограниченные адаптеры,
+  хранение/защищённый API. Количество завершённых объектов только с перечнем/границами охвата.
+- [ ] **ORG-06 · B** — блок двух организаций в карточке ЖК, отдельные страницы компаний,
+  компактные ссылки на конкретные источники возле значений, даты/неизвестное/расхождения.
+- [ ] **GEO-01 · B** — достоверные реальные ЖК/адреса/координаты с источником и точностью;
+  не привязывать реальные компании к DEMO-записям и не подменять стройку офисом продаж.
+- [ ] **ORG-07–08 · B** — проверки, отчёт, review/CI и интеграция с картой A.
+  Публикация API/Hosting — отдельный шаг. Сохранить открытый PR #19 со сверкой реестров;
+  не повторять готовую реализацию и не считать наличие PR облачным выпуском.
+
+Общие frontend файлы разделены явно: A — city-map/** и ComplexList.tsx,
+B — company frontend, ComplexDetail.tsx, routes и shared types. Старые A-01–04 выполнены.
+R1–R6/auth/rules не меняются, платные AI/SearchAPI запросы не нужны.
 
 ## 1. Главный результат и фактическое состояние
 
@@ -24,9 +55,9 @@ CI нового main проверяется отдельно. Сайт/расп�
   64 frontend tests, локальный Chromium — 16 групп/658 запросов.
 - Владелец сообщил, что выполнил команды обновления и открыл собранный сайт
   17 октября. Это сообщение владельца, не автоматическая облачная приёмка Codex.
-- **Автоматического сбора в опубликованном baseline пока нет.** MON — текущий P0.
-  Instagram-таргет приоритетен: сначала проверяется доступность данных, а не
-  обещается недоступное API. [Фактическая проверка Instagram](instagram-feasibility.md).
+- Мониторинг опубликован владельцем 18 октября: источники, Instagram/SearchAPI,
+  очередь, AI и экспертное решение проверены на живом сайте. Полный охват Instagram
+  не гарантируется. [Фактическая проверка Instagram](instagram-feasibility.md).
 - Старые P0-задачи закрыты ниже по существующей реализации и проверкам;
   полноценные RU/KZ-измерения, независимый чистый запуск и выпуск остаются открыты.
 
@@ -59,17 +90,24 @@ CI нового main проверяется отдельно. Сайт/расп�
   Cloud Run Job/Scheduler и локальный режим без зависимости от открытого браузера.
 - [x] **MON-08** — подходящие unit/API/SDK/browser tests, документация и отдельный PR;
   тестовые адаптеры и реальные HTTP-пробы обозначены, сторонние ключи не публикуются.
-- [ ] **MON-09** — отдельно развернуть worker/расписание/новые индексы и выполнить
-  облачную приёмку опубликованного SHA. Пока инфраструктура мониторинга не настроена,
-  не показывать «работает по расписанию» и не выдавать ручной запуск за автономность.
+- [x] **MON-09a** — владелец опубликовал API/Hosting/индексы, создал worker и hourly
+  Scheduler; execution `saq-qurylys-monitor-ltms7` завершился успешно, heartbeat виден.
+- [ ] **MON-09b** — подтвердить следующий фактический сбор по расписанию после
+  наступления nextRunAt и новый run в истории, а не только успешный heartbeat.
+- [x] **REG-01 · B** — публичные кандидаты Homeportal/Ashyq, сверка применимого
+  разрешения/гарантии и исключение подтверждённой находки из активной очереди.
+  [Реализация и границы](registry-screening.md), [PR #19](https://github.com/arturk0-0/3a-saq-qurylys/pull/19).
+  Сервер/UI/SDK/Compose проверены; публикация остаётся REG-02.
+- [ ] **REG-02 · B + владелец** — после review/CI опубликовать API + Hosting и проверить
+  разрешение/гарантию в облаке; факторы R1–R6 остаются прежними.
 
 Реализация MON-01–08: [PR #14](https://github.com/arturk0-0/3a-saq-qurylys/pull/14),
 [отчёт с проверками и ограничениями](monitoring-report.md),
 [контракты/worker](monitoring.md), [активная задача #13](https://github.com/arturk0-0/3a-saq-qurylys/issues/13).
 После SearchAPI: 431 backend, 14 SDK/emulator, 72 frontend, build, 18 browser-групп.
 Это закрытие реализации в ветке, не human approval/merge/облачной приёмки.
-MON-IG-02 подтверждён коротким live trial; MON-09 остаётся открыт. Полный охват
-Instagram не обещается, media автоматически не скачиваются, cloud приёмки ещё нет.
+MON-IG-02 подтверждён коротким live trial и запуском владельца. MON-09b остаётся
+открыт. Полный охват Instagram не обещается, media автоматически не скачиваются.
 
 Публичные изображения/видео, Stories и закрытые аккаунты не считаются покрытыми
 текстовым сборщиком как файлы. Для Meta сохраняются только media references;
@@ -175,11 +213,20 @@ Instagram не обещается, media автоматически не ска�
 
 </details>
 
-## 5. Отложено, не часть текущего P0
+## 5. Дрон-инспекция · новый запрос владельца, 20 октября
 
-- [ ] **DRONE-01 · B** — Own private Storage/backend upload contract; A implements its frontend only after the criteria and API are agreed.
-- [ ] **DRONE-02 · B** — Define configurable checklist pending organisers' criteria; Gemini classifies `visible / not_visible / uncertain`.
-- [ ] **DRONE-03 · A** — Show marked results and human review; no claim of confirmed noncompliance on one photograph.
+B по прямому запросу реализует весь модуль и его frontend; карту A не меняет.
+Код подготовлен в `feat/drone-photo-inspections`,
+[PR #24](https://github.com/arturk0-0/3a-saq-qurylys/pull/24) поверх сохранённого PR #23/#19.
+Проверены 527 backend, 100 frontend, 18 native SDK, Chromium и CI функционального SHA.
+[Контракты](drone-api.md), [фактический отчёт](drone-inspection-report.md).
+Публикация и проверка реальной моделью — отдельно; при разработке платных вызовов нет.
+Чекбоксы интеграции закрываются после review/CI/merge.
+
+
+- [ ] **DRONE-01 · B** — Own private Storage/backend upload contract; B implements the requested frontend; original photos remain private.
+- [ ] **DRONE-02 · B** — Configurable visual checklist; exact normative criteria still pending organisers; Gemini classifies `visible / not_visible / uncertain`.
+- [ ] **DRONE-03 · B** — Show marked results and human review; no claim of confirmed noncompliance on one photograph.
 - [ ] **DRONE-04 · B** — Save separate inspection report/evidence trail; do not touch core advertising-law score.
 
 ## 6. Работа команды и Git

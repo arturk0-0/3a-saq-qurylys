@@ -12,7 +12,7 @@ import './monitoring.css'
 export function MonitoringPage() {
   const [params, setParams] = useSearchParams()
   const view = params.get('view') === 'sources' ? 'sources' : params.get('view') === 'runs' ? 'runs' : 'queue'
-  const status = ['new', 'investigating', 'dismissed'].includes(params.get('status') || '') ? params.get('status')! : ''
+  const status = ['active', 'all', 'new', 'investigating', 'dismissed'].includes(params.get('status') || '') ? params.get('status')! : 'active'
   const cursor = params.get('cursor') || ''
   const selected = params.get('item')
   const state = useApiQuery<MonitorStatus>('/api/v1/monitoring/status')
@@ -20,7 +20,7 @@ export function MonitoringPage() {
   useEffect(() => { if (state.data) setLastStatus(state.data) }, [state.data])
   const provider = state.data ?? lastStatus
   const sources = useApiQuery<{ items: Source[] }>('/api/v1/monitoring/sources')
-  const items = useApiQuery<Page<Finding>>(view === 'queue' ? '/api/v1/monitoring/items?limit=20' + (status ? '&status=' + status : '') + (cursor ? '&cursor=' + cursor : '') : null)
+  const items = useApiQuery<Page<Finding>>(view === 'queue' ? '/api/v1/monitoring/items?limit=20' + (status !== 'all' ? '&status=' + status : '') + (cursor ? '&cursor=' + cursor : '') : null)
   const runs = useApiQuery<Page<Run>>(view === 'runs' ? '/api/v1/monitoring/runs?limit=20' + (cursor ? '&cursor=' + cursor : '') : null)
   function set(values: Record<string, string | null>) {
     const next = new URLSearchParams(params)
@@ -64,10 +64,10 @@ export function MonitoringPage() {
           {run.autoAiStatus && <p>Авто-AI: {run.autoAiStatus === 'succeeded' ? 'анализ сохранён' : safeMonitorError(run.autoAiStatus)}</p>}
         </article>)}
       </section> : <>
-        <div className="monitor-filter"><label htmlFor="monitor-filter">Статус находки</label><select id="monitor-filter" value={status} onChange={e => set({ status: e.target.value, cursor: null })}><option value="">Все находки</option><option value="new">Новые</option><option value="investigating">В работе эксперта</option><option value="dismissed">Отложенные</option></select></div>
+        <div className="monitor-filter"><label htmlFor="monitor-filter">Статус находки</label><select id="monitor-filter" value={status} onChange={e => set({ status: e.target.value, cursor: null })}><option value="active">Требуют проверки</option><option value="all">Все находки</option><option value="new">Новые</option><option value="investigating">В работе эксперта</option><option value="dismissed">Отложенные</option></select></div>
         <div className="monitor-layout"><section aria-label="Найденные публикации">
           {items.loading ? <LoadingState /> : items.error ? <ErrorState message={items.error} retry={items.refresh} /> : !items.data?.items.length ? <EmptyState title="В этой очереди пока нет находок"><p>Это не означает отсутствия рекламы. Проверьте источники и историю запусков.</p><Button variant="outline" onClick={() => set({ view: 'sources', cursor: null })}>Настроить источники</Button></EmptyState> : items.data.items.map(item => <article className={'panel monitor-finding' + (selected === item.id ? ' selected' : '')} key={item.id}>
-            <div className="monitor-heading"><span className="monitor-tag">{findingLabels[item.status]}</span><span>{contentLabel(item.contentKind)}</span></div>
+            <div className="monitor-heading"><span className="monitor-tag">{item.basisReview ? 'Правовое основание подтверждено' : findingLabels[item.status]}</span><span>{contentLabel(item.contentKind)}</span></div>
             <h2>{item.title || item.account}</h2><p className="monitor-preview">{item.text}</p>
             {item.paymentMatches.length > 0 && <p className="monitor-attention">Есть слова об оплате — проверить</p>}
             <p className="form-hint">Получено {formatDate(item.createdAt)} · {item.aiStatus === 'succeeded' ? 'AI-анализ готов' : item.aiStatus === 'failed' ? 'AI-анализ не выполнен' : item.aiStatus === 'running' ? 'AI выполняется' : 'Без AI-анализа'}</p>

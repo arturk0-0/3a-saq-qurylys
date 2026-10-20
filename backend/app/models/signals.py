@@ -24,6 +24,7 @@ class EvidenceSnapshot(DomainModel):
 class SignalSnapshot(DomainModel):
     complex: Complex
     developer: Developer
+    authorized_company: Developer | None = None
     risk: RiskResult
     evidence: list[EvidenceSnapshot]
     captured_at: AwareDatetime

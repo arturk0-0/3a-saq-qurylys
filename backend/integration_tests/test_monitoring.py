@@ -133,3 +133,39 @@ def test_sdk_meta_provider_lease_reserve_and_private_queue(workspace):
     assert result["created"] == 1 and calls == ["/api/v1/me", "/api/v1/search"]
     assert monitor.status()["searchApi"]["unsettledAttempts"] == 0
     assert monitor.items()["items"][0]["adArchiveId"] == "100000000000001"
+
+
+def test_sdk_active_queue_cursor_and_registry_confirmation(workspace, db):
+    from app.models.monitoring import MonitorItem
+    from app.services.registries import RegistryClient
+    from tests.test_registries import detail, payload
+
+    monitor = service(workspace)
+    source = create(monitor)
+    monitor.run(source["id"], USER)
+    original = monitor.items()["items"][0]
+    before = deepcopy(workspace.complex_detail("demo-complex-01"))
+    for index, status in enumerate(["new", "investigating", "dismissed"]):
+        row = MonitorItem.model_validate({**original, "id": f"sdk-item-{index}", "status": status})
+        db.collection("monitorItems").document(row.id).set(
+            row.model_dump(mode="json", by_alias=True)
+        )
+    first = monitor.items("active", limit=1)
+    seen = [first["items"][0]["id"]]
+    cursor = first["nextCursor"]
+    while cursor:
+        page = monitor.items("active", cursor=cursor, limit=1)
+        seen += [row["id"] for row in page["items"]]
+        cursor = page["nextCursor"]
+    assert len(seen) == len(set(seen)) == 3 and "sdk-item-2" not in seen
+    db.collection("monitorItems").document(seen[0]).update({"status": "dismissed"})
+    with pytest.raises(Conflict):
+        monitor.items("active", cursor=first["nextCursor"], limit=1)
+    monitor.registry = RegistryClient(
+        httpx.MockTransport(lambda r: httpx.Response(200, json=detail()))
+    )
+    updated = monitor.confirm_basis("sdk-item-1", payload(original), USER)
+    assert updated.basis_review.document.reference == "SYNTHETIC-PERMIT-1"
+    assert "sdk-item-1" not in [row["id"] for row in monitor.items("active")["items"]]
+    assert monitor.history("sdk-item-1")["items"][0]["action"] == "item.basis.confirm"
+    assert workspace.complex_detail("demo-complex-01") == before

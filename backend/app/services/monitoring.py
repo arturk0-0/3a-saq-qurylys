@@ -5,6 +5,7 @@ import json
 from datetime import timedelta
 from urllib.parse import urlsplit
 from uuid import NAMESPACE_URL, uuid4, uuid5
+from zoneinfo import ZoneInfo
 
 from app.core.config import Settings
 from app.core.errors import AppError, Conflict, NotFound
@@ -13,12 +14,15 @@ from app.models.auth import Principal
 from app.models.common import utc_now
 from app.models.entities import Advertisement, Evidence
 from app.models.monitoring import (
+    BasisReview,
     ItemAnalyze,
     ItemAttach,
+    ItemBasisReview,
     ItemReview,
     MonitorItem,
     MonitorRun,
     MonitorSource,
+    RegistryDocument,
     SourceInput,
     SourceUpdate,
 )
@@ -30,6 +34,8 @@ from app.services.public_sources import (
     relevance,
     safe_original_url,
 )
+from app.services.registries import RegistryClient
+from app.services.registry_usage import reserve_registry_read
 from app.services.searchapi import MonitoringCollector
 from app.services.workspace import WorkspaceService, audit_event, serialize
 
@@ -56,10 +62,12 @@ class MonitoringService:
         settings: Settings,
         collector: PublicCollector | None = None,
         client: GeminiClient | None = None,
+        registry: RegistryClient | None = None,
     ):
         self.workspace, self.store, self.settings = workspace, workspace.store, settings
         self.collector = collector or MonitoringCollector(settings)
         self.client = client or GeminiClient(settings)
+        self.registry = registry or RegistryClient()
 
     def require(self, collection, record_id, tx=None):
         row = (tx or self.store).get(collection, record_id)
@@ -160,7 +168,11 @@ class MonitoringService:
     def items(self, status=None, cursor=None, limit=30):
         rows = self.store.list(
             "monitorItems",
-            filters=[("status", "==", status)] if status else [],
+            filters=[("status", "in", ["new", "investigating"])]
+            if status == "active"
+            else [("status", "==", status)]
+            if status
+            else [],
             after_id=cursor,
             limit=limit + 1,
             newest_first=True,
@@ -416,7 +428,11 @@ class MonitoringService:
                     run.relevant += 1
                     run.created += int(created)
                     run.duplicates += int(not created)
-                    if auto_item is None and item.ai_status == "not_requested":
+                    if (
+                        auto_item is None
+                        and item.ai_status == "not_requested"
+                        and item.status != "dismissed"
+                    ):
                         auto_item = item
             # Opt-in, at most ONE paid analysis per source run, including duplicates
             # that have not yet been attempted. Existing global/user quotas also apply.
@@ -488,6 +504,7 @@ class MonitoringService:
             updated = item.model_copy(
                 update={
                     "status": payload.decision,
+                    "basis_review": item.basis_review if payload.decision == "dismissed" else None,
                     "notes": payload.notes,
                     "reviewer": user.uid,
                     "reviewed_at": utc_now(),
@@ -500,6 +517,80 @@ class MonitoringService:
             return updated
 
         return self.store.atomic(review)
+
+    def _registry_attempt(self):
+        reserve_registry_read(self.store)
+
+    def registry_search(self, item_id, query):
+        self.item(item_id)
+        if not 3 <= len(query.strip()) <= 100:
+            raise AppError(422, "REGISTRY_QUERY_INVALID", "Enter the complex name or address")
+        self._registry_attempt()
+        return self.registry.search(query)
+
+    def registry_detail(self, item_id, record_id):
+        self.item(item_id)
+        self._registry_attempt()
+        return self.registry.detail(record_id)
+
+    def confirm_basis(self, item_id, payload: ItemBasisReview, user):
+        item = self.item(item_id)
+        if item.version != payload.expected_version or item.ai_status == "running":
+            raise Conflict()
+        if item.advertisement_id:
+            raise Conflict("Review legal basis in the linked complex instead")
+        observed = item.created_at.astimezone(ZoneInfo("Asia/Qyzylorda")).date()
+        published = (
+            item.published_at.astimezone(ZoneInfo("Asia/Qyzylorda")).date()
+            if item.published_at
+            else None
+        )
+        if payload.advertisement_date > observed or (
+            published and payload.advertisement_date != published
+        ):
+            raise AppError(422, "REGISTRY_DATE_MISMATCH", "Check the original advertisement date")
+        self._registry_attempt()
+        document = RegistryDocument.model_validate(self.registry.detail(payload.record_id))
+        if document.document_sha256 != payload.expected_document_sha256:
+            raise AppError(
+                409, "REGISTRY_DOCUMENT_CHANGED", "Registry document changed; review again"
+            )
+        if document.issued_on > payload.advertisement_date:
+            raise AppError(
+                422, "REGISTRY_DOCUMENT_TOO_RECENT", "Document issued after advertisement"
+            )
+        proof = BasisReview(
+            document=document,
+            advertisement_date=payload.advertisement_date,
+            reviewer=user.uid,
+            reviewed_at=utc_now(),
+            notes=payload.notes,
+        )
+
+        def save(tx):
+            current = self.item(item_id, tx)
+            if (
+                current.version != payload.expected_version
+                or current.ai_status == "running"
+                or current.advertisement_id
+            ):
+                raise Conflict()
+            updated = current.model_copy(
+                update={
+                    "basis_review": proof,
+                    "status": "dismissed",
+                    "reviewer": user.uid,
+                    "reviewed_at": proof.reviewed_at,
+                    "notes": payload.notes,
+                    "version": current.version + 1,
+                }
+            )
+            event = monitor_event(user, item_id, "item.basis.confirm", serialize(proof))
+            tx.set("monitorItems", item_id, serialize(updated))
+            tx.create("monitorEvents", event["id"], event)
+            return updated
+
+        return self.store.atomic(save)
 
     def analyze(self, item_id: str, payload: ItemAnalyze, user: Principal):
         self.client.check_config()

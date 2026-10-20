@@ -13,11 +13,11 @@ function renderApp(api: ApiClient) {
     api, signIn: vi.fn(), logout: vi.fn() }}><MemoryRouter><App /></MemoryRouter></AuthContext.Provider>)
 }
 
-describe('analyst workspace', () => {
+describe('analyst workspace', { timeout: 15_000 }, () => {
   it('renders server risk and submits filters to the protected API', async () => {
     const api = vi.fn().mockResolvedValue({ items: [row], total: 1, nextCursor: null })
     renderApp(api)
-    expect(await screen.findByText('Проверочный ЖК')).toBeInTheDocument()
+    expect(await screen.findByText('Проверочный ЖК', {}, { timeout: 5_000 })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('link', { name: 'К содержимому' }))
     expect(screen.getByRole('main')).toHaveFocus()
     expect(screen.getByText('35 · Требует проверки')).toBeInTheDocument()
@@ -35,7 +35,7 @@ describe('analyst workspace', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Сеть недоступна')
     expect(screen.queryByText('Проверочный ЖК')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }))
-    expect(await screen.findByText('Проверочный ЖК')).toBeInTheDocument()
+    expect(await screen.findByText('Проверочный ЖК', {}, { timeout: 5_000 })).toBeInTheDocument()
   })
 
   it('shows an empty registry and navigates to advertisements', async () => {
@@ -43,7 +43,7 @@ describe('analyst workspace', () => {
     renderApp(api)
     expect(await screen.findByText('ЖК не найдены')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('link', { name: 'Объявления' }))
-    expect(await screen.findByText('Объявлений пока нет')).toBeInTheDocument()
+    expect(await screen.findByText('Объявлений пока нет', {}, { timeout: 5_000 })).toBeInTheDocument()
     expect(screen.getByRole('main')).toHaveFocus()
     expect(api).toHaveBeenLastCalledWith('/api/v1/advertisements?limit=50', expect.any(Object))
   })

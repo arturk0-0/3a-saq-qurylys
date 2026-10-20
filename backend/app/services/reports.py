@@ -96,10 +96,23 @@ def report_html(signal: Signal) -> str:
         if signal.reviewer and signal.reviewed_at
         else "Решение по сигналу ещё не принято."
     )
+    is_demo = s.complex.demo
+    footer = "SAQ QURYLYS · DEMO · " if is_demo else "SAQ QURYLYS · "
+    banner = (
+        "DEMO — вымышленные данные. " if is_demo else "Материалы для проверки. "
+    ) + "Не является выводом о незаконности."
+    bin_label = "вымышленный БИН" if is_demo else "БИН"
+    participants = "".join(
+        f"<p>{'Юридический застройщик' if p.role == 'developer' else 'Уполномоченная компания'}: "
+        f"{esc(p.name)} · БИН {esc(p.bin)}<br>Источник: "
+        f'<a href="{esc(str(p.source.url))}">{esc(p.source.publisher)}</a> · '
+        f"получено {esc(p.source.retrieved_at.isoformat())}</p>"
+        for p in s.complex.party_snapshots
+    )
     return f"""<!doctype html><html lang="ru"><meta charset="utf-8">
 <title>SAQ QURYLYS — сигнал</title>
 <style>@page {{ size: A4; margin: 18mm;
-@bottom-center {{ content: 'SAQ QURYLYS · DEMO · ' counter(page); }} }}
+@bottom-center {{ content: '{footer}' counter(page); }} }}
 body {{ font: 10pt 'DejaVu Sans', sans-serif; color: #163539;
 line-height: 1.5; overflow-wrap: anywhere; }}
 h1 {{ font-size: 20pt; }} h2 {{ font-size: 14pt; }}
@@ -113,12 +126,12 @@ p, blockquote {{ orphans: 3; widows: 3; }}
 .provenance {{ padding: 8px; border: 1px solid #b4c9c8; background: #f1f6f3; }}
 col:nth-child(1) {{ width: 36%; }} col:nth-child(2) {{ width: 23%; }}
 col:nth-child(3) {{ width: 10%; }} col:nth-child(4) {{ width: 31%; }}
-</style><body><p class="demo">DEMO — вымышленные данные.
-Не является выводом о незаконности.</p>
+</style><body><p class="{"demo" if is_demo else "provenance"}">{banner}</p>
 <h1>{esc(signal.title)}</h1><p>Сигнал {esc(signal.id)} · версия {signal.version}
 <br>Статус: {STATUSES[signal.status]}</p>
 <h2>{esc(s.complex.name)}</h2><p>{esc(s.complex.city)}, {esc(s.complex.address)}
-<br>Застройщик: {esc(s.developer.name)} · вымышленный БИН {esc(s.developer.bin)}</p>
+<br>Застройщик: {esc(s.developer.name)} · {bin_label} {esc(s.developer.bin)}</p>
+{participants}
 <p>Причина: {esc(signal.reason)}</p>
 <h2>Приоритет проверки: {s.risk.score} / 100 · {s.risk.zone} — {ZONE_LABELS[s.risk.zone]}</h2>
 <p>Снимок версии ЖК {s.complex.version}, зафиксирован {esc(s.captured_at.isoformat())}.
