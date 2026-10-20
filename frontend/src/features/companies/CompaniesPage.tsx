@@ -38,7 +38,7 @@ export function CompaniesPage() {
     } catch (failure) { setError(errorMessage(failure)) } finally { setBusy(false) }
   }
   return <div className="company-feature"><PageHeading eyebrow="Сведения из открытых источников" title="Организации" description="Застройщики и уполномоченные компании, связанные с найденными ЖК." />
-    <section className="panel"><h2>Найти участников по жилому комплексу</h2><p>Введите название ЖК или адрес. Сверьте карточку источника перед сохранением.</p>
+    <section className="panel content-pad"><h2>Найти участников по жилому комплексу</h2><p>Введите название ЖК или адрес. Сверьте карточку источника перед сохранением.</p>
       <form className="company-search" onSubmit={e => void operation('search', undefined, e)}><FormField label="Название ЖК или адрес"><input required minLength={3} maxLength={100} value={q} disabled={busy} onChange={e => setQ(e.target.value)} /></FormField><Button disabled={busy || q.trim().length < 3}>Найти в Homeportal</Button></form>
       {busy && <LoadingState />}{error && <ErrorState message={error} />}
       {results && <><p className="form-hint">Поиск ограничен каталогом ВКО. Пустой результат не означает отсутствия организации или разрешения.</p>
@@ -55,7 +55,7 @@ export function CompaniesPage() {
       </section>}
       {saved && <div role="status" className="inline-notice">Участники сохранены с источниками. {saved.companyIds.map(id => <Link key={id} className="detail-link" to={'/companies/' + id}>Открыть организацию · БИН {id.replace('bin-', '')} → </Link>)}{saved.registryId && <Link className="detail-link" to={'/complexes/' + saved.registryId}>Открыть ЖК →</Link>}</div>}
     </section>
-    <section className="panel"><h2>Сохранённые организации</h2>{companies.loading ? <LoadingState /> : companies.error ? <ErrorState message={companies.error} retry={companies.refresh} /> : companies.data?.items.length ? companies.data.items.map(company => <article className="company-project" key={company.id}><Link className="detail-link" to={'/companies/' + company.id}>{company.name} →</Link><p>БИН {company.bin}</p></article>) : <p>Организации пока не сохранены. Найдите ЖК в источнике или откройте участника из существующей карточки.</p>}
+    <section className="panel content-pad"><h2>Сохранённые организации</h2>{companies.loading ? <LoadingState /> : companies.error ? <ErrorState message={companies.error} retry={companies.refresh} /> : companies.data?.items.length ? companies.data.items.map(company => <article className="company-project" key={company.id}><Link className="detail-link" to={'/companies/' + company.id}>{company.name} →</Link><p>БИН {company.bin}</p></article>) : <p>Организации пока не сохранены. Найдите ЖК в источнике или откройте участника из существующей карточки.</p>}
       {(cursor || companies.data?.nextCursor) && <div className="form-actions"><Button variant="outline" onClick={() => setCursor('')}>В начало списка</Button>{companies.data?.nextCursor && <Button variant="outline" onClick={() => setCursor(companies.data!.nextCursor!)}>Далее</Button>}</div>}
     </section>
   </div>
