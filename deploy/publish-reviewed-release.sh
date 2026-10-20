@@ -65,13 +65,21 @@ if [[ -z "$SAQ_RELEASE_NEW_REVISION" || "$SAQ_RELEASE_NEW_REVISION" == "$SAQ_REL
   echo 'New API revision was not identified. Traffic has not been changed.' >&2
   exit 1
 fi
-gcloud run services update-traffic "$SAQ_RELEASE_SERVICE" --project="$SAQ_RELEASE_PROJECT" --region="$SAQ_RELEASE_REGION" --to-revisions="$SAQ_RELEASE_NEW_REVISION=100"
+if ! gcloud run services update-traffic "$SAQ_RELEASE_SERVICE" --project="$SAQ_RELEASE_PROJECT" --region="$SAQ_RELEASE_REGION" --to-revisions="$SAQ_RELEASE_NEW_REVISION=100"; then
+  gcloud run services update-traffic "$SAQ_RELEASE_SERVICE" --project="$SAQ_RELEASE_PROJECT" --region="$SAQ_RELEASE_REGION" --to-revisions="$SAQ_RELEASE_OLD_REVISION=100"
+  echo 'Traffic promotion failed: attempted restoration of the previous revision.' >&2
+  exit 1
+fi
 if ! curl --fail --silent --show-error "$SAQ_RELEASE_API/api/v1/health"; then
   gcloud run services update-traffic "$SAQ_RELEASE_SERVICE" --project="$SAQ_RELEASE_PROJECT" --region="$SAQ_RELEASE_REGION" --to-revisions="$SAQ_RELEASE_OLD_REVISION=100"
   echo 'Health failed: API traffic restored to the previous revision.' >&2
   exit 1
 fi
-SAQ_RELEASE_AUTH_STATUS=$(curl --silent --output /dev/null --write-out '%{http_code}' "$SAQ_RELEASE_API/api/v1/me")
+if ! SAQ_RELEASE_AUTH_STATUS=$(curl --silent --output /dev/null --write-out '%{http_code}' "$SAQ_RELEASE_API/api/v1/me"); then
+  gcloud run services update-traffic "$SAQ_RELEASE_SERVICE" --project="$SAQ_RELEASE_PROJECT" --region="$SAQ_RELEASE_REGION" --to-revisions="$SAQ_RELEASE_OLD_REVISION=100"
+  echo 'Auth smoke transport failed: API traffic restored to the previous revision.' >&2
+  exit 1
+fi
 if [[ "$SAQ_RELEASE_AUTH_STATUS" != 401 ]]; then
   gcloud run services update-traffic "$SAQ_RELEASE_SERVICE" --project="$SAQ_RELEASE_PROJECT" --region="$SAQ_RELEASE_REGION" --to-revisions="$SAQ_RELEASE_OLD_REVISION=100"
   echo 'Anonymous access check failed: API traffic restored to the previous revision.' >&2
