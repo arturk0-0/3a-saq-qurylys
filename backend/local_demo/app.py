@@ -109,6 +109,8 @@ def create_local_app(root: Path | None = None):
         source = monitoring.sources()["items"][0]
         monitoring.run(source["id"], USER)
     app = create_app(settings)
+    app.state.material_client = client
+    app.state.material_files = files
     app.state.local_identity = identity
     app.state.local_workspace = workspace
     app.dependency_overrides[get_runtime] = lambda: identity

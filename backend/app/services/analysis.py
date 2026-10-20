@@ -24,21 +24,22 @@ class AnalysisService:
 
     def analyze(self, ad_id: str, payload: AnalysisRequest, user: Principal) -> dict:
         self.client.check_config()
+        from app.services.materials import MaterialService
+
         run_id = str(payload.request_id)
+        if not self.workspace.store.get("analysisRuns", run_id):
+            MaterialService(self.workspace, self.files).sync_legacy()
         ad = Advertisement.model_validate(self.workspace.require_record("advertisements", ad_id))
         fingerprint = hashlib.sha256(
             f"{ad_id}:{payload.expected_version}:{payload.screenshot_id}".encode()
         ).hexdigest()
         now = utc_now()
-        day = now.strftime("%Y%m%d")
-        quota_ids = [f"global-{day}", f"user-{hashlib.sha256(user.uid.encode()).hexdigest()}-{day}"]
 
         def reserve(tx):
             existing = tx.get("analysisRuns", run_id)
             current = Advertisement.model_validate(
                 self.workspace.require_record("advertisements", ad_id, tx)
             )
-            counters = [tx.get("usageLimits", key) or {"id": key, "count": 0} for key in quota_ids]
             if existing:
                 if existing["createdBy"] != user.uid or existing["fingerprint"] != fingerprint:
                     raise Conflict("Analysis request ID already used")
@@ -53,13 +54,6 @@ class AnalysisService:
                 raise AppError(
                     422, "IMAGE_MISMATCH", "Select an image attached to this advertisement"
                 )
-            for counter, limit in zip(
-                counters,
-                [self.settings.ai_daily_global_limit, self.settings.ai_daily_user_limit],
-                strict=True,
-            ):
-                if counter["count"] >= limit:
-                    raise AppError(429, "AI_DAILY_LIMIT", "Daily analysis limit reached")
             run = {
                 "id": run_id,
                 "advertisementId": ad_id,
@@ -75,8 +69,6 @@ class AnalysisService:
                 "screenshotId": payload.screenshot_id,
             }
             tx.create("analysisRuns", run_id, run)
-            for counter in counters:
-                tx.set("usageLimits", counter["id"], {**counter, "count": counter["count"] + 1})
             return run
 
         run = self.workspace.store.atomic(reserve)
@@ -84,7 +76,17 @@ class AnalysisService:
             return run
         try:
             image = self.files.download(payload.screenshot_id) if payload.screenshot_id else None
-            result = self.client.extract(ad.text, image)
+            from app.services.material_provider import cached_extract
+
+            result = cached_extract(
+                self.workspace,
+                self.settings,
+                self.client,
+                ad.text,
+                image,
+                user,
+                "demo" if ad.demo else "live",
+            )
             digest = hashlib.sha256(ad.text.encode() + (image[0] if image else b"")).hexdigest()
             screenshot = (
                 Evidence.model_validate(

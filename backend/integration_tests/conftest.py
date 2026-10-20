@@ -45,3 +45,15 @@ def workspace(db):
     result = import_demo_seed(store, "local-test-admin")
     assert result["created"] == 37
     return WorkspaceService(store)
+
+
+@pytest.fixture(autouse=True)
+def local_http_only(monkeypatch):
+    original = httpx.HTTPTransport.handle_request
+
+    def guarded(transport, request):
+        if request.url.host not in {"127.0.0.1", "localhost", "::1"}:
+            raise AssertionError("Integration HTTP must use loopback or explicit MockTransport")
+        return original(transport, request)
+
+    monkeypatch.setattr(httpx.HTTPTransport, "handle_request", guarded)

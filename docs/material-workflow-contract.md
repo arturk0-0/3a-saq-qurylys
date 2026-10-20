@@ -1,6 +1,6 @@
 # Материалы и единая проверка · согласованный hand-off v1
 
-20 октября 2026. **Контракт целевой реализации, endpoints пока не существуют.**
+20 октября 2026. **Реализовано в B / PR #32; совместимо с исходным hand-off v1.**
 Additive фасад над существующими находками/объявлениями. B реализует backend,
 A — TypeScript клиент. Детали совместимых дополнений фиксировать здесь прежде
 использования; не менять существующие API/Firestore коллекции разрушительно.
@@ -12,6 +12,8 @@ A — TypeScript клиент. Детали совместимых дополн�
 | GET | `/api/v1/materials` | Единая выборка сгруппированных материалов |
 | GET | `/api/v1/materials/{id}` | Текущая ревизия, оригиналы, гипотезы, решения |
 | GET | `/api/v1/materials/{id}/occurrences` | Пагинация оригинальных публикаций |
+| GET | `/api/v1/materials/{id}/occurrences/{occurrenceId}` | Конкретный оригинал гипотезы вне первой страницы |
+| GET | `/api/v1/materials/{id}/history` | История решений без UID; cursor, limit 1–50 |
 | POST | `/api/v1/materials/{id}/review` | Одна операция проверки |
 | POST | `/api/v1/materials/{id}/retry-analysis` | Повтор только для failed, с идемпотентностью/квотой |
 
@@ -24,7 +26,7 @@ sort=priority: сначала needs_review, затем по серверному
 Неподходящий фильтрам cursor не использовать. Никаких client-side total/полноты
 по первой странице; нужны стабильный tie-break и непропадающие элементы.
 
-## DTO (целевое представление JSON)
+## DTO (представление JSON)
 
 `Priority`: `{score:number|null, level:'unknown'|'low'|'medium'|'high', reasons:string[]}`.
 Score серверный, 0–100; null означает приоритет пока не рассчитан, не нулевой риск.
@@ -42,7 +44,7 @@ errorCode:string|null, canRetry:boolean, updatedAt:string|null}`.
 - `reviewState:'needs_review'|'reviewed'|'dismissed'`;
 - `origins:('automatic'|'manual')[]`, `platforms:string[]`;
 - `occurrenceCount:number`, `firstSeenAt:string`, `lastSeenAt:string`;
-- `complex:{id:string,name:string}|null` (подтверждённая/однозначная связь);
+- `complex:{id:string,name:string,version:number}|null` (подтверждённая/однозначная связь);
 - `priority:Priority`, `analysis:Analysis`.
 
 `MaterialDetail` расширяет Summary:
@@ -104,3 +106,27 @@ Retry body: `{requestId:string,expectedVersion:number}`; 200 — актуаль�
 остаётся в истории. Квота/ошибка/неподдерживаемое видео/конфликт/частично недоступный
 источник видимы и не превращаются в подтверждение. Только синтетические QA/local
 адаптеры при разработке, production не подменяется ими.
+
+
+## Совместимые уточнения реализации B
+
+- Detail ЖК теперь возвращает `version`; она нужна в expectedComplexVersion при
+  выборе кандидата. GET `/complexes?sort=priority` сортирует по reviewPriority.
+- Приоритет: нерешённый R2=25, R3=10, код учитывается один раз; low <10,
+  medium 10–24, high >=25. При текущем наборе максимум 35. Подтверждённая
+  оценка R1–R6 имеет прежнюю формулу. Баллы разных материалов не суммируются
+  повторно по одному коду для одного ЖК.
+- Внешние video/image/thumbnail не скачиваются и не анализируются. После
+  анализа текста такой материал имеет status=unsupported,
+  errorCode=EXTERNAL_MEDIA_NOT_ANALYZED. Доступные текстовые гипотезы сохраняются.
+- История: `{items:[{id,action,createdAt,reviewerDisplayName,details}],nextCursor}`;
+  details содержат revisionId, decisions, notes, disposition. Не отображать
+  технические ID в качестве имени человека. Старый журнал остаётся в прежних API.
+- Cursor связан с фильтрами и снимком выборки. При изменении данных — 409:
+  загрузить первую страницу, не продолжать устаревший cursor.
+- Приватные ручные реальные данные, публичные находки и учебные данные имеют
+  разные scope. Они намеренно не склеиваются между scope: публичная копия не
+  должна открывать приватный файл или учебную карточку реальному источнику.
+- Одинаковые входы внутри scope используют общий кэш Gemini; отдельные ЖК
+  сохраняют собственные jobs/версии/решения. Успешные старые результаты
+  подхватываются по точному тексту и фактическому SHA изображения.

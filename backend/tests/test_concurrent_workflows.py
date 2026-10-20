@@ -80,6 +80,14 @@ def test_parallel_duplicate_analysis_has_one_provider_call_and_one_quota_charge(
 def test_parallel_users_cannot_exceed_global_or_personal_analysis_limits():
     service, store = analysis_fixture(ai_daily_global_limit=3, ai_daily_user_limit=2)
     original_complexes = deepcopy(store.documents["complexes"])
+    base = deepcopy(store.documents["advertisements"]["demo-ad-01"])
+    for index in range(12):
+        key = f"quota-input-{index}"
+        store.documents["advertisements"][key] = {
+            **base,
+            "id": key,
+            "text": base["text"] + f" Условие {index}.",
+        }
     start = Barrier(12)
 
     def analyze(index):
@@ -87,7 +95,9 @@ def test_parallel_users_cannot_exceed_global_or_personal_analysis_limits():
         start.wait(timeout=5)
         try:
             return service.analyze(
-                "demo-ad-01", AnalysisRequest(request_id=uuid4(), expected_version=1), user
+                f"quota-input-{index}",
+                AnalysisRequest(request_id=uuid4(), expected_version=1),
+                user,
             )
         except AppError as error:
             return error
@@ -97,7 +107,8 @@ def test_parallel_users_cannot_exceed_global_or_personal_analysis_limits():
     failures = [result for result in results if isinstance(result, AppError)]
     assert len(failures) == 9
     assert all((error.status_code, error.code) == (429, "AI_DAILY_LIMIT") for error in failures)
-    assert len(store.documents["analysisRuns"]) == len(store.documents["aiHypotheses"]) == 3
+    assert len(store.documents["analysisRuns"]) == 12
+    assert len(store.documents["aiHypotheses"]) == 3
     counters = store.documents["usageLimits"]
     assert sum(row["count"] for key, row in counters.items() if key.startswith("global-")) == 3
     personal = [row["count"] for key, row in counters.items() if key.startswith("user-")]
@@ -116,13 +127,16 @@ def test_lost_success_response_replays_saved_analysis_without_second_provider_ca
 
     service, store = analysis_fixture(handler)
     atomic = store.atomic
-    transactions = 0
+    reply_lost = False
 
     def ambiguous_commit(operation):
-        nonlocal transactions
-        transactions += 1
+        nonlocal reply_lost
         result = atomic(operation)
-        if transactions == 2:  # completion persisted, but its acknowledgement was lost
+        succeeded = any(
+            r["status"] == "succeeded" for r in store.documents.get("analysisRuns", {}).values()
+        )
+        if succeeded and not reply_lost:  # persisted success, lost acknowledgement
+            reply_lost = True
             raise AppError(503, "INTEGRATION_UNAVAILABLE", "Test-only lost commit reply")
         return result
 

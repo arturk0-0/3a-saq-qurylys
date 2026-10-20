@@ -19,6 +19,13 @@ from app.repositories.store import Document, T, UnitOfWork, matches_filter
 logger = logging.getLogger(__name__)
 COLLECTIONS = frozenset(
     {
+        "materialProviderCalls",
+        "materialProviderAttempts",
+        "materials",
+        "materialOccurrences",
+        "materialLinks",
+        "materialJobs",
+        "materialReviews",
         "developers",
         "companies",
         "companyProjects",

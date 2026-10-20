@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 
 from app.api.dependencies import CurrentUser
 from app.api.workspace import Cursor, Limit, Workspace
@@ -49,8 +49,20 @@ def update_source(
 
 
 @router.post("/sources/{record_id}/run")
-def run(record_id: Identifier, user: CurrentUser, service: Monitor):
-    return service.run(record_id, user)
+def run(
+    record_id: Identifier,
+    user: CurrentUser,
+    service: Monitor,
+    background: BackgroundTasks,
+    request: Request,
+):
+    result = service.run(record_id, user)
+    from app.api.materials import schedule_analysis
+    from app.services.materials import MaterialService
+
+    MaterialService(service.workspace).sync_legacy()
+    schedule_analysis(background, request, service.workspace)
+    return result
 
 
 @router.get("/items")

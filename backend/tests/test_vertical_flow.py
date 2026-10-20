@@ -46,6 +46,7 @@ def test_new_ad_to_reviewed_factor_signal_and_pdf():
         )
     )
     app = create_app(settings)
+    app.state.material_client = GeminiClient(settings, transport)
     app.dependency_overrides[current_user] = lambda: Principal(uid="reviewer", role="analyst")
     app.dependency_overrides[workspace_service] = lambda: workspace
     app.dependency_overrides[analysis_service] = lambda: AnalysisService(

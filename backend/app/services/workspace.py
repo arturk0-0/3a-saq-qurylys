@@ -88,7 +88,13 @@ class WorkspaceService:
             "developer": serialize(developer),
             "authorizedCompany": serialize(authorized) if authorized else None,
             "risk": serialize(calculate_risk(complex_.factors)),
+            "reviewPriority": self.material_priority(record_id),
         }
+
+    def material_priority(self, record_id):
+        from app.services.materials import MaterialService
+
+        return MaterialService(self).priority_for_complex(record_id)
 
     def list_complexes(
         self,
@@ -115,11 +121,33 @@ class WorkspaceService:
             if zone and risk.zone != zone:
                 continue
             rows.append({**serialize(complex_), "risk": serialize(risk)})
-        rows.sort(
-            key=(lambda row: (-row["risk"]["score"], row["id"]))
-            if sort == "risk"
-            else (lambda row: (row["name"].casefold(), row["id"]))
-        )
+        from app.services.materials import MaterialService
+
+        priorities = MaterialService(self).priorities_for_complexes()
+        for row in rows:
+            row["reviewPriority"] = priorities.get(
+                row["id"],
+                {
+                    "score": None,
+                    "level": "unknown",
+                    "reasons": ["Нет завершённого анализа материалов."],
+                },
+            )
+        if sort == "priority":
+            rows.sort(
+                key=lambda row: (
+                    -(
+                        row["reviewPriority"]["score"]
+                        if row["reviewPriority"]["score"] is not None
+                        else -1
+                    ),
+                    row["id"],
+                )
+            )
+        elif sort == "risk":
+            rows.sort(key=lambda row: (-row["risk"]["score"], row["id"]))
+        else:
+            rows.sort(key=lambda row: (row["name"].casefold(), row["id"]))
         next_offset = offset + limit
         return {
             "items": rows[offset:next_offset],
@@ -180,6 +208,9 @@ class WorkspaceService:
                 demo=complex_.demo,
             )
             event = audit_event(user, "advertisement", ad.id, "advertisement.create", complex_)
+            from app.services.material_projection import ad_occurrence, stage_occurrence
+
+            stage_occurrence(tx, ad_occurrence(tx, ad))
             tx.create("advertisements", ad.id, serialize(ad))
             tx.create("auditLogs", event.id, serialize(event))
             return ad

@@ -244,9 +244,23 @@ def test_ai_idempotency_quota_and_concurrent_human_notes(service):
     assert result.notes == "DEMO: заметка во время AI" and result.ai_status == "succeeded"
     assert service.analyze(item["id"], request, USER) == result and len(calls) == 1
     service.settings.ai_daily_user_limit = 1
+    cached = service.analyze(
+        item["id"], ItemAnalyze(expected_version=result.version, request_id=uuid4()), USER
+    )
+    assert cached.ai_status == "succeeded" and len(calls) == 1
+    from app.services.monitoring import sha
+
+    changed = service.store.get("monitorItems", item["id"])
+    changed["id"] = "new-input"
+    changed["text"] += " Новое предложение."
+    changed["textSha256"] = sha(changed["text"])
+    changed["aiStatus"] = "not_requested"
+    service.store.atomic(lambda tx: tx.create("monitorItems", changed["id"], changed))
     with pytest.raises(AppError) as e:
         service.analyze(
-            item["id"], ItemAnalyze(expected_version=result.version, request_id=uuid4()), USER
+            changed["id"],
+            ItemAnalyze(expected_version=changed["version"], request_id=uuid4()),
+            USER,
         )
     assert e.value.code == "AI_DAILY_LIMIT" and len(calls) == 1
 

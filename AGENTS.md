@@ -17,8 +17,8 @@ unified Advertising, two tabs, one review page, priority presentation, spacing a
 B (this Codex) owns backend/contracts/auto-analysis/dedup/priority/atomic review and
 integration for [Issue #29](https://github.com/arturk0-0/3a-saq-qurylys/issues/29).
 Read [the new scope/sequence](docs/tasks/unified-advertising-split.md) and
-[target API v1](docs/material-workflow-contract.md); these endpoints are planned,
-not implemented. B must not concurrently edit frontend owned by A.
+[target API v1](docs/material-workflow-contract.md); backend endpoints are implemented in B PR #32;
+frontend integration remains A’s task. B must not concurrently edit frontend owned by A.
 This overrides the historical MON/MAP/ORG frontend exceptions below. A needs no
 cloud accounts, keys, paid calls or deployment. Preserve PR #25–28 and their fixes.
 Confirmed R1–R6 stays deterministic/human-reviewed; preliminary priority is separate.
