@@ -34,7 +34,7 @@ export function CompanyDetail() {
     {error && <ErrorState message={error} />}
     {error && <Button variant="outline" onClick={() => { setUpdated(null); query.refresh() }}>Загрузить сохранённую версию</Button>}
     {company.lastError && <p role="status" className="inline-notice">Часть сведений не обновлена: источник недоступен или изменился. Сохранённые сведения и даты показаны ниже.</p>}
-    <section className="panel"><h2>Основные сведения</h2><dl className="company-facts">{Object.entries(labels).map(([field, label]) => {
+    <section className="panel content-pad"><h2>Основные сведения</h2><dl className="company-facts">{Object.entries(labels).map(([field, label]) => {
       const facts = company.facts.filter(f => f.field === field)
       const values = [...new Set(facts.map(f => f.value))]
       return <div key={field}><dt>{label}</dt><dd>{!facts.length ? field === 'name' || field === 'bin' ? <><span>{field === 'name' ? company.name : company.bin}</span><small>Внутренняя запись, публичный источник не указан</small></> : <span className="company-unknown">Сведения пока не найдены</span>
@@ -43,7 +43,7 @@ export function CompanyDetail() {
           {facts.filter(f => f.value === value).map(f => <CitationLink key={f.source.url} source={f.source} />)}
         </div>)}</>}</dd></div>
     })}</dl></section>
-    <section className="panel"><h2>Объекты в найденных источниках</h2>
+    <section className="panel content-pad"><h2>Объекты в найденных источниках</h2>
       <p>{company.foundCompletedCount === null ? 'Количество завершённых объектов не установлено.' : 'Найдено карточек с реквизитами зарегистрированного акта ввода: ' + company.foundCompletedCount + '.'}</p>
       <p className="form-hint">Показаны сохранённые карточки источников. Это не полный портфель компании; корпус и очередь могут быть отдельными объектами.</p>
       {!company.projects.length ? <p>Связанные объекты пока не найдены.</p> : company.projects.map(project => <article className="company-project" key={project.recordId}>

@@ -61,11 +61,10 @@ export function ComplexList({ overview = false }: { overview?: boolean }) {
       {overview && showMap && !loading && !error && <div id="complex-map"><ComplexMap complexes={visible} /></div>}
       {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={refresh} />
         : !visible.length ? <EmptyState title="ЖК не найдены"><p>Измените фильтры или добавьте объекты в реестр.</p></EmptyState>
-        : <ScrollableTable label="Жилые комплексы"><table className="data-table"><thead><tr><th>Жилой комплекс</th><th>Город / этап</th><th>Готовность</th><th>Приоритет проверки</th><th><span className="sr-only">Карточка</span></th></tr></thead>
+        : <ScrollableTable label="Жилые комплексы"><table className="data-table"><thead><tr><th>Жилой комплекс</th><th>Город / этап</th><th>Приоритет проверки</th><th><span className="sr-only">Карточка</span></th></tr></thead>
           <tbody>{visible.map((complex_) => <tr key={complex_.id}>
             <td><strong>{complex_.name.replace(/^DEMO — /, '')}</strong><span>{complex_.address}</span>{complex_.demo && <DemoBadge />}</td>
             <td><strong>{complex_.city}</strong><span>{stageLabels[complex_.stage]}</span></td>
-            <td><strong>{complex_.progress.verifiedPercent === null ? 'Не проверено' : `${complex_.progress.verifiedPercent}%`}</strong><span>Заявлено: {complex_.progress.claimedPercent ?? '—'}%</span></td>
             <td><RiskBadge risk={complex_.risk} /></td><td><DetailLink to={`/complexes/${complex_.id}`}>Карточка</DetailLink></td>
           </tr>)}</tbody></table></ScrollableTable>}
       {data?.catalogLimited && <p className="inline-notice">Поиск ограничен первыми 500 записями. Уточните город; полный поиск требует расширения индекса.</p>}
