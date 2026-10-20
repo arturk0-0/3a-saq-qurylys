@@ -623,3 +623,13 @@ B реализовал backend и необходимый frontend в `feat/drone
 [API](drone-api.md), [отчёт/ограничения/следующий шаг](drone-inspection-report.md).
 После интеграции зависимостей и review/CI — отдельный выпуск API/Hosting/indexes
 и ручная приёмка реального кадра; автоматически ничего не публиковалось.
+
+## 20 октября · общий выпуск и локальный запуск для организаторов
+
+По прямому запросу владельца подготовлен общий выпуск `release/judge-local-and-latest`:
+PR #24 (сохраняет #19/#23/#22) + карта A `6ea62b4`, merge `4d4b7db` без конфликтов.
+Добавлен самостоятельный локальный Compose, fictional seed/local sessions/JSON-volume,
+без внешних ключей/настоящего AI. Production entry и auth/rules не ослаблены.
+Полный backend: 531 passed; frontend production build прошла. Docker и финальная
+проверка frontend продолжаются. [Промежуточный отчёт](judge-release-report.md).
+Cloud deployment не объявляется выполненным: действующей GCP-авторизации здесь нет.

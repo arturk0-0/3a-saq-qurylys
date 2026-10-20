@@ -1,0 +1,42 @@
+# Separate local demonstration; never combine with compose.firebase.yaml or deploy it.
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.local-demo
+    environment:
+      SAQ_LOCAL_DATA: /local-data
+    volumes:
+      - local-demo-data:/local-data
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks: [local-demo]
+    healthcheck:
+      test: ["CMD", ".venv/bin/python", "-c", "import json,urllib.request; assert json.load(urllib.request.urlopen('http://127.0.0.1:8000/api/local-demo/info'))['mode']=='local-demo'"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.local-demo
+    environment:
+      SAQ_DEMO_PROXY: http://backend:8000
+    ports:
+      - "127.0.0.1:5173:5173"
+    networks: [local-demo]
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5173/api/local-demo/info').then(r=>r.json()).then(d=>{if(d.mode!=='local-demo')process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+networks:
+  local-demo:
+    internal: true
+volumes:
+  local-demo-data:

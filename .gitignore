@@ -231,3 +231,5 @@ credentials/
 artifacts/
 deploy/cloud-run.env.yaml
 deploy/monitor-job.env.yaml
+.local-demo-data/
+dist-demo/
