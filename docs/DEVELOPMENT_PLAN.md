@@ -213,11 +213,18 @@ MON-IG-02 подтверждён коротким live trial и запуском
 
 </details>
 
-## 5. Отложено, не часть текущего P0
+## 5. Дрон-инспекция · новый запрос владельца, 20 октября
 
-- [ ] **DRONE-01 · B** — Own private Storage/backend upload contract; A implements its frontend only after the criteria and API are agreed.
-- [ ] **DRONE-02 · B** — Define configurable checklist pending organisers' criteria; Gemini classifies `visible / not_visible / uncertain`.
-- [ ] **DRONE-03 · A** — Show marked results and human review; no claim of confirmed noncompliance on one photograph.
+B по прямому запросу реализует весь модуль и его frontend; карту A не меняет.
+Код готовится в `feat/drone-photo-inspections` поверх сохранённого PR #23/#19.
+[Контракты](drone-api.md), [фактический отчёт](drone-inspection-report.md).
+Публикация и проверка реальной моделью — отдельно; при разработке платных вызовов нет.
+Чекбоксы интеграции закрываются после review/CI/merge.
+
+
+- [ ] **DRONE-01 · B** — Own private Storage/backend upload contract; B implements the requested frontend; original photos remain private.
+- [ ] **DRONE-02 · B** — Configurable visual checklist; exact normative criteria still pending organisers; Gemini classifies `visible / not_visible / uncertain`.
+- [ ] **DRONE-03 · B** — Show marked results and human review; no claim of confirmed noncompliance on one photograph.
 - [ ] **DRONE-04 · B** — Save separate inspection report/evidence trail; do not touch core advertising-law score.
 
 ## 6. Работа команды и Git

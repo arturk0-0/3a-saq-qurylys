@@ -1,12 +1,14 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { NavLink, Route, Routes, Link, useLocation } from 'react-router-dom'
-import { Building2, LayoutDashboard, LogOut, Megaphone, ShieldCheck, FileCheck2, MapPin, ScanSearch } from 'lucide-react'
+import { Building2, LayoutDashboard, LogOut, Megaphone, ShieldCheck, FileCheck2, MapPin, ScanSearch, Camera } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfigurationNotice, useAuth } from '@/features/auth/AuthProvider'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { EmptyState, LoadingState } from '@/components/WorkspaceUI'
 import { RouteBoundary } from './RouteBoundary'
 
+const DronePage = lazy(() => import('@/features/drone/DronePage').then(module => ({ default: module.DronePage })))
+const DroneDetail = lazy(() => import('@/features/drone/DroneDetail').then(module => ({ default: module.DroneDetail })))
 const CompaniesPage = lazy(() => import('@/features/companies/CompaniesPage').then(module => ({ default: module.CompaniesPage })))
 const CompanyDetail = lazy(() => import('@/features/companies/CompanyDetail').then(module => ({ default: module.CompanyDetail })))
 const MonitoringPage = lazy(() => import('@/features/monitoring/MonitoringPage').then(module => ({ default: module.MonitoringPage })))
@@ -24,6 +26,7 @@ const modules = [
   { path: '/monitoring', title: 'Мониторинг рекламы', icon: ScanSearch },
   { path: '/complexes', title: 'Реестр ЖК', icon: Building2 },
   { path: '/companies', title: 'Организации', icon: Building2 },
+  { path: '/drone-inspections', title: 'Дрон-инспекция', icon: Camera },
   { path: '/advertisements', title: 'Объявления', icon: Megaphone },
   { path: '/signals', title: 'Сигналы', icon: FileCheck2 },
 ]
@@ -83,6 +86,8 @@ export function App() {
           <Route path="/monitoring" element={<MonitoringPage />} />
           <Route path="/complexes" element={<ComplexList />} />
           <Route path="/complexes/:id" element={<ComplexDetail />} />
+          <Route path="/drone-inspections" element={<DronePage />} />
+          <Route path="/drone-inspections/:id" element={<DroneDetail key={pathname} />} />
           <Route path="/companies" element={<CompaniesPage />} />
           <Route path="/companies/:id" element={<CompanyDetail key={pathname} />} />
           <Route path="/advertisements" element={<AdvertisementsPage />} />

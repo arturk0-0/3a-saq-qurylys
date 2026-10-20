@@ -34,6 +34,12 @@ export function createApiClient(getToken: () => Promise<string>): ApiClient {
       const code = typeof error.code === 'string' && /^[A-Z][A-Z0-9_]{0,63}$/.test(error.code) ? error.code : 'REQUEST_FAILED'
       const knownMessages: Record<string, string> = {
         ...monitorErrors,
+        DRONE_INVALID_RESPONSE: 'Ответ ИИ не прошёл проверку чек-листа. Снимок сохранён; наблюдения не подтверждены.',
+        DRONE_PHOTO_REQUIRED: 'Сначала загрузите фотографию.',
+        DRONE_BUSY: 'Анализ этого снимка уже выполняется. Обновите результаты перед повтором.',
+        DRONE_LIMIT: 'Достигнут предел анализов или решений этой инспекции. Создайте новую запись для нового осмотра.',
+        DRONE_REVIEW_UNAVAILABLE: 'Откройте завершённый актуальный анализ для рассмотрения.',
+        DRONE_INTERRUPTED: 'Предыдущий анализ был прерван. Оригинал сохранён.',
         COMPANY_SOURCE_INVALID: 'Карточки источника недостаточно для определения участников. Проверьте оригинал.',
         COMPANY_LIVE_REGISTRY_REQUIRED: 'Добавление реальных ЖК в этом режиме недоступно. Участников можно сохранить отдельно.',
         COMPANY_PROJECT_INCOMPLETE: 'В источнике не установлен застройщик или этап строительства. Можно сохранить участников без добавления ЖК.',

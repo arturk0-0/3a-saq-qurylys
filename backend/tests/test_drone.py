@@ -327,3 +327,52 @@ def test_api_photo_protection_and_lifecycle(service):
             path + "/analyze", json=dict(requestId=str(uuid4()), expectedVersion=2)
         )
         assert analyzed.status_code == 200 and analyzed.json()["latestRun"]["status"] == "succeeded"
+
+
+def test_rejected_upload_cleans_only_own_object_but_uncertain_commit_keeps_original(service):
+    item = create(service)
+    original_put = service.storage.put
+
+    def racing_put(path, data, media_type):
+        original_put(path, data, media_type)
+        service.store.documents["droneInspections"][item["id"]]["version"] += 1
+
+    service.storage.put = racing_put
+    with pytest.raises(Conflict):
+        service.upload(item["id"], 1, png(), "image/png", USER)
+    assert not service.storage.objects
+    service.storage.put = original_put
+    atomic = service.store.atomic
+
+    def commit_then_timeout(operation):
+        atomic(operation)
+        raise AppError(503, "INTEGRATION_UNAVAILABLE", "Synthetic uncertain commit")
+
+    service.store.atomic = commit_then_timeout
+    with pytest.raises(AppError):
+        service.upload(item["id"], 2, png(), "image/png", USER)
+    assert len(service.storage.objects) == 1
+    assert service.download(item["id"])[0] == png()
+
+
+def test_late_old_model_response_cannot_replace_recovered_result(service):
+    item = uploaded(service)
+    original_inspect = service.client.inspect
+    old_id = None
+
+    def finish_late(image, checklist):
+        nonlocal old_id
+        old_id = service.get(item["id"])["latestRunId"]
+        service.store.documents["droneRuns"][old_id]["createdAt"] = (
+            utc_now() - timedelta(minutes=6)
+        ).isoformat()
+        service.client.inspect = original_inspect
+        analyze(service, service.get(item["id"]))
+        return original_inspect(image, checklist)
+
+    service.client.inspect = finish_late
+    with pytest.raises(Conflict):
+        analyze(service, item)
+    current = service.get(item["id"])
+    assert current["latestRunId"] != old_id and current["latestRun"]["status"] == "succeeded"
+    assert service.store.get("droneRuns", old_id)["errorCode"] == "DRONE_INTERRUPTED"
