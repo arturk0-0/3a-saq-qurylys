@@ -633,3 +633,15 @@ PR #24 (сохраняет #19/#23/#22) + карта A `6ea62b4`, merge `4d4b7db
 Полный backend: 531 passed; frontend production build прошла. Docker и финальная
 проверка frontend продолжаются. [Промежуточный отчёт](judge-release-report.md).
 Cloud deployment не объявляется выполненным: действующей GCP-авторизации здесь нет.
+
+
+## 20 октября · восстановление после остановки и зелёный CI
+
+Исправлены обе причины красного CI: незакоммиченное Ruff-форматирование fixture и
+попытка JSON-декодирования пустого logout 204 в `scripts/check-local-demo.py`.
+Регрессионный тест проходит весь сценарий через настоящие routes, включая PDF,
+приватную загрузку и выход. Код `366d756`: оба прогона push/PR полностью зелёные
+(537 backend, 109 frontend, native Firestore, Compose, local-demo с restart).
+PR #25 содержит общий выпуск с картой/компаниями/дроном/реестрами и README.
+[Финальный отчёт](judge-release-report.md). Google Cloud deployment не выдаётся за
+выполненный: авторизация пользователя в отдельной Cloud Shell сюда не переносится.

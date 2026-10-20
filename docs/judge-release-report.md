@@ -18,19 +18,45 @@
   обычная Hosting-сборка, индексы, API image с сохранением env/secrets/identity/limits,
   health/anonymous 401, Hosting и обновление image существующего worker без запуска.
 
-## Проверки на текущем этапе
+## Проверки окончательного кода
 
-| Проверка | Результат |
+Проверенный код: `366d756b0924051b6733186d97679c84745503bd`.
+PR [#25](https://github.com/arturk0-0/3a-saq-qurylys/pull/25) объединяет модули.
+Два GitHub Actions прогона (push и PR) **полностью зелёные**:
+[39449898436](https://github.com/arturk0-0/3a-saq-qurylys/actions/runs/39449898436),
+[39449888237](https://github.com/arturk0-0/3a-saq-qurylys/actions/runs/39449888237).
+
+| Проверка | Фактический результат |
 | --- | --- |
-| Общий backend pytest | **531 passed**, 1 upstream Starlette/httpx warning |
-| Новые backend проверки локального режима | **4 passed** (вход/изоляция, rollback, сохранение, upload) |
-| Ruff / format | Пройдены на backend и локальном smoke-script |
-| Обычная production frontend сборка | Пройдена: карта, компании, дрон в отдельных чанках |
-| Общий frontend Vitest | Первый прогон: 105 passed / 4 timeout failures; отдельный: 16 passed / 3 timeouts. Проверки не отключены; увеличены ожидания async UI для медленных CI. Итоговый прогон выполняется |
-| Docker local-demo | Сборка выполняется. HTTPS-прокси среды потребовал временный build-only trusted CA secret; TLS не отключался |
-| Полный локальный smoke и Chromium | Ожидают готовности контейнеров |
-| `bash -n` / `node --check` release helper | Пройдены; публичный Hosting init JSON содержит нужную browser config |
-| Google Cloud deployment | Не выполнялся: в текущем процессе нет ADC/действующего файла credentials или авторизованного gcloud |
+| Backend / Ruff / format | **537 passed**, 1 upstream Starlette/httpx warning; lint и format passed |
+| Frontend / TypeScript / build | **109 passed / 26 файлов**, production build passed |
+| Native Firestore SDK | GitHub Actions passed; без изменений живой БД |
+| Обычный Compose | Чистая сборка, оба health и proxy health passed |
+| Локальный Compose | Чистый checkout без ключей, полный smoke **passed** |
+| Перезапуск локального Compose | Повторный полный smoke **passed**, данные сохранены |
+| Локальная проверка CI-регрессий | **10 passed**: режим, весь smoke включая logout, index gate, rollback |
+| Release helper | `bash -n`, `node --check`; rollback проверен локальными CLI stand-ins, не Google Cloud |
+| Google Cloud deployment | Не выполнен: в среде нет ADC/действующего файла credentials или авторизованного gcloud |
+
+### Причины красных проверок и исправления
+
+- В последнем сохранении не было закоммичено форматирование строкового fixture
+  `test_release_shell.py`; Ruff остановил backend до тестов. Форматирование сохранено.
+- Smoke дошёл до выхода, получил корректный **204 No Content**, затем пытался
+  разобрать пустое тело как JSON. Теперь 204/пустые ответы не декодируются. Добавлен
+  регрессионный тест, запускающий **весь** тот же smoke через настоящие API routes.
+- До этого исправлены учебные `.invalid` URL, отбрасываемые общим валидатором,
+  и Docker-сеть: backend изолирован, frontend публикует только loopback 5173.
+  Production URL validation, auth и scoring не ослаблены.
+- Таймауты UI в медленной среде устранены увеличением async ожиданий; assertions
+  сохранены. Финальные frontend проверки прошли локально и в обоих CI-прогонах.
+
+### Review выпуска
+
+Независимые read-only проверки сохранили production/local разделение. Исправлены
+найденные блокеры: реальная активная ревизия для rollback, явное переключение на
+новую ревизию, READY нужных индексов до rollout и rollback при transport-ошибке
+проверки auth. Эти пути покрыты CLI stand-ins, без облачных мутаций/платного ИИ.
 
 ## Публикация после проверок
 
@@ -43,7 +69,7 @@ bash deploy/publish-reviewed-release.sh "$(git rev-parse HEAD)"
 Передаётся именно полный SHA проверенного checkout, а не переменная старой сборки.
 Скрипт не публикует локальную Vite-конфигурацию, не загружает seed и не меняет роли.
 В настоящем проекте остаётся выбранная модель/секрет Gemini, настройки SearchAPI и
-сервисный аккаунт. Новые индексы должны закончить построение до проверки запросов.
+сервисный аккаунт. Скрипт ждёт READY всех требуемых индексов до публикации новой API-версии.
 
 Живая приёмка после публикации: вход существующим аналитиком, старые объявления и
 сигналы, новые разделы организаций/карты/дрона, загрузка приватного фото, история и
