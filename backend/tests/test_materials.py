@@ -308,7 +308,7 @@ def test_live_monitoring_groups_cross_platform_and_never_confirms_demo_registry(
 def test_pagination_search_filters_cover_whole_collection_and_cursor_is_bound(services):
     w, m, _, _, _ = services
     for i in range(205):
-        ad(w, text=f"DEMO предложение {i:04d}")
+        ad(w, text=f"DEMO предложение {i:04d}", url=f"https://example.org/pagination/{i:04d}")
     result = m.items(q="0204", origin="manual")
     assert len(result["items"]) == 1
     first = m.items(limit=3)

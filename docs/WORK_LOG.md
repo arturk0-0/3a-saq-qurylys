@@ -718,7 +718,9 @@ jobs/решения при общем кэше provider. Старые точны
 
 Независимые read-only review закрыли найденные проблемы scope, повторных вызовов,
 версий групп и legacy proof. Полный локальный набор: 558 passed; после уточнения
-приоритетного фонового запуска повторяются затронутые API/native сценарии.
+приоритетного фонового запуска 47 затронутых API tests passed; native Firestore
+SDK — 19 passed. Новый HTTP flow auto priority35/confirmed0 → review35, replay,
+дубль и история также прошёл.
 Локальный старый flow до 35/сигнала/PDF/private upload прошёл. Итог CI/SDK и
 ограничения фиксируются в `unified-advertising-backend-report.md`.
 Без платных запросов и деплоя; объединённый UI ждёт A / #30.
