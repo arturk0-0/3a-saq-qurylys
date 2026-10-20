@@ -11,7 +11,19 @@ This file is the repository-level operating guide. Read it **before** editing co
 
 ## Two-person ownership
 
-**Owner update, 19 October — current MAP/ORG assignment:** A (friend) owns the
+**Owner update, 20 October — current unified advertising assignment:**
+A (second Codex) owns **all frontend** for [Issue #30](https://github.com/arturk0-0/3a-saq-qurylys/issues/30):
+unified Advertising, two tabs, one review page, priority presentation, spacing and QA.
+B (this Codex) owns backend/contracts/auto-analysis/dedup/priority/atomic review and
+integration for [Issue #29](https://github.com/arturk0-0/3a-saq-qurylys/issues/29).
+Read [the new scope/sequence](docs/tasks/unified-advertising-split.md) and
+[target API v1](docs/material-workflow-contract.md); these endpoints are planned,
+not implemented. B must not concurrently edit frontend owned by A.
+This overrides the historical MON/MAP/ORG frontend exceptions below. A needs no
+cloud accounts, keys, paid calls or deployment. Preserve PR #25–28 and their fixes.
+Confirmed R1–R6 stays deterministic/human-reviewed; preliminary priority is separate.
+
+**Historical owner update, 19 October — MAP/ORG assignment:** A (friend) owns the
 secondary city-map feature and minimal ComplexList mount, [Issue #20](https://github.com/arturk0-0/3a-saq-qurylys/issues/20).
 B (owner) owns public-source company data, backend/contracts, company pages,
 ComplexDetail and routes, [Issue #21](https://github.com/arturk0-0/3a-saq-qurylys/issues/21).
@@ -35,8 +47,8 @@ See `docs/instagram-feasibility.md` and the current development plan.
 The team has **two** contributors; current queues and copy/paste prompts are in
 [`docs/two-person-team.md`](docs/two-person-team.md), assignments in
 [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md). GitHub queues:
-[A / friend #20](https://github.com/arturk0-0/3a-saq-qurylys/issues/20),
-[B / owner #21](https://github.com/arturk0-0/3a-saq-qurylys/issues/21).
+[A / second Codex #30](https://github.com/arturk0-0/3a-saq-qurylys/issues/30),
+[B / this Codex #29](https://github.com/arturk0-0/3a-saq-qurylys/issues/29).
 
 - **A = the owner's friend and their Codex:** owns all `frontend/**` and the
   user/demo documents listed in the team guide. Develop/test using the existing

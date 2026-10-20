@@ -24,6 +24,19 @@ six-page PDF was reread and its mandatory scenarios remain consistent with this 
 
 **Open source vs access.** For code assessment the repository must be publicly accessible by the deadline; the **running application** is login-protected and not publicly deployed by default. Judges may run the client and FastAPI locally with internet connectivity. Firebase (hosted DB/auth/storage) and Gemini API are remote. Local ML/LLM is not required.
 
+## Owner workflow update · 20 October (TEAM DECISION)
+
+New implementation queue: one Advertising section with All materials and Sources
+and schedule; automatic analysis of supported new revisions; grouped duplicate
+publications preserving originals; one-page human review/one save. Separate
+preliminary review priority from confirmed R1–R6 score. This supersedes the old
+multi-step UI, not the hard scoring/evidence rules. Automatic analysis does not
+confirm legal findings or fabricate matches/permissions. Unsupported media and
+quota queues are explicit. Construction progress visuals/columns remain removed.
+[Implementation split](tasks/unified-advertising-split.md),
+[target contract](material-workflow-contract.md). These changes are planned,
+not yet implemented or deployed.
+
 ## 2. Mandatory end-to-end journey (REQUIRED)
 
 **Product scope update requested by owner, 17 October (TEAM DECISION):** complete
