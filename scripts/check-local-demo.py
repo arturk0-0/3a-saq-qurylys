@@ -40,6 +40,9 @@ def main():
             raise AssertionError(
                 f"{method} {path}: {response.code}, expected {expected}"
             )
+        # 204 has no response body, even when a framework leaves a JSON media header.
+        if response.code == 204 or not data:
+            return b""
         return (
             json.loads(data)
             if "application/json" in response.headers.get("Content-Type", "")

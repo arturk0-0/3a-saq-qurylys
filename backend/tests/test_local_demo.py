@@ -1,6 +1,9 @@
 """The local judge mode is isolated, persistent and never a production auth fallback."""
 
 import io
+import runpy
+from pathlib import Path
+from types import SimpleNamespace
 from uuid import uuid4
 
 import httpx
@@ -96,3 +99,27 @@ def test_demo_analysis_collectors_companies_and_uploaded_file(demo):
         headers={"Content-Type": "image/png"},
     )
     assert uploaded.status_code == 201, uploaded.text
+
+
+def test_judge_smoke_completes_full_scenario_including_empty_logout(demo, monkeypatch, capsys):
+    client, _, _ = demo
+    client.headers.clear()
+    script = Path(__file__).resolve().parents[2] / "scripts/check-local-demo.py"
+    namespace = runpy.run_path(str(script))
+    main = namespace["main"]
+
+    def local_request(request, timeout):
+        response = client.request(
+            request.get_method(),
+            request.full_url,
+            content=request.data,
+            headers=dict(request.header_items()),
+        )
+        return SimpleNamespace(
+            code=response.status_code, headers=response.headers, read=lambda: response.content
+        )
+
+    monkeypatch.setitem(main.__globals__, "urlopen", local_request)
+    monkeypatch.setattr("sys.argv", [str(script)])
+    main()
+    assert "PASS: local login" in capsys.readouterr().out

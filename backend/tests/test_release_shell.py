@@ -9,7 +9,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 SHA = "a" * 40
-STAND_IN = r'''
+STAND_IN = r"""
 import json,os,sys
 from pathlib import Path
 tool=Path(sys.argv[0]).name
@@ -41,7 +41,7 @@ elif tool=='curl':
     elif 'release.json' in args:print(json.dumps({'gitSha':'a'*40}))
     else:print('{}')
 elif tool=='node' and '--input-type' in args:sys.stdin.read()
-'''
+"""
 
 
 @pytest.mark.parametrize("auth_result", ["401", "200", "transport"])
