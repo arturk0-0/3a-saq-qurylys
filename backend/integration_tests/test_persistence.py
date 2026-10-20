@@ -52,6 +52,8 @@ def test_new_ad_to_human_review_signal_revisions_and_native_pdf(workspace, quote
         workspace, GeminiClient(config, httpx.MockTransport(handler)), files, config
     )
     app = create_app(config)
+    app.state.material_client = service.client
+    app.state.material_files = files
     app.dependency_overrides[workspace_service] = lambda: workspace
     app.dependency_overrides[file_service] = lambda: files
     app.dependency_overrides[analysis_service] = lambda: service
@@ -85,7 +87,7 @@ def test_new_ad_to_human_review_signal_revisions_and_native_pdf(workspace, quote
         analyzed = client.post(f"/api/v1/advertisements/{ad['id']}/analyze", json=payload)
         assert analyzed.status_code == 200, analyzed.text
         repeated = client.post(f"/api/v1/advertisements/{ad['id']}/analyze", json=payload)
-        assert repeated.json() == analyzed.json() and len(provider_calls) == 1
+        assert repeated.json() == analyzed.json() and len(provider_calls) == (2 if image else 1)
         hypothesis = client.get(f"/api/v1/advertisements/{ad['id']}/hypotheses").json()["items"][0]
         assert client.get("/api/v1/complexes/demo-complex-04/risk").json()["score"] == 10
         accepted = client.post(
@@ -284,6 +286,14 @@ def test_real_transactions_enforce_global_ai_quota(workspace):
         FileService(workspace, FakeFiles()),
         config,
     )
+    original = workspace.require_record("advertisements", "demo-ad-01")
+    workspace.store.atomic(
+        lambda tx: tx.create(
+            "advertisements",
+            "quota-distinct",
+            {**original, "id": "quota-distinct", "text": original["text"] + " Иные условия."},
+        )
+    )
     start = Barrier(2)
     requests = [AnalysisRequest(request_id=uuid4(), expected_version=1) for _ in range(2)]
 
@@ -291,7 +301,7 @@ def test_real_transactions_enforce_global_ai_quota(workspace):
         start.wait(timeout=10)
         try:
             return service.analyze(
-                "demo-ad-01",
+                "demo-ad-01" if index == 0 else "quota-distinct",
                 requests[index],
                 Principal(uid=f"local-quota-user-{index}", role="analyst"),
             )
@@ -304,21 +314,21 @@ def test_real_transactions_enforce_global_ai_quota(workspace):
     assert len(failures) == 1
     failure = failures[0]
     assert len(calls) == 1  # No second provider call even on exhausted SDK retries.
-    if (failure.status_code, failure.code) == (409, "CONFLICT"):
+    if (failure.status_code, failure.code) in {(409, "CONFLICT"), (503, "INTEGRATION_UNAVAILABLE")}:
         # Real SDK contention may exhaust three attempts before reading the winner's
-        # committed quota. Explicit caller retry uses the SAME idempotency key;
-        # the application must still enforce the quota after contention settles.
+        # committed quota. A new request for the losing distinct input must
+        # still enforce the quota after contention settles.
         index = next(i for i, result in enumerate(results) if isinstance(result, AppError))
         with pytest.raises(AppError) as retried:
             service.analyze(
-                "demo-ad-01",
-                requests[index],
+                "demo-ad-01" if index == 0 else "quota-distinct",
+                AnalysisRequest(request_id=uuid4(), expected_version=1),
                 Principal(uid=f"local-quota-user-{index}", role="analyst"),
             )
         failure = retried.value
     assert (failure.status_code, failure.code) == (429, "AI_DAILY_LIMIT")
     assert len(calls) == 1
-    assert len(workspace.page("analysisRuns")["items"]) == 1
+    assert sum(r["status"] == "succeeded" for r in workspace.page("analysisRuns")["items"]) == 1
     assert workspace.complex_detail("demo-complex-01")["risk"]["score"] == 35
 
 

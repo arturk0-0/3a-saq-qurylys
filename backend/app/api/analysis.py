@@ -117,7 +117,7 @@ async def screenshot(
     )
     from app.api.materials import schedule_analysis
 
-    schedule_analysis(background, request, files.workspace, files)
+    schedule_analysis(background, request, files.workspace, files, advertisement_id=record_id)
     return result
 
 

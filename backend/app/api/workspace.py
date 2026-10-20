@@ -117,7 +117,7 @@ def create_advertisement(
     result = service.create_advertisement(payload, user)
     from app.api.materials import schedule_analysis
 
-    schedule_analysis(background, request, service)
+    schedule_analysis(background, request, service, advertisement_id=result.id)
     return result
 
 

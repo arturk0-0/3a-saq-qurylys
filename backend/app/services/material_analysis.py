@@ -31,12 +31,14 @@ class MaterialProcessor:
         self.workspace, self.store = workspace, workspace.store
         self.client, self.files, self.settings = client, files, settings
 
-    def process(self, user, limit=3):
+    def process(self, user, limit=3, material_id=None):
         outcomes = []
         # ID cursor scan is deliberate; sort oldest first so small batches cannot starve work.
         jobs = list(all_rows(self.store, "materialJobs", [("status", "in", ["queued", "running"])]))
         jobs.sort(key=lambda r: (r["createdAt"], r["id"]))
         for candidate in jobs:
+            if material_id and candidate["materialId"] != material_id:
+                continue
             if self.workspace.demo_only and candidate["workspaceScope"] == "live":
                 continue
             if len(outcomes) >= limit:

@@ -322,6 +322,7 @@ def test_pagination_search_filters_cover_whole_collection_and_cursor_is_bound(se
 
 def test_routes_auto_analyze_and_role_auth_preserved(services):
     w, _, _, provider, files = services
+    backlog = ad(w, text="DEMO older queued input")
     app = create_app(Settings(_env_file=None, gemini_api_key="", gemini_model="local-test"))
     app.state.material_client, app.state.material_files = provider, files
     app.dependency_overrides[workspace_service] = lambda: w
@@ -343,6 +344,9 @@ def test_routes_auto_analyze_and_role_auth_preserved(services):
         rows = client.get("/api/v1/materials").json()["items"]
         item = client.get("/api/v1/materials/" + rows[0]["id"]).json()
         assert item["analysis"]["status"] == "ready" and len(provider.calls) == 1
+        assert (
+            client.get("/api/v1/materials/" + backlog.id).json()["analysis"]["status"] == "queued"
+        )
         decision = review_payload(item).model_dump(mode="json", by_alias=True)
         reviewed = client.post("/api/v1/materials/" + item["id"] + "/review", json=decision)
         assert reviewed.status_code == 200, reviewed.text

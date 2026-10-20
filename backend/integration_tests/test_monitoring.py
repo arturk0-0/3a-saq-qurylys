@@ -90,9 +90,22 @@ def test_sdk_stale_lease_and_shared_ai_quota(workspace, db):
     assert first.ai_status == "failed" and first.ai_error == "AI_PROVIDER_QUOTA"
     assert monitor.analyze(item["id"], request, USER) == first and len(calls) == 1
     monitor.settings.ai_daily_global_limit = 1
+    distinct = {
+        **workspace.store.get("monitorItems", item["id"]),
+        "id": "quota-other",
+        "aiStatus": "not_requested",
+        "aiRequestId": None,
+        "aiError": None,
+        "aiModel": None,
+        "aiPromptVersion": None,
+        "extraction": None,
+        "aiCompletedAt": None,
+        "text": item["text"] + " Новое условие.",
+    }
+    workspace.store.atomic(lambda tx: tx.create("monitorItems", distinct["id"], distinct))
     with pytest.raises(AppError) as error:
         monitor.analyze(
-            item["id"], ItemAnalyze(expected_version=first.version, request_id=uuid4()), USER
+            distinct["id"], ItemAnalyze(expected_version=first.version, request_id=uuid4()), USER
         )
     assert error.value.code == "AI_DAILY_LIMIT" and len(calls) == 1
 

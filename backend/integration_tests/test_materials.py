@@ -23,7 +23,7 @@ def test_native_material_dedup_cache_atomic_review_and_stale_fence(workspace):
     before = materials.detail(first.id)
     assert before["occurrenceCount"] == 2
     processor = MaterialProcessor(workspace, provider, files, settings)
-    processor.process(user, 20)
+    processor.process(user, 20, before["id"])
     item = materials.detail(before["id"])
     assert item["priority"]["score"] == 35
     assert len(provider.calls) == 1

@@ -23,7 +23,9 @@ Materials = Annotated[MaterialService, Depends(material_service)]
 MaterialCursor = Annotated[str | None, Query(max_length=1024, pattern=r"^[A-Za-z0-9_-]+$")]
 
 
-def schedule_analysis(background, request, workspace, files=None):
+def schedule_analysis(
+    background, request, workspace, files=None, *, material_id=None, advertisement_id=None
+):
     settings = request.app.state.settings
     client = getattr(request.app.state, "material_client", None) or GeminiClient(settings)
     files = (
@@ -31,6 +33,13 @@ def schedule_analysis(background, request, workspace, files=None):
         or getattr(request.app.state, "material_files", None)
         or FileService(workspace, FirebaseFileStorage(request.app.state.firebase))
     )
+    if advertisement_id:
+        from app.services.material_projection import digest
+
+        link = workspace.store.get(
+            "materialLinks", digest(f"legacy:advertisement:{advertisement_id}")
+        )
+        material_id = link["materialId"] if link else None
     processor = MaterialProcessor(workspace, client, files, settings)
     # New input creates durable jobs in the SAME commit as the original record.
     # Background execution is an optimization; the existing worker drains leftovers.
@@ -38,7 +47,9 @@ def schedule_analysis(background, request, workspace, files=None):
 
     def run():
         try:
-            processor.process(Principal(uid="service-material-worker", role="analyst"), 1)
+            processor.process(
+                Principal(uid="service-material-worker", role="analyst"), 1, material_id
+            )
         except Exception:
             import logging
 
@@ -105,7 +116,7 @@ def retry(
     request: Request,
 ):
     result = service.retry(record_id, payload, user)
-    schedule_analysis(background, request, service.workspace)
+    schedule_analysis(background, request, service.workspace, material_id=record_id)
     return result
 
 
