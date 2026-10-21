@@ -412,7 +412,7 @@ def test_automatic_and_legacy_entry_points_share_one_paid_input_claim(services):
     assert all(c["count"] == 1 for c in w.store.documents["usageLimits"].values())
 
 
-def test_old_successful_screenshot_is_reused_without_reanalyzing_image(services):
+def test_old_successful_screenshot_is_reused_without_reanalyzing_image(services, monkeypatch):
     from app.models.analysis import AnalysisRequest
     from app.services.analysis import AnalysisService
 
@@ -442,6 +442,12 @@ def test_old_successful_screenshot_is_reused_without_reanalyzing_image(services)
     processor.process(USER)
     assert sum(bool(image) for _, image in provider.calls) == 1
     assert result["occurrences"][0]["media"][0]["analyzed"]
+
+    def unexpected_download(_):
+        raise AssertionError("Ready image analysis must not redownload its file during listing")
+
+    monkeypatch.setattr(files, "download", unexpected_download)
+    assert m.items()["items"]
 
 
 def test_changed_revision_during_paid_request_cannot_receive_old_results(services):
@@ -479,7 +485,7 @@ def test_identical_caption_different_complexes_own_jobs_share_provider(services)
     assert len(w.store.documents["materialProviderAttempts"]) == 1
 
 
-def test_review_rejects_imported_legacy_proof_without_leaving_its_score(services):
+def test_review_rejects_imported_legacy_proof_without_leaving_its_score(services, monkeypatch):
     from app.models.analysis import AnalysisRequest
     from app.services.analysis import AnalysisService
 
@@ -512,10 +518,56 @@ def test_review_rejects_imported_legacy_proof_without_leaving_its_score(services
     imported = detail(m)
     assert all(h["decision"] == "confirmed" for h in imported["hypotheses"])
     assert detail(m)["version"] == imported["version"]
+    with monkeypatch.context() as unchanged:
+
+        def unexpected_transaction(_):
+            raise AssertionError("An unchanged list must not reopen historical write transactions")
+
+        unchanged.setattr(w.store, "atomic", unexpected_transaction)
+        assert m.items()["items"]
     result = m.review(imported["id"], review_payload(imported, decision="rejected"), USER)
     assert result["confirmedRisk"]["score"] == 0
     assert all(h["decision"] == "rejected" for h in result["hypotheses"])
     assert len(provider.calls) == 1
+
+
+def test_material_lists_bulk_read_links_jobs_and_complexes_without_stale_shared_cache(
+    services, monkeypatch
+):
+    w, m, _, _, _ = services
+    for i in range(60):
+        ad(w, text=f"{TEXT} Вариант {i}.")
+    points, batches = [], []
+    original_get = w.store.get
+
+    def point(collection, key):
+        points.append((collection, key))
+        return original_get(collection, key)
+
+    def bulk(collection, keys):
+        keys = list(keys)
+        batches.append((collection, len(keys)))
+        return {key: original_get(collection, key) for key in keys}
+
+    monkeypatch.setattr(w.store, "get", point)
+    monkeypatch.setattr(w.store, "get_many", bulk, raising=False)
+    page = m.items(limit=50)
+    assert len(page["items"]) == 50
+    assert page["nextCursor"]
+    assert points == []
+    assert len(batches) <= 8
+    assert any(collection == "materialLinks" and count == 60 for collection, count in batches)
+    assert any(collection == "materialJobs" and count == 60 for collection, count in batches)
+    mid = page["items"][0]["id"]
+    jid = w.store.documents["materials"][mid]["inputIds"][0]
+    w.store.documents["materialJobs"][jid]["status"] = "failed"
+    refreshed = next(row for row in m.items(limit=50)["items"] if row["id"] == mid)
+    assert refreshed["analysis"]["status"] == "failed"
+    points.clear()
+    batches.clear()
+    assert CID in m.priorities_for_complexes()
+    assert points == []
+    assert batches == [("materialJobs", 60)]
 
 
 def test_history_and_direct_original_preserve_audit_without_uid(services):

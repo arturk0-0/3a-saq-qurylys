@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from google.api_core.exceptions import (
+    Aborted,
     FailedPrecondition,
     PermissionDenied,
     RetryError,
@@ -177,3 +178,62 @@ def test_missing_index_is_an_authenticated_typed_history_error(offline_store, mo
     assert response.json()["requestId"] == response.headers["x-request-id"]
     assert response.headers["cache-control"] == "no-store"
     assert "PRIVATE_CONSOLE_URL" not in response.text
+
+
+def test_bulk_reads_are_chunked_deduplicated_and_keep_missing_documents(offline_store, monkeypatch):
+    from types import SimpleNamespace
+
+    store, _ = offline_store
+    batches = []
+
+    def get_all(refs, *, timeout):
+        assert timeout == 10
+        batches.append([ref.id for ref in refs])
+        # Native get_all order is not guaranteed; missing snapshots are explicit.
+        return iter(
+            [
+                SimpleNamespace(
+                    id=ref.id, exists=ref.id != "missing", to_dict=lambda ref=ref: {"id": ref.id}
+                )
+                for ref in reversed(refs)
+            ]
+        )
+
+    monkeypatch.setattr(store.db, "get_all", get_all)
+    keys = [f"row-{i}" for i in range(201)] + ["missing", "row-0"]
+    result = store.get_many("materialJobs", keys)
+    assert [len(batch) for batch in batches] == [200, 2]
+    assert len(result) == 202
+    assert result["missing"] is None
+    assert result["row-200"] == {"id": "row-200"}
+    assert store.get_many("materialJobs", []) == {}
+    with pytest.raises(ValueError):
+        store.get_many("materialJobs", ["bad/id"])
+
+
+@pytest.mark.parametrize("always_abort", [False, True])
+def test_transaction_read_abort_restarts_whole_callback_or_returns_conflict(
+    offline_store, monkeypatch, always_abort
+):
+    store, _ = offline_store
+    calls = []
+    # Isolate the SDK boundary: Aborted from callback reads is not retried by its
+    # commit retry loop. Each outer retry must receive a fresh transaction.
+    monkeypatch.setattr(firestore, "transactional", lambda callback: callback)
+    monkeypatch.setattr("app.repositories.firestore.time.sleep", lambda _: None)
+
+    def operation(tx):
+        calls.append(tx.transaction)
+        if always_abort or len(calls) == 1:
+            raise Aborted("PRIVATE_PROVIDER_MESSAGE")
+        return "committed"
+
+    if always_abort:
+        with pytest.raises(Conflict) as error:
+            store.atomic(operation)
+        assert "PRIVATE_PROVIDER_MESSAGE" not in error.value.message
+        assert len(calls) == 3
+    else:
+        assert store.atomic(operation) == "committed"
+        assert len(calls) == 2
+    assert len({id(tx) for tx in calls}) == len(calls)

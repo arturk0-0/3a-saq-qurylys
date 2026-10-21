@@ -15,6 +15,7 @@ from app.services.material_projection import (
     monitor_occurrence,
     stage_occurrence,
 )
+from app.services.material_reads import MaterialReads, read_many
 from app.services.risk import calculate_risk
 from app.services.workspace import serialize
 
@@ -49,8 +50,13 @@ class MaterialService:
                 pair[1]["id"],
             )
         )
+        links = read_many(
+            self.store,
+            "materialLinks",
+            (digest(f"legacy:{kind}:{row['id']}") for kind, row in originals),
+        )
         for kind, row in originals:
-            link = self.store.get("materialLinks", digest(f"legacy:{kind}:{row['id']}"))
+            link = links.get(digest(f"legacy:{kind}:{row['id']}"))
             seen = row.get("lastSeenAt", row.get("capturedAt", row.get("createdAt", "")))
             if link and (
                 link.get("derived")
@@ -114,11 +120,11 @@ class MaterialService:
         }
         return jobs, proposals, analysis
 
-    def summary(self, group):
-        jobs, proposals, analysis = self.state(group, self.store)
+    def summary(self, group, reader=None):
+        jobs, proposals, analysis = self.state(group, reader or self.store)
         complex_ = None
         if group.get("complexId"):
-            c = self.workspace.complex(group["complexId"])
+            c = self.workspace.complex(group["complexId"], reader)
             complex_ = {"id": c.id, "name": c.name, "version": c.version}
         return {
             "id": group["id"],
@@ -174,7 +180,11 @@ class MaterialService:
     ):
         self.sync_legacy()
         rows = []
-        for group in all_rows(self.store, "materials"):
+        groups = [g for g in all_rows(self.store, "materials") if self.visible(g)]
+        reader = MaterialReads(self.store)
+        reader.load("materialJobs", (jid for g in groups for jid in g["inputIds"]))
+        reader.load("complexes", (g.get("complexId") for g in groups))
+        for group in groups:
             if not self.visible(group):
                 continue
             if review != "all" and group["reviewState"] != review:
@@ -194,7 +204,7 @@ class MaterialService:
                     for r in originals
                 ):
                     continue
-            rows.append(self.summary(group))
+            rows.append(self.summary(group, reader))
         rows.sort(key=lambda r: (r["lastSeenAt"], r["id"]), reverse=True)
         if sort == "priority":
             rows.sort(
@@ -337,12 +347,19 @@ class MaterialService:
 
     def priorities_for_complexes(self):
         by_complex = {}
-        for group in all_rows(self.store, "materials"):
+        groups = [
+            g
+            for g in all_rows(self.store, "materials")
+            if self.visible(g) and g["reviewState"] == "needs_review"
+        ]
+        reader = MaterialReads(self.store)
+        reader.load("materialJobs", (jid for g in groups for jid in g["inputIds"]))
+        for group in groups:
             if not self.visible(group) or group["reviewState"] != "needs_review":
                 continue
             cid = group.get("complexId") or self.candidates(group)[1]
             if cid:
-                jobs, proposals, _ = self.state(group, self.store)
+                jobs, proposals, _ = self.state(group, reader)
                 found, states = by_complex.setdefault(cid, ([], []))
                 found.extend(proposals)
                 states.extend(j["status"] for j in jobs)
