@@ -40,3 +40,25 @@ def test_native_material_dedup_cache_atomic_review_and_stale_fence(workspace):
     assert rejected["confirmedRisk"]["score"] == 10
     events = workspace.store.list("auditLogs", filters=[("entityId", "==", item["id"])], limit=20)
     assert len(events) == 2
+
+
+def test_native_bulk_reads_and_list_refresh_preserve_current_jobs(workspace):
+    store = workspace.store
+    rows = store.get_many("complexes", [CID, "missing-complex", CID])
+    assert rows[CID]["id"] == CID
+    assert rows["missing-complex"] is None
+    assert len(rows) == 2
+    original = ad(workspace)
+    service = MaterialService(workspace)
+    item = service.detail(original.id)
+    first = next(row for row in service.items()["items"] if row["id"] == item["id"])
+    assert first["analysis"]["status"] == "queued"
+    jid = store.get("materials", item["id"])["inputIds"][0]
+
+    def fail(tx):
+        job = tx.get("materialJobs", jid)
+        tx.set("materialJobs", jid, {**job, "status": "failed", "errorCode": "TEST"})
+
+    store.atomic(fail)
+    refreshed = next(row for row in service.items()["items"] if row["id"] == item["id"])
+    assert refreshed["analysis"]["status"] == "failed"

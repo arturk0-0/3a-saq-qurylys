@@ -9,6 +9,7 @@ from app.services.gemini import PROMPT_VERSION
 from app.services.material_analysis import hypotheses
 from app.services.material_projection import all_rows, digest
 from app.services.material_provider import input_call_key
+from app.services.material_reads import MaterialReads
 
 
 def import_legacy_results(workspace, files=None):
@@ -26,19 +27,36 @@ def import_legacy_results(workspace, files=None):
         if e["status"] == "confirmed" and e.get("advertisementId"):
             evidence.setdefault(e["advertisementId"], []).append(e)
     downloads = {}
-    for group in all_rows(store, "materials"):
+    groups = [
+        g
+        for g in all_rows(store, "materials")
+        if not workspace.demo_only or g["workspaceScope"] in {"demo", "public"}
+    ]
+    reader = MaterialReads(store)
+    reader.load("materialJobs", (jid for g in groups for jid in g["inputIds"]))
+    jobs = [reader.get("materialJobs", jid) for g in groups for jid in g["inputIds"]]
+    jobs = [j for j in jobs if j]
+    reader.load("materialOccurrences", (j["occurrenceId"] for j in jobs))
+    sources = [reader.get("materialOccurrences", j["occurrenceId"]) for j in jobs]
+    reader.load(
+        "monitorItems",
+        (s["legacyId"] for s in sources if s and s["legacyKind"] == "monitoring"),
+    )
+    reader.load("complexes", (g.get("complexId") for g in groups))
+    for group in groups:
         if workspace.demo_only and group["workspaceScope"] not in {"demo", "public"}:
             continue
         for jid in group["inputIds"]:
-            job = store.get("materialJobs", jid)
+            job = reader.get("materialJobs", jid)
             if not job:
                 continue
-            source = store.get("materialOccurrences", job["occurrenceId"])
+            source = reader.get("materialOccurrences", job["occurrenceId"])
             if not source:
                 continue
             old = None
-            if source["legacyKind"] == "monitoring" and not job.get("screenshotId"):
-                candidate = store.get("monitorItems", source["legacyId"])
+            reusable = job["status"] in {"queued", "failed"} and not job.get("attemptToken")
+            if reusable and source["legacyKind"] == "monitoring" and not job.get("screenshotId"):
+                candidate = reader.get("monitorItems", source["legacyId"])
                 if (
                     candidate
                     and candidate["text"] == job["text"]
@@ -54,7 +72,7 @@ def import_legacy_results(workspace, files=None):
                         "completedAt": candidate.get("aiCompletedAt"),
                         "createdAt": candidate.get("aiStartedAt") or candidate["lastSeenAt"],
                     }
-            else:
+            elif reusable:
                 for candidate in runs.get(source.get("advertisementId"), []):
                     sid = candidate.get("screenshotId")
                     if bool(sid) != bool(job.get("screenshotId")):
@@ -167,7 +185,7 @@ def import_legacy_results(workspace, files=None):
                 continue
             decisions, legacy_evidence = {}, {}
             cid = group.get("complexId")
-            complex_ = store.get("complexes", cid) if cid else None
+            complex_ = reader.get("complexes", cid) if cid else None
             ad_id = source.get("advertisementId")
             for h in hypotheses(job):
                 if (h["code"], h["quote"]) in rejected.get(ad_id, set()):
@@ -189,7 +207,13 @@ def import_legacy_results(workspace, files=None):
                     ):
                         decisions[h["id"]] = "confirmed"
                         legacy_evidence.setdefault(h["id"], []).append(e["id"])
-            if decisions:
+            # Do not open a write transaction for an unchanged historical decision.
+            # The callback still rechecks the current revision and missing keys.
+            missing_decisions = set(decisions) - set(group.get("decisions", {}))
+            changed_refs = {**group.get("legacyEvidence", {}), **legacy_evidence} != group.get(
+                "legacyEvidence", {}
+            )
+            if decisions and (missing_decisions or changed_refs):
 
                 def preserve(tx, group=group, decisions=decisions, legacy_evidence=legacy_evidence):
                     current = tx.get("materials", group["id"])

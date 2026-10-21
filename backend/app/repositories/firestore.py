@@ -1,5 +1,6 @@
 import logging
 import re
+import time
 from collections.abc import Callable
 from typing import Any
 
@@ -108,6 +109,23 @@ class FirestoreStore:
         except (GoogleAPICallError, RetryError) as exc:
             raise firestore_error(exc, "read") from None
 
+    def get_many(self, collection: str, record_ids: list[str]) -> dict[str, Document | None]:
+        ids = list(dict.fromkeys(record_ids))
+        for key in ids:
+            validate_path(collection, key)
+        result = dict.fromkeys(ids)
+        try:
+            for offset in range(0, len(ids), 200):
+                refs = [
+                    self.db.collection(collection).document(key)
+                    for key in ids[offset : offset + 200]
+                ]
+                for snapshot in self.db.get_all(refs, timeout=10):
+                    result[snapshot.id] = snapshot.to_dict() if snapshot.exists else None
+            return result
+        except (GoogleAPICallError, RetryError) as exc:
+            raise firestore_error(exc, "bulk read") from None
+
     def list(
         self,
         collection: str,
@@ -149,7 +167,15 @@ class FirestoreStore:
             return operation(FirestoreUnitOfWork(self.db, transaction))
 
         try:
-            return execute(self.db.transaction(max_attempts=3))
+            # The SDK retries commit contention, but Aborted during callback reads
+            # escapes its retry loop. Restart the whole rolled-back transaction.
+            for attempt in range(3):
+                try:
+                    return execute(self.db.transaction(max_attempts=3))
+                except Aborted:
+                    if attempt == 2:
+                        raise Conflict() from None
+                    time.sleep(0.05 * (2**attempt))
         except AlreadyExists:
             raise Conflict("Record already exists") from None
         except ValueError as exc:
